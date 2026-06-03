@@ -1,0 +1,503 @@
+
+<style>
+  .doc { max-width: 680px; padding: 24px 0; font-family: var(--font-sans); color: var(--color-text-primary); }
+  h1 { font-size: 20px; font-weight: 500; margin: 0 0 4px; }
+  .subtitle { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 28px; }
+  h2 { font-size: 15px; font-weight: 500; margin: 32px 0 10px; border-bottom: 1px solid var(--color-border-tertiary); padding-bottom: 6px; }
+  h3 { font-size: 13px; font-weight: 500; margin: 16px 0 6px; color: var(--color-text-secondary); }
+  p, li { font-size: 13px; line-height: 1.65; margin: 0 0 6px; }
+  ul { padding-left: 18px; margin: 0 0 10px; }
+  pre { background: var(--color-background-secondary); border-radius: 8px; padding: 12px 14px; font-size: 11.5px; font-family: var(--font-mono); overflow-x: auto; margin: 8px 0 12px; line-height: 1.65; white-space: pre; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 8px 0 16px; }
+  th { text-align: left; font-weight: 500; padding: 6px 10px; border-bottom: 1px solid var(--color-border-secondary); color: var(--color-text-secondary); }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--color-border-tertiary); vertical-align: top; }
+  .badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+  .new { background: var(--color-background-success); color: var(--color-text-success); }
+  .core { background: var(--color-background-info); color: var(--color-text-info); }
+  hr { border: none; border-top: 1px solid var(--color-border-tertiary); margin: 28px 0; }
+  .copy-btn { float: right; font-size: 11px; padding: 4px 10px; border: 1px solid var(--color-border-secondary); border-radius: 6px; background: none; color: var(--color-text-secondary); cursor: pointer; margin-top: -2px; }
+  .copy-btn:hover { background: var(--color-background-secondary); }
+  .note { font-size: 11px; color: var(--color-text-tertiary); margin: 0; }
+</style>
+<div class="doc">
+  <h1>Directed Interactive Novel Engine — Architecture Brief v3.1</h1>
+  <div class="subtitle">Handoff document · June 2026 · Status: <strong>NPC behaviour subsystem COMPLETE</strong> (ADR 0001–0007); <strong>Narrator subsystem IN PROGRESS</strong> — nudge, POV projection, recorder done (ADR 0008–0010); beat doc + narrator loop next. Full decision log lives in <code>docs/adr/</code> — this brief is the snapshot; the ADRs hold the <em>why</em>.</div>
+
+  <h2>Project summary</h2>
+  <p>A custom interactive fiction engine built on top of the Claude API. Not a SillyTavern config — a purpose-built web app. The player experiences a story chapter-by-chapter with authored prose quality, player input moments, and NPC agent turns. A hidden beat document steers all agents toward chapter goals without explicit plot instructions. v3 closes the full NPC behaviour subsystem: how a character <em>is</em>, <em>feels</em>, <em>changes</em>, <em>scars</em>, and <em>expresses</em> — and how all of that compiles into a single in-character LLM call. v3.1 adds the Narrator's first pieces — a <strong>directed-pressure nudge</strong> (the only authorial steering channel), <strong>per-scene POV projection</strong>, and the <strong>recorder</strong> — establishing <strong>three leak guards</strong> (own feelings · authorial omniscience · others' hidden truth) and one shared human review gate.</p>
+
+  <h2>Decision log <span class="badge new">v3.1</span></h2>
+  <p>Decisions are recorded as ADRs in <code>docs/adr/</code> (append-only, dated). Snapshot:</p>
+  <table>
+    <tr><th>ADR</th><th>Decision</th></tr>
+    <tr><td>0001</td><td>Character data: three-layer separation (source bible → card / edges / internal state)</td></tr>
+    <tr><td>0002</td><td>Relationship-edge schema (directed, owner-perspective, per-axis bounds + register)</td></tr>
+    <tr><td>0003</td><td>Delta engine: drift vs. rupture + appraisal propose→review→commit</td></tr>
+    <tr><td>0004</td><td>Time decay + latched scars (commitment & trauma unified)</td></tr>
+    <tr><td>0005</td><td>Appraisal trigger taxonomy (universal priors + card sensitivities)</td></tr>
+    <tr><td>0006</td><td>Register / relational-mode system (behavioral grammar)</td></tr>
+    <tr><td>0007</td><td>NPC context assembly (compiler + isolation boundary)</td></tr>
+    <tr><td>0008</td><td>Psychological nudge — directed-pressure model (escalation ladder, leak-checked)</td></tr>
+    <tr><td>0009</td><td>POV projection — perceived-read leak guard (hedged reads, two legibility dials)</td></tr>
+    <tr><td>0010</td><td>Recorder mechanics — two-layer beat record + derived legibility</td></tr>
+  </table>
+
+  <h2>Three agents — layered context isolation <span class="badge core">core</span></h2>
+  <p>Different agents see different slices of truth. "Sees" means "acts within the limits of what it knows" — an NPC cannot act on information outside its context boundary. The NPC context assembler (ADR 0007) is the mechanical enforcement point: it only ever reads the acting NPC's own data + what it witnessed.</p>
+  <pre>NARRATOR     → sees: beat doc (full), full relationship mesh, scene history,
+                      player inputs, NPC responses as story events
+               uses mesh for: atmosphere, body language, room dynamics only
+               rule: never reveal info a character would not know
+
+PLAYER (you) → sees: rendered prose only
+
+NPC agent    → sees: own character card, own relationship snapshot (self-perspective only),
+                      psychological nudge from beat doc, witnessed scene excerpt
+               does NOT see: beat doc, other character cards, other characters' relationships,
+                             narrator instructions</pre>
+
+  <h2>Session state machine <span class="badge core">core</span></h2>
+  <pre>[SESSION_START]
+      ↓
+[NARRATOR_TURN] → generates prose → scans for handoff signal
+      ↓
+   branches to:
+      ├── [PLAYER_MOMENT]   → render input box → wait → [NARRATOR_RESUMES]
+      ├── [NPC_MOMENT]      → run interaction queue → resolve turns → [NARRATOR_RESUMES]
+      └── [BEAT_COMPLETE]   → chapter wrap → summary generated</pre>
+
+  <h2>Data model — three layers <span class="badge new">ADR 0001</span></h2>
+  <p>Split by <strong>lifecycle and ownership</strong>, not by "it's all character data." The full authored bible (e.g. <code>luna-archi.md</code>) is never injected — it is the human's source. The runtime <em>card</em> is a compiled, spoiler-free, current-state slice of it.</p>
+  <pre>SOURCE BIBLE   → full authored doc, all arcs. Human-facing. NEVER injected.
+CHARACTER CARD → compiled current-state slice. Immutable at runtime.
+                 Includes knowledge_boundary (what the character knows / does NOT know now).
+RELATIONSHIP   → mutable, per DIRECTED pair (from → to). Written at scene/session boundaries.
+   EDGES
+INTERNAL STATE → mutable, per character. Transient: active emotions, motivation, masks.
+                 Decays on its own clock.</pre>
+  <p>The <strong>player</strong> has an appearance-only card and <strong>no simulated outgoing edges</strong> — the human supplies their own behaviour; NPCs only hold edges <em>toward</em> the player.</p>
+
+  <h2>Relationship edge schema <span class="badge new">ADR 0002</span></h2>
+  <p>Directed and owner-perspective (how <code>from</code> sees <code>to</code>, possibly self-deceived). <code>A→B ≠ B→A</code>. Only the live axes for that edge are instantiated. Behaviour is <em>not</em> the number alone:</p>
+  <pre>rendered behaviour = axis value  ×  expression mask  ×  (card voice + relational register)</pre>
+  <pre>edge:  from: luna-archi   to: vixia-archi
+  register: { base: transparent_mess, overrides: [...] }     # behavioral grammar (ADR 0006)
+  axes:
+    affection:
+      value: 96                 # -100..+100, owner self-perceived
+      awareness: { mode: auto } # auto (derive tier from |value|) | capped (feels, can't access)
+      bounds: { soft_floor: 88, soft_cap: 100, hard_floor: 40, hard_cap: 100 }
+      rates:  { gain: 0.4, loss: 0.2 }     # asymmetric per axis (trust: gain low / loss high)
+      peak:   { up: 96, down: 0 }          # high-water marks (latch source, ADR 0004)
+      scar:   { latched: true, floor: 57 } # permanent floor once peak crosses threshold
+      baseline: 0                          # decay pulls toward here, stops at scar floor
+  topic_flags: [ { topic: the_diagnosis, effect: knows_but_wont_admit } ]   # edge-scoped masks
+  meta: { seeded_from: vixia_sibling_bond, pending_drift: {} }</pre>
+  <p><strong>Awareness is computed from value</strong> at read time (tiers below); <code>mode: capped</code> models blind spots (feels strongly, cannot consciously reach it). <strong>Bounds are invisible to the character</strong> — they are authorial. New edges are seeded from <strong>disposition priors</strong> on the card, keyed by traits of the target (gender, demeanor, faction, shows-interest) — not born neutral.</p>
+
+  <h2>Emotion axes — full model <span class="badge core">core</span></h2>
+  <p>All axes run from -100 to +100. Negative values reverse meaning. Some axes are directional by nature (rivalry, debt) and approach zero rather than going negative. Which axes are "live" is declared on the card.</p>
+  <table>
+    <tr><th>Axis</th><th>Negative (-100)</th><th>Zero</th><th>Positive (+100)</th></tr>
+    <tr><td>Affection</td><td>Deep contempt, wants harm</td><td>Indifference</td><td>Deeply fond, loves</td></tr>
+    <tr><td>Trust</td><td>Actively deceives, manipulates</td><td>Neither trusts nor distrusts</td><td>Confides everything</td></tr>
+    <tr><td>Fear</td><td>Reckless contempt, no caution</td><td>No fear</td><td>Paralyzed, avoids</td></tr>
+    <tr><td>Respect</td><td>Dismisses judgment entirely</td><td>Neutral regard</td><td>Defers to their judgment</td></tr>
+    <tr><td>Romantic</td><td>Active aversion, repulsion</td><td>No attraction</td><td>Longing, desire</td></tr>
+    <tr><td>Rivalry</td><td>—</td><td>No competitive tension</td><td>Strong competitive drive</td></tr>
+    <tr><td>Debt</td><td>—</td><td>Balanced</td><td>Feels deeply owed or owes</td></tr>
+  </table>
+
+  <h3>Meaningful contradictions — do not resolve, surface them</h3>
+  <pre>HIGH AFFECTION + LOW TRUST      "I love you but can't believe a word you say."   (Luna's default)
+HIGH FEAR + HIGH AFFECTION      "I'm drawn to them but they terrify me."
+HIGH TRUST + NEGATIVE AFFECTION "I rely on their judgment but can't stand them."
+HIGH RIVALRY + HIGH AFFECTION   "My favorite person is also my greatest competition."
+HIGH DEBT + NEGATIVE AFFECTION  "I owe them everything and I hate that I do."</pre>
+
+  <h2>Awareness tiers <span class="badge core">core</span> <span class="badge new">ADR 0002/0007</span></h2>
+  <p>Characters don't have full conscious access to all their feelings. Awareness is per-axis, <strong>computed from value</strong> by default, overridable to <code>capped</code> for blind spots. In the assembled prompt awareness is <strong>folded into the wording</strong> (so a capped feeling is never stated plainly and can't leak); in the data it stays a separate field.</p>
+  <table>
+    <tr><th>Range</th><th>Awareness level</th><th>Prompt language</th></tr>
+    <tr><td>0–39</td><td>No felt signal</td><td>Behavior exists but character would deny or not notice it</td></tr>
+    <tr><td>40–59</td><td>Vague unease / warmth</td><td>"Something feels off / right but I can't name it"</td></tr>
+    <tr><td>60–79</td><td>Subconscious recognition</td><td>Feels it, acts on it instinctively, rationalizes it away if asked</td></tr>
+    <tr><td>80+</td><td>Conscious awareness</td><td>Knows. May suppress or act on it deliberately.</td></tr>
+  </table>
+
+  <h2>Caps, floors &amp; latched scars <span class="badge new">ADR 0004</span></h2>
+  <p>Each axis has two-tier bounds. <strong>Drift</strong> (ordinary events) is clamped to <em>soft</em> bounds; only a <strong>rupture</strong> (high-impact event) reaches the soft↔hard band and may rewrite bounds. High feelings leave permanent marks via a single latch mechanism:</p>
+  <pre>LATCH      when an axis's peak crosses latch_threshold → set a permanent floor (a "scar")
+COMMITMENT = a positive latch   (affection peaks high → high floor → won't abandon over slights)
+TRAUMA/PTSD = a high-magnitude latch (fear peaks high → permanent floor → lingering flaw)
+DECAY      pulls value toward baseline but STOPS at the latched floor (acute fades, scar stays)
+TRIGGERS   stored on a scar can rupture-spike the value back toward peak ("something reminds her")
+OVERCOME   only a deliberate growth-arc rupture clears a latched floor — time/drift cannot
+EFFECTIVE FLOOR = max(static soft_floor, scar.floor)</pre>
+  <p><strong>Time = narrative time.</strong> Decay is computed at scene/chapter boundaries and scaled by <em>declared in-world elapsed time</em> (a "three weeks pass" timeskip), not by beat count. Committed edges and latched floors are decay-exempt.</p>
+
+  <h2>Delta engine — drift vs. rupture <span class="badge new">ADR 0003 / 0005</span></h2>
+  <p>Two channels move every axis, with different rules:</p>
+  <table>
+    <tr><th></th><th>DRIFT (ordinary)</th><th>RUPTURE (high-impact, flagged)</th></tr>
+    <tr><td>Source</td><td>per-scene appraisal</td><td>betrayal, confession, profound understanding</td></tr>
+    <tr><td>Magnitude</td><td>tiny, rate-scaled</td><td>large, explicit</td></tr>
+    <tr><td>Clamped to</td><td>soft bounds</td><td>hard bounds</td></tr>
+    <tr><td>Rewrite bounds / latch?</td><td>no</td><td>yes (= character development)</td></tr>
+    <tr><td>Flip register?</td><td>no</td><td>yes</td></tr>
+    <tr><td>Applied</td><td>batched at scene boundary</td><td>immediately, in-scene</td></tr>
+  </table>
+  <p>The appraisal LLM never writes the edge directly — it emits <strong>proposals</strong>; a review gate sits before commit:</p>
+  <pre>appraisal LLM → delta proposals → REVIEW gate (accept / edit / reject) → commit (+ audit log)
+
+proposal: { edge, axis, direction, magnitude, channel, trigger, confidence }
+  trigger is MANDATORY — every axis movement is explainable; the log feeds the relationship viewer.</pre>
+
+  <h3>Trigger taxonomy <span class="badge new">ADR 0005</span></h3>
+  <pre>TWO LAYERS   universal priors (shared) + character sensitivities (on the card)
+SENSITIVITY  { id, detect (natural language), targets, axes+direction, weight, channel }
+TARGETS      actor | beneficiary | witnessed_third_party  (vicarious shifts supported)
+DRIFT vs RUPTURE  magnitude ≈ weight × LLM-judged severity, against a shared severity rubric;
+                  betrayal / confession / abandonment are categorically rupture
+SALIENCE     match-only — no matched sensitivity → no delta (characters are numb to what they
+             don't care about)
+CONFLICTS    multiple sensitivities may fire → multiple proposals (this MANUFACTURES the
+             meaningful contradictions; do not resolve them)
+RUNTIME      ruptures can INSTALL new sensitivities (a scar's re-spike triggers) — appraisal
+             both reads and writes sensitivities
+LOOP CLOSURE the matched sensitivity names itself as the proposal's `trigger` string</pre>
+
+  <h2>Expression mask layer <span class="badge core">core</span></h2>
+  <p>Separates what a character <em>feels</em> (internal state) from what they <em>express</em> (behavior output). Resolves contradictions like trust=100 but cannot tell the truth. Sources: card traits, active emotional states (guilt/grief/shame), external obligations (sworn to secrecy), and self-deception (below awareness threshold). Narrow, topic-scoped masks live on the edge as <code>topic_flags</code>.</p>
+  <pre>INTERNAL STATE   trust: +100
+MASK             guilt modifier active on topic [the merchant]
+RESULT PROMPT
+  "Trusts completely and wants to tell the truth. But guilt stops her — not lack of trust,
+   inability to face it herself. The more she trusts them, the more it costs her to stay silent.
+   She deflects warmly, changes the subject with a smile."</pre>
+
+  <h2>Register / relational-mode system <span class="badge new">ADR 0006</span></h2>
+  <p>The layer that turns numbers back into behaviour. A register is a profile across a <strong>fixed canonical dimension set</strong> — the <em>grammar</em> of how a character expresses, independent of how much they feel. (Luna's "Koakuma vs. With-Vixia" contrast table is literally a two-register spec.)</p>
+  <table>
+    <tr><th>Dimension</th><th>Values</th></tr>
+    <tr><td>disclosure</td><td>sealed · guarded · open · transparent</td></tr>
+    <tr><td>proximity</td><td>controlled · warm · unconscious-seeking · distancing</td></tr>
+    <tr><td>flow</td><td>clean-exit · extends-every-moment</td></tr>
+    <tr><td>deflection</td><td>invisible · transparent-failing · none</td></tr>
+    <tr><td>sincerity</td><td>direct · warm-non-answer · rerouted-through-teasing · impossible</td></tr>
+    <tr><td>composure</td><td>unbreakable · fragile</td></tr>
+    <tr><td>reads_target</td><td>accurate · crashes</td></tr>
+    <tr><td>tells / speech</td><td>authored leaks · ref to voice subset</td></tr>
+  </table>
+  <pre>RESOLUTION (per turn)
+  1. base               edge's authored default register (may be a HARD PIN)
+  2. threshold selector  axis value → register variant  (e.g. trust gradient L1..L4)
+  3. situational override event/context conditions       (romantic-interest → boundary_protection)
+  4. emotional modulation current emotional state shifts the SURFACE, not the grammar
+  5. mask + awareness    suppress specific content / gate whether she can name it
+
+STORAGE   shared archetypes (one_way_mirror, romantic_deflection, ...) + card instantiation
+          (binds archetype + character voice/tells). Bespoke card-local registers allowed.</pre>
+
+  <h2>NPC context assembly <span class="badge new">ADR 0007</span></h2>
+  <p>The assembler is a <strong>compiler</strong> (structured data → folded prose blocks) and the <strong>isolation boundary</strong>. Compilation is LLM-driven; stable blocks are cached within a scene, volatile blocks (the snapshot) recompiled after deltas. Each NPC turn is two-stage: <em>compile</em> then <em>act</em>.</p>
+  <pre>NPC_CALL for [character]:
+  system:
+    [IDENTITY]        card + knowledge_boundary (clamped to current chapter)
+    [SELF]            internal state: mood, active emotions, motivation
+    [SNAPSHOT]        edges → present chars, each axis as (value × awareness) language,
+                      FOLDED (capped feelings never stated plainly), own-perspective only
+    [MASKS]           topic_flags + global mask + active states
+    [DIRECTIVES]      resolved register → concrete behavior rules
+    [NUDGE]           directed-pressure nudge (ADR 0008), framed as the character's own impulse
+    [SCENE RULES]     POV, tone, format
+  user:
+    [SCENE EXCERPT]   surface layer, POV-projected to this NPC (ADR 0009/0010): witnessed_by ∋ self
+                      at fidelity (full / overheard / partial); perceived reads decoded via reads_target
+    "How does [character] respond?"</pre>
+
+  <h3>Behavior translation (numbers → language), now 2-D <span class="badge new">ADR 0007</span></h3>
+  <p>Extends the original 1-D table to (value × awareness). Major NPCs get the full card (Sonnet); minor NPCs a compressed card (Haiku).</p>
+  <pre>affection +80..+100  "deeply fond, seeks closeness, visibly happy when near them"
+affection +50..+79   "friendly, comfortable, generally cooperative"
+affection +20..+49   "neutral to cautious, polite but guarded"
+
+trust +25, low aware   "Something about [name] makes her hold back, though she couldn't say why."
+trust +85, conscious   "She knows she doesn't fully trust [name]. She chooses her words carefully."
+romantic +72, CAPPED   "A pull she has no name for — racing heart, words that won't form."
+                       (never rendered as the plain feeling — the cap forbids it)</pre>
+
+  <h2>Psychological nudge — directed pressure <span class="badge new">ADR 0008</span></h2>
+  <p>The nudge is the <strong>only channel</strong> from authorial / story intent into an NPC (everything else is self-simulation). It is a <strong>bias term gated by the register</strong> — it can justify a situational override or shift the surface, but is still gated by mask + awareness, so it <em>never puppets</em>. It is framed as the character's <strong>own impulse</strong>, never a stage direction.</p>
+  <pre>ESCALATION LADDER (one beat, one character) — clocked by WORD BUDGET + goal-not-met
+  L0 ambient → L1 preoccupation → L2 active intent → L3 urgent drive
+  ── ceiling: never puppet from inside the character ──
+  ① stall flag (out-of-context) → ② narrator environmental push → ③ player "Continue / Skip / Direct?"
+  → ④ hard directive (break-glass; may override NPC; player-invoked; logged)</pre>
+  <p>"Directed" = <em>catchable</em>, not scripted: the beat's <strong>goal is the anchor</strong>, the route may drift, and the chapter's word count is the outer hard flag. Authoring is dual — an omniscient <strong>beat intent</strong> (free text) is compiled into a knowledge-bounded nudge, or a nudge is hand-authored; <strong>both pass the leak-check</strong> at the assembler boundary. The nudge is the <strong>second leak guard</strong> (authorial omniscience).</p>
+
+  <h2>POV projection + recorder <span class="badge new">ADR 0009/0010</span></h2>
+  <p>POV is declared <strong>per scene</strong> (default from the chapter outline). The narrator writes in that contract, but each NPC's excerpt is <strong>re-projected to its own limited POV</strong> — the <strong>third leak guard</strong> (others' hidden truth + narrator omniscience). The recorder commits a two-layer record after each beat:</p>
+  <pre>surface      observable behavior + dialogue + HEDGED perceived reads ("looks/seems X")  → crosses agents
+true_state   per-character private feeling / intent  → NEVER cross-fed (own copy via SELF block)
+witnessed_by { char: full | overheard | partial }     pov_anchor: &lt;scene contract anchor&gt;</pre>
+  <p><strong>Leak line:</strong> a perceived read (<em>"Vixia looks sad"</em>) is fine; the truth behind it (<em>"…because she's hiding the diagnosis"</em>, <em>"he is lying"</em>) is not. Two per-edge, <strong>directional</strong> dials:</p>
+  <pre>LEGIBILITY (how much shows)  baked into `surface` at the RECORDER
+   = card base_opacity × axis intensity × awareness/mask × resolved register (composure+tells)   [target→observer edge]
+DECODE (how well it's read)  applied per observer at PROJECTION
+   = observer.reads_target   [observer→target edge]    accurate → faithful/sharpened · crashes → degraded</pre>
+  <p>Poker-face = high card <code>base_opacity</code> (it seeds composure) — no new subsystem. Player delivery is <strong>sourced</strong> (prose → optional tone tag → narrator infer/ask), never decoded from text. Safety guard = the <strong>hedged-attribution rule</strong> (unhedged "is sad / is lying" rejected; hidden facts blocked by <code>knowledge_boundary</code>) + the shared <strong>review gate</strong>. Safety is structural (holds at any model tier); fidelity is best-effort + human-backstopped.</p>
+  <p class="note">Three leak guards: own capped feelings (0007) · authorial omniscience (0008) · others' hidden truth + narrator omniscience (0009/0010). One review-gate surface now serves deltas (0003), nudge compile (0008), and beat records (0010).</p>
+
+  <h2>NPC interaction queue <span class="badge core">core</span></h2>
+  <p>After any speech act (player or NPC), each character present runs a priority check before anyone responds.</p>
+  <pre>STEP 1 — Relevance check   directed at me? / touches my interests? / relationship urge? / motivation?
+STEP 2 — Priority          RESPOND_NOW · RESPOND_WAIT · SILENT · INTERRUPT
+STEP 3 — Interrupt valid    axis crosses threshold AND card supports behavior AND motivation strong
+STEP 4 — Queue resolution   if no one responds → player inaction timer
+PLAYER INACTION TIMER
+  short  → other characters fill silence naturally
+  medium → narrator describes atmosphere beat
+  long   → system: "Continue? / Skip to next beat? / Direct a character?"</pre>
+
+  <h2>Context memory layers <span class="badge core">core</span></h2>
+  <pre>IMMEDIATE CONTEXT    raw exchanges, last ~2000 tokens
+SCENE SUMMARY        compressed after each scene unit (also where drift + decay are applied)
+CHAPTER LOG          key beat events for continuity
+LOREBOOK             world facts, injected on keyword match (existing system)</pre>
+
+  <h2>Narrator resume anchor <span class="badge core">core</span></h2>
+  <pre>"You were narrating [scene type].
+Last line before pause: '[exact last sentence]'
+POV: [POV]. Tone: [tone].
+Continue from here."</pre>
+
+  <h2>What is not yet decided</h2>
+  <ul>
+    <li><strong>Beat document authoring format</strong> — how a beat declares its intent / goal / word-budget, and what fires <code>BEAT_DONE</code> (the nudge producer, ADR 0008, depends on this)</li>
+    <li><strong>Narrator loop internals</strong> — prose generation, handoff-signal scanning, the mesh-awareness rule (atmosphere / body-language only), and resume-anchor wiring</li>
+    <li><strong>Session state schema + persistence</strong> — what is saved/loaded; DB choice</li>
+    <li><strong>UI/UX</strong> — prose display, player input (incl. a delivery/tone channel), the relationship viewer (fed by the audit log), and the shared review-gate surface (deltas + nudge compile + beat records)</li>
+    <li><strong>Tech stack</strong> — framework, hosting, orchestration of the compile→act calls</li>
+  </ul>
+  <p class="note">Decided since v2 (now in ADRs): data schema for card/edges, which axes are live, delta calculation, time-based drift, and now the directed-pressure nudge, POV projection, and recorder (0008–0010).</p>
+
+  <h2>Suggested next steps</h2>
+  <ul>
+    <li><strong>Beat document</strong> — intent / goal / word-budget format + <code>BEAT_DONE</code> criteria (unblocks the nudge producer, ADR 0008)</li>
+    <li><strong>Narrator loop</strong> — prose generation, handoff scanning, mesh-awareness rule, resume anchor</li>
+    <li>Session state + persistence, then tech stack</li>
+    <li>Prototype narrator → player → narrator loop before wiring NPCs</li>
+    <li>Add the NPC behaviour subsystem (already specified) once the narrator loop is stable</li>
+  </ul>
+
+  <hr>
+  <button class="copy-btn" onclick="copyAll()">Copy all as text</button>
+  <p class="note">Paste into a new Claude conversation to resume. Start with: "Continue from this architecture brief. ADR 0001–0010 are done (NPC subsystem + nudge / POV projection / recorder) — let's design the beat document and narrator loop next."</p>
+</div>
+
+<script>
+function copyAll() {
+  const text = `# Directed Interactive Novel Engine — Architecture Brief v3.1
+Handoff · June 2026 · Status: NPC subsystem COMPLETE (0001–0007); Narrator IN PROGRESS —
+nudge/POV/recorder done (0008–0010); beat doc + narrator loop next.
+Full decision log in docs/adr/ (this brief is the snapshot; ADRs hold the why).
+
+---
+
+## Project summary
+Custom interactive fiction engine on the Claude API. Purpose-built web app (not SillyTavern).
+Chapter-by-chapter story with authored prose, player input moments, NPC agent turns. A hidden
+beat doc steers all agents toward chapter goals without explicit plot instructions. v3 closes
+the full NPC behaviour subsystem: how a character is, feels, changes, scars, and expresses, and
+how all of it compiles into one in-character LLM call. v3.1 adds the Narrator's first pieces — a
+directed-pressure nudge (the only authorial steering channel), per-scene POV projection, and the
+recorder — three leak guards (own feelings, authorial omniscience, others' hidden truth) + one
+shared review gate.
+
+## Decision log
+0001 Character data: three-layer separation (source bible → card / edges / internal state)
+0002 Relationship-edge schema (directed, owner-perspective, per-axis bounds + register)
+0003 Delta engine: drift vs rupture + appraisal propose→review→commit
+0004 Time decay + latched scars (commitment & trauma unified)
+0005 Appraisal trigger taxonomy (universal priors + card sensitivities)
+0006 Register / relational-mode system (behavioral grammar)
+0007 NPC context assembly (compiler + isolation boundary)
+0008 Psychological nudge — directed-pressure model (escalation ladder, leak-checked)
+0009 POV projection — perceived-read leak guard (hedged reads, two legibility dials)
+0010 Recorder mechanics — two-layer beat record + derived legibility
+
+---
+
+## Three agents — layered context isolation
+"Sees" = "acts within the limits of what it knows." The NPC assembler (0007) enforces this.
+
+NARRATOR     → beat doc (full), full mesh, scene history, player inputs, NPC responses.
+               Uses mesh for atmosphere/body language/room dynamics ONLY.
+               Never reveal info a character would not know.
+PLAYER       → rendered prose only.
+NPC agent    → own card, own relationship snapshot (self-perspective), psychological nudge,
+               witnessed scene excerpt. Does NOT see: beat doc, other cards, other edges,
+               narrator instructions.
+
+## Session state machine
+[SESSION_START] → [NARRATOR_TURN] (prose, scan for handoff) branches to:
+  [PLAYER_MOMENT] | [NPC_MOMENT] (interaction queue) | [BEAT_COMPLETE] (chapter wrap)
+
+---
+
+## Data model — three layers (ADR 0001)
+SOURCE BIBLE   full authored doc, all arcs. NEVER injected.
+CHARACTER CARD compiled current-state slice, immutable at runtime. Includes knowledge_boundary
+               (what the character knows / does NOT know now).
+REL. EDGES     mutable, per DIRECTED pair (from→to). Written at scene/session boundaries.
+INTERNAL STATE mutable, per character. Transient: active emotions, motivation, masks. Decays.
+Player = appearance-only card, NO outgoing simulated edges. NPCs only hold edges toward player.
+
+## Relationship edge schema (ADR 0002)
+Directed, owner-perspective (A→B ≠ B→A). Only live axes instantiated.
+behaviour = axis value × expression mask × (card voice + relational register)
+
+edge: from luna-archi → vixia-archi
+  register: { base: transparent_mess, overrides: [...] }
+  axes.affection:
+    value: 96                 # -100..+100, owner self-perceived
+    awareness: { mode: auto } # auto (derive from |value|) | capped (feels, can't access)
+    bounds: { soft_floor: 88, soft_cap: 100, hard_floor: 40, hard_cap: 100 }
+    rates:  { gain: 0.4, loss: 0.2 }     # asymmetric per axis
+    peak:   { up: 96, down: 0 }
+    scar:   { latched: true, floor: 57 } # permanent floor once peak crosses threshold
+    baseline: 0
+  topic_flags: [ { topic: the_diagnosis, effect: knows_but_wont_admit } ]
+  meta: { seeded_from: vixia_sibling_bond, pending_drift: {} }
+
+Awareness computed from value at read time; capped = blind spot. Bounds are invisible to the
+character (authorial). New edges seeded from disposition priors on the card, keyed by target
+traits — not born neutral.
+
+## Emotion axes — full model
+All -100..+100. Negative reverses meaning. Rivalry & Debt are directional (approach zero).
+Affection / Trust / Fear / Respect / Romantic / Rivalry / Debt. Live axes declared on card.
+Meaningful contradictions are SURFACED, not resolved (e.g. high affection + low trust = Luna).
+
+## Awareness tiers (computed from value; ADR 0002/0007)
+0–39 none · 40–59 vague · 60–79 subconscious · 80+ conscious. Overridable to capped (blind spot).
+In the prompt awareness is FOLDED into wording (capped feeling never stated plainly → no leak);
+in the data it stays a separate field.
+
+## Caps, floors & latched scars (ADR 0004)
+Two-tier bounds. Drift clamps to soft; rupture reaches soft↔hard and may rewrite bounds.
+LATCH: peak crosses threshold → permanent floor (scar).
+  Commitment = positive latch. Trauma/PTSD = high-magnitude latch.
+  Decay pulls value to baseline but stops at scar floor. Scar triggers can rupture-spike back.
+  Only a growth-arc rupture clears a scar. effective floor = max(static soft_floor, scar.floor).
+Time = narrative time: decay at scene/chapter boundaries, scaled by DECLARED in-world elapsed
+time (timeskips), not beat count. Committed edges + scars are decay-exempt.
+
+## Delta engine — drift vs rupture (ADR 0003 / 0005)
+DRIFT  ordinary, tiny, rate-scaled, soft-clamped, batched at scene boundary.
+RUPTURE high-impact, large, reaches hard bounds, may rewrite bounds/flip register, immediate.
+Appraisal LLM proposes → REVIEW gate (accept/edit/reject) → commit (+ audit log).
+  proposal { edge, axis, direction, magnitude, channel, trigger(MANDATORY), confidence }
+
+Trigger taxonomy:
+  Two layers: universal priors (shared) + character sensitivities (card).
+  sensitivity { id, detect(NL), targets, axes+direction, weight, channel }
+  targets: actor | beneficiary | witnessed_third_party (vicarious supported).
+  magnitude ≈ weight × LLM-judged severity (shared rubric); betrayal/confession/abandonment
+    are categorically rupture.
+  match-only salience (no match → no delta). Multiple sensitivities → multiple proposals
+    (manufactures contradictions). Ruptures can INSTALL new sensitivities (scar triggers).
+  Matched sensitivity names itself as the proposal trigger string.
+
+## Expression mask layer
+Feels (internal) vs expresses (output). Sources: card traits, active emotions, external
+obligations, self-deception. Narrow topic-scoped masks live on the edge as topic_flags.
+
+## Register / relational-mode system (ADR 0006)
+Register = profile across a FIXED canonical dimension set (the grammar of expression):
+  disclosure, proximity, flow, deflection, sincerity, composure, reads_target, tells, speech.
+Resolution per turn:
+  1 base (may be a hard pin) → 2 threshold selector (trust gradient) → 3 situational override
+  → 4 emotional modulation (surface only) → 5 mask + awareness gate.
+Storage: shared archetypes (one_way_mirror, romantic_deflection, ...) + card instantiation;
+bespoke card-local registers allowed (e.g. Luna's transparent_mess).
+
+## NPC context assembly (ADR 0007)
+Compiler + isolation boundary. LLM-compiled blocks; cache stable blocks, recompile volatile
+snapshot after deltas. Two-stage turn: compile then act.
+system: [IDENTITY card+knowledge_boundary] [SELF mood/emotions/motivation]
+        [SNAPSHOT edges→present chars, (value×awareness) FOLDED, own-perspective]
+        [MASKS] [DIRECTIVES resolved register→rules] [NUDGE directed-pressure, ADR 0008] [SCENE RULES POV/tone]
+user:   [SCENE EXCERPT surface layer, POV-projected (0009/0010); witnessed_by∋self at fidelity;
+        perceived reads decoded via reads_target] "How does [character] respond?"
+Behavior translation now 2-D (value × awareness). Major NPC = full card (Sonnet),
+minor = compressed (Haiku). A capped-high axis renders as "feels it, can't name it" — never plainly.
+
+## Psychological nudge — directed pressure (ADR 0008)
+The ONLY channel from authorial intent into an NPC. A bias term GATED by the register (can justify a
+situational override / shift the surface) but still gated by mask+awareness → never puppets. Framed
+as the character's OWN impulse, never a stage direction.
+Escalation ladder (one beat, one char), clocked by WORD BUDGET + goal-not-met:
+  L0 ambient → L1 preoccupation → L2 active intent → L3 urgent drive
+  ceiling (never puppet from inside): ① stall flag (out-of-context) → ② narrator environmental push
+  → ③ player "Continue/Skip/Direct?" → ④ hard directive (break-glass, may override NPC; player-invoked; logged)
+"Directed" = catchable, not scripted: goal is the anchor, route may drift, chapter word count is the
+outer hard flag. Dual authoring: omniscient beat intent (free text) compiled → bounded nudge, OR
+hand-authored; both pass the leak-check. = the SECOND leak guard (authorial omniscience).
+
+## POV projection + recorder (ADR 0009/0010)
+POV declared PER SCENE (default from the chapter outline). Narrator writes in that contract; each
+NPC's excerpt is RE-PROJECTED to its own limited POV = the THIRD leak guard (others' hidden truth +
+narrator omniscience). Recorder commits a two-layer record per beat:
+  surface     observable behavior + dialogue + HEDGED perceived reads ("looks/seems X") → crosses agents
+  true_state  per-character private feeling/intent → NEVER cross-fed (own copy via SELF block)
+  witnessed_by { char: full|overheard|partial }   pov_anchor: <scene anchor>
+Leak line: "Vixia looks sad" OK; the truth behind it ("…hiding the diagnosis", "he is lying") NOT.
+Two per-edge, directional dials:
+  LEGIBILITY (how much shows) baked into surface at RECORDER
+    = card base_opacity × axis intensity × awareness/mask × resolved register (composure+tells)  [target→observer]
+  DECODE (how well read) per observer at PROJECTION = observer.reads_target  [observer→target]
+    accurate → faithful/sharpened · crashes → degraded
+Poker-face = high card base_opacity (seeds composure), no new subsystem. Player delivery is SOURCED
+(prose → optional tone tag → narrator infer/ask), never decoded from text. Safety = hedged-attribution
+rule (unhedged "is sad/is lying" rejected; hidden facts blocked by knowledge_boundary) + shared review
+gate. Safety is structural (any model tier); fidelity best-effort + human-backstopped.
+Three leak guards: own capped feelings (0007) · authorial omniscience (0008) · others' hidden truth +
+narrator omniscience (0009/0010). One review gate serves deltas (0003), nudge compile (0008), records (0010).
+
+## NPC interaction queue
+1 relevance (directed/interests/relationship/motivation) → 2 priority
+(RESPOND_NOW/WAIT/SILENT/INTERRUPT) → 3 interrupt valid (axis threshold + card + motivation)
+→ 4 queue / player inaction timer (short fill / medium atmosphere / long system prompt).
+
+## Context memory layers
+IMMEDIATE (~2000 tok) · SCENE SUMMARY (drift + decay applied here) · CHAPTER LOG · LOREBOOK.
+
+## Narrator resume anchor
+"You were narrating [scene type]. Last line: '[exact last sentence]'. POV: [POV]. Tone: [tone].
+Continue from here."
+
+---
+
+## Not yet decided
+- Beat document authoring format: intent / goal / word-budget + BEAT_DONE (the nudge producer, 0008, needs it)
+- Narrator loop internals: prose generation, handoff-signal scanning, mesh-awareness rule, resume anchor
+- Session state schema + persistence (DB)
+- UI/UX: prose display, player input (delivery/tone channel), relationship viewer (audit log),
+  shared review-gate surface (deltas + nudge compile + beat records)
+- Tech stack: framework, hosting, compile→act orchestration
+
+## Next steps
+1. Beat doc — intent / goal / word-budget format + BEAT_DONE (unblocks the nudge producer, 0008)
+2. Narrator loop — prose gen, handoff scanning, mesh-awareness rule, resume anchor
+3. Session state + persistence, then tech stack
+4. Prototype narrator → player → narrator loop, then wire in the (already-specified) NPC subsystem`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy all as text', 2000);
+  });
+}
+</script>
