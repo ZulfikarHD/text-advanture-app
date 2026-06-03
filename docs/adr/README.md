@@ -20,6 +20,13 @@ This folder is the **append-only decision log** for the Directed Interactive Nov
 
 Lightweight [MADR](https://adr.github.io/madr/): **Context -> Decision -> Alternatives considered -> Consequences**.
 
+## Open items
+
+The NPC behaviour subsystem (ADR 0001–0010) is built. What's still open — scoped to the brief's
+runtime **flow**, not a generic-backend audit — lives in [`GAPS.md`](GAPS.md): narrator internals +
+turn loop, beat document + `BEAT_DONE`, the internal-state schema, and persistence/tech-stack/UI.
+Close an item by writing the ADR named in its "home" and striking it.
+
 ## Index
 
 | ADR | Title | Status |
