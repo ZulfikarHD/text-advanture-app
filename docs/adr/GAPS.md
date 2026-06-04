@@ -1,5 +1,9 @@
 # Open items — measured against the flow
 
+> Each open item below now has a lean feature spec under [`../features/`](../features/README.md):
+> O1 → `features/narrator/O1-narrator-loop.md`, O2 → `features/directing/O2-beat-document.md`,
+> O3 → `features/session/O3-internal-state-schema.md`, O4 → `features/session/O4-persistence-and-ui.md`.
+
 > **Reset note (2026-06-04).** An earlier version of this file was a 16-item "architecture audit"
 > that treated the engine like a generic backend and inflated the list with subsystems the design
 > **already has** (it called the session state machine a missing "conductor," and the context-memory

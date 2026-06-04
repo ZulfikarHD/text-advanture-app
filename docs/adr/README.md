@@ -7,6 +7,11 @@ This folder is the **append-only decision log** for the Directed Interactive Nov
 - The consolidated "what the system is right now" snapshot lives separately in
   [`../directed_interactive_novel_engine_v2.html`](../directed_interactive_novel_engine_v2.html).
   That brief gets refreshed only when a cluster of decisions stabilizes; the ADRs are where the *why* lives.
+- The structured docs that sit alongside these ADRs follow the
+  [`../DOCUMENTATION_STRUCTURE.md`](../DOCUMENTATION_STRUCTURE.md) standard: see
+  [`../architecture/ARCHITECTURE.md`](../architecture/ARCHITECTURE.md) (system snapshot),
+  [`../architecture/DATABASE.md`](../architecture/DATABASE.md) (proposed schema), and the
+  [`../features/`](../features/README.md) open-item specs (O1–O4).
 
 ## Status values
 
@@ -41,3 +46,5 @@ Close an item by writing the ADR named in its "home" and striking it.
 | [0008](0008-psychological-nudge.md) | Psychological nudge (directed-pressure model) | Accepted |
 | [0009](0009-pov-projection.md) | POV projection (perspective leak guard) | Accepted |
 | [0010](0010-recorder-mechanics.md) | Recorder mechanics (beat record + legibility) | Accepted |
+| [0011](0011-tech-stack.md) | Tech stack (Laravel 13 + Vue/Inertia v3 + Wayfinder + MySQL/MariaDB) | Accepted |
+| [0012](0012-persistence-schema.md) | Persistence schema (two-realm, multi-save) | Accepted |
