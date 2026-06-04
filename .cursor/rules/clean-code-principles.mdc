@@ -1,0 +1,66 @@
+---
+description: Clean code general principles, KISS, Boy Scout rule, and code smell awareness
+alwaysApply: true
+---
+
+# Clean Code: Principles
+
+## Follow standard conventions - use existing project patterns, don't invent new ones
+
+```php
+// BAD - inventing a new pattern when project uses Form Requests
+public function store(Request $request): void {
+    $validated = $request->validate([...]);
+}
+
+// GOOD - follow the existing convention
+public function store(StoreOrderRequest $request): void {
+    $validated = $request->validated();
+}
+```
+
+## KISS - Simpler is always better
+
+```php
+// BAD
+$result = ($condition === true) ? (($value !== null) ? $value : $default) : $fallback;
+
+// GOOD
+if ($condition) {
+    $result = $value ?? $default;
+} else {
+    $result = $fallback;
+}
+```
+
+## Boy Scout Rule - Leave code cleaner than you found it
+
+When touching a file, fix small issues you see: unclear names, dead code, missing types.
+
+## Always find root cause - Don't patch symptoms
+
+```php
+// BAD - patching the symptom
+try {
+    $user->charge($amount);
+} catch (\Exception $e) {
+    $user->charge($amount); // just retry blindly
+}
+
+// GOOD - investigate and handle the root cause
+if (!$user->hasValidPaymentMethod()) {
+    throw new PaymentMethodRequiredException();
+}
+$user->charge($amount);
+```
+
+## Code Smell Awareness
+
+| Smell | Sign | Fix |
+|-------|------|-----|
+| **Rigidity** | Small change cascades everywhere | Decouple with interfaces/DI |
+| **Fragility** | Unrelated things break | Improve encapsulation |
+| **Immobility** | Can't reuse code elsewhere | Extract standalone modules |
+| **Needless Complexity** | Built for hypothetical futures | Apply YAGNI |
+| **Needless Repetition** | Copy-paste code | Extract shared logic |
+| **Opacity** | Hard to understand | Rename, simplify, split |

@@ -1,0 +1,121 @@
+---
+description: Clean code function rules for writing small, focused methods with clear signatures
+globs: "**/*.{php,vue,ts,js}"
+alwaysApply: false
+---
+
+# Clean Code: Functions
+
+## Keep functions small
+
+```php
+// BAD - one massive method doing everything
+public function processOrder(Order $order): void
+{
+    // 50+ lines handling validation, payment, notification, logging...
+}
+
+// GOOD - split into focused steps
+public function processOrder(Order $order): void
+{
+    $this->validateOrder($order);
+    $this->chargePayment($order);
+    $this->sendConfirmation($order);
+}
+```
+
+## Do one thing
+
+```php
+// BAD
+public function saveUserAndSendEmail(User $user): void
+{
+    $user->save();
+    Mail::to($user)->send(new WelcomeMail($user));
+}
+
+// GOOD
+public function save(User $user): void { $user->save(); }
+public function sendWelcomeEmail(User $user): void { Mail::to($user)->send(new WelcomeMail($user)); }
+```
+
+## Use descriptive names
+
+```php
+// BAD
+public function handle($data) { ... }
+
+// GOOD
+public function calculateMonthlyRevenue(Collection $transactions): Money { ... }
+```
+
+## Prefer fewer arguments
+
+```php
+// BAD
+public function createUser(string $name, string $email, string $phone, string $address): User { ... }
+
+// GOOD
+public function createUser(CreateUserData $data): User { ... }
+```
+
+## No side effects
+
+```php
+// BAD
+public function isValidPassword(string $password): bool
+{
+    if (strlen($password) < 8) return false;
+    Session::regenerate(); // hidden side effect
+    return true;
+}
+
+// GOOD
+public function isValidPassword(string $password): bool
+{
+    return strlen($password) >= 8;
+}
+```
+
+## Don't use flag arguments - split into separate methods
+
+```php
+// BAD
+public function getUsers(bool $isActive): Collection
+{
+    return $isActive ? User::where('active', true)->get() : User::all();
+}
+
+// GOOD
+public function getActiveUsers(): Collection { return User::where('active', true)->get(); }
+public function getAllUsers(): Collection { return User::all(); }
+```
+
+## Avoid negative conditionals
+
+```php
+// BAD
+if (!$user->isNotVerified()) { ... }
+
+// GOOD
+if ($user->isVerified()) { ... }
+```
+
+## Avoid logical dependency on implicit class state
+
+```php
+// BAD - depends on $this->reportType being set elsewhere
+public function generateReport(): string
+{
+    return $this->reportType === 'pdf' ? $this->toPdf() : $this->toCsv();
+}
+
+// GOOD - explicit parameter
+public function generateReport(ReportType $type): string
+{
+    return match ($type) {
+        ReportType::Pdf => $this->toPdf(),
+        ReportType::Csv => $this->toCsv(),
+    };
+}
+```

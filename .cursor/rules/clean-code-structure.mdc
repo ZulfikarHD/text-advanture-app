@@ -1,0 +1,129 @@
+---
+description: Clean code source structure rules for organizing code vertically, horizontally, and consistently
+globs: "**/*.{php,vue,ts,js}"
+alwaysApply: false
+---
+
+# Clean Code: Source Structure
+
+## Separate concepts vertically with blank lines
+
+```php
+// BAD
+public function index() { return view('users.index'); }
+public function store(Request $request) { ... }
+private function validate(array $data) { ... }
+
+// GOOD
+public function index() { return view('users.index'); }
+
+public function store(Request $request) { ... }
+
+private function validate(array $data) { ... }
+```
+
+## Related code should appear vertically dense
+
+```php
+// BAD
+private string $name;
+
+private int $age;
+
+private string $email;
+
+// GOOD
+private string $name;
+private string $email;
+private int $age;
+```
+
+## Declare variables close to their usage
+
+```php
+// BAD
+$total = 0;
+// ... 20 lines of unrelated code ...
+$total = $items->sum('price');
+
+// GOOD
+$items = $this->getCartItems();
+$total = $items->sum('price');
+```
+
+## Dependent functions should be close - caller above callee
+
+```php
+// GOOD
+public function processOrder(Order $order): void
+{
+    $this->validateOrder($order);
+}
+
+private function validateOrder(Order $order): void { ... }
+```
+
+## Keep lines short (under ~120 characters)
+
+```php
+// BAD
+$users = User::where('active', true)->where('role', 'admin')->where('department', 'engineering')->orderBy('created_at', 'desc')->get();
+
+// GOOD
+$users = User::query()
+    ->where('active', true)
+    ->where('role', 'admin')
+    ->where('department', 'engineering')
+    ->orderByDesc('created_at')
+    ->get();
+```
+
+## Don't use horizontal alignment
+
+```php
+// BAD
+$name    = 'John';
+$email   = 'john@example.com';
+$age     = 25;
+
+// GOOD
+$name = 'John';
+$email = 'john@example.com';
+$age = 25;
+```
+
+## Don't break indentation - always use braces
+
+```php
+// BAD
+if ($isActive) { return true; }
+
+// GOOD
+if ($isActive) {
+    return true;
+}
+```
+
+## Encapsulate boundary conditions in one place
+
+```php
+// BAD - boundary logic scattered everywhere
+if ($index < count($items) - 1) { ... }
+if ($index <= count($items) - 1) { ... }
+
+// GOOD
+$lastIndex = count($items) - 1;
+if ($index < $lastIndex) { ... }
+```
+
+## Be consistent - do similar things the same way
+
+```typescript
+// BAD - inconsistent patterns in the same codebase
+const fetchUsers = async () => { ... }
+function getProducts() { return axios.get(...) }
+
+// GOOD - same pattern everywhere
+const fetchUsers = async () => { ... }
+const fetchProducts = async () => { ... }
+```

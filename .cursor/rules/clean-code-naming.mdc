@@ -1,0 +1,99 @@
+---
+description: Clean code naming conventions for variables, functions, classes, and constants
+globs: "**/*.{php,vue,ts,js}"
+alwaysApply: false
+---
+
+# Clean Code: Naming
+
+## Choose descriptive and unambiguous names
+
+```php
+// BAD
+$d = Carbon::now()->diffInDays($start);
+
+// GOOD
+$daysSinceCreation = Carbon::now()->diffInDays($createdAt);
+```
+
+## Make meaningful distinctions
+
+```php
+// BAD
+function getUserInfo() {}
+function getUserData() {}
+
+// GOOD
+function getUserProfile() {}
+function getUserPermissions() {}
+```
+
+## Use pronounceable names
+
+```php
+// BAD
+$ymdhms = now()->format('Y-m-d H:i:s');
+
+// GOOD
+$formattedTimestamp = now()->format('Y-m-d H:i:s');
+```
+
+## Use searchable names
+
+```php
+// BAD
+if ($status === 3) { ... }
+
+// GOOD
+if ($status === OrderStatus::Completed) { ... }
+```
+
+## Replace magic numbers with named constants
+
+```php
+// BAD
+$tax = $price * 0.11;
+
+// GOOD
+const TAX_RATE = 0.11;
+$tax = $price * TAX_RATE;
+```
+
+## Avoid encodings and type prefixes
+
+```php
+// BAD
+$strName = 'John';
+$iAge = 25;
+$arrItems = [];
+
+// GOOD
+$name = 'John';
+$age = 25;
+$items = [];
+```
+
+## Use explanatory variables for complex expressions
+
+```php
+// BAD
+if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $input, $m)) {
+    return Carbon::create($m[1], $m[2], $m[3]);
+}
+
+// GOOD
+if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $input, $matches)) {
+    [$fullMatch, $year, $month, $day] = $matches;
+    return Carbon::create($year, $month, $day);
+}
+```
+
+## Prefer dedicated value objects over primitives
+
+```php
+// BAD
+function createOrder(string $email, float $amount, string $currency): void { ... }
+
+// GOOD
+function createOrder(Email $email, Money $amount): void { ... }
+```

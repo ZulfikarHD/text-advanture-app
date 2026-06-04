@@ -1,0 +1,103 @@
+---
+description: Clean code test rules for writing readable, fast, independent, and repeatable tests
+globs: "**/tests/**/*.php"
+alwaysApply: false
+---
+
+# Clean Code: Tests
+
+## One assert per test (one concept per test)
+
+```php
+// BAD
+public function testUser(): void
+{
+    $user = User::factory()->create();
+    $this->assertNotNull($user->id);
+    $this->assertEquals('active', $user->status);
+    $this->assertTrue($user->hasRole('member'));
+}
+
+// GOOD
+public function testUserIsCreatedWithId(): void
+{
+    $user = User::factory()->create();
+    $this->assertNotNull($user->id);
+}
+
+public function testNewUserHasActiveStatus(): void
+{
+    $user = User::factory()->create();
+    $this->assertEquals('active', $user->status);
+}
+```
+
+## Tests must be readable - descriptive names and clear setup
+
+```php
+// BAD
+public function testIt(): void
+{
+    $u = User::factory()->create(['r' => 'a']);
+    $this->actingAs($u)->get('/d')->assertOk();
+}
+
+// GOOD
+public function testAdminCanAccessDashboard(): void
+{
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin)->get('/dashboard')->assertOk();
+}
+```
+
+## Tests must be fast - mock external dependencies
+
+```php
+// BAD - hits real external API
+public function testPayment(): void
+{
+    $result = (new StripeGateway())->charge(1000);
+    $this->assertTrue($result->success);
+}
+
+// GOOD
+public function testPaymentChargesSuccessfully(): void
+{
+    $this->mock(PaymentGateway::class)
+        ->shouldReceive('charge')->once()->andReturn(new PaymentResult(success: true));
+}
+```
+
+## Tests must be independent - no shared mutable state
+
+```php
+// BAD - depends on other test's state
+public function testCreateOrder(): void { $this->orderId = Order::factory()->create()->id; }
+public function testCancelOrder(): void { Order::find($this->orderId)->cancel(); }
+
+// GOOD
+public function testCancelOrder(): void
+{
+    $order = Order::factory()->create();
+    $order->cancel();
+    $this->assertEquals('cancelled', $order->fresh()->status);
+}
+```
+
+## Tests must be repeatable - same result every run
+
+```php
+// BAD - depends on real time
+public function testDiscount(): void
+{
+    $this->assertTrue($product->hasDiscount());
+}
+
+// GOOD - freeze time
+public function testDiscountActiveDuringPromo(): void
+{
+    $this->travelTo(Carbon::parse('2026-01-15'));
+    $product = Product::factory()->withPromo()->create();
+    $this->assertTrue($product->hasDiscount());
+}
+```

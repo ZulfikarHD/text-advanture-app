@@ -1,0 +1,92 @@
+---
+description: Clean code comment rules - when and how to write meaningful comments
+globs: "**/*.{php,vue,ts,js}"
+alwaysApply: false
+---
+
+# Clean Code: Comments
+
+## Explain yourself in code, not comments
+
+```php
+// BAD
+// Check if user is eligible for discount
+if ($user->age >= 65 || $user->membership_years > 5) { ... }
+
+// GOOD
+if ($user->isEligibleForDiscount()) { ... }
+```
+
+## Don't be redundant
+
+```php
+// BAD
+/** Returns the user's name */
+public function getName(): string { return $this->name; }
+
+// GOOD - no comment needed, code is self-explanatory
+public function getName(): string { return $this->name; }
+```
+
+## Don't add obvious noise
+
+```php
+// BAD
+$total = 0; // set total to zero
+
+// GOOD
+$total = 0;
+```
+
+## Don't use closing brace comments
+
+```php
+// BAD
+if ($isActive) {
+    // ...
+} // end if isActive
+
+// GOOD
+if ($isActive) {
+    // ...
+}
+```
+
+## Don't comment out code - remove it (version control exists)
+
+```php
+// BAD
+// $user->sendNotification();
+// $logger->info('Notification sent');
+$user->save();
+
+// GOOD
+$user->save();
+```
+
+## Use comments to explain intent (WHY, not WHAT)
+
+```php
+// BAD
+$retryLimit = 3; // set retry limit to 3
+
+// GOOD
+// Payment gateway recommends max 3 retries to avoid duplicate charges
+$retryLimit = 3;
+```
+
+## Use comments for non-obvious clarification
+
+```php
+// GOOD - clarifies a non-obvious regex
+// Matches Indonesian phone: +62 or 08, followed by 8-13 digits
+$pattern = '/^(\+62|62|0)8[1-9][0-9]{7,11}$/';
+```
+
+## Use comments as warning of consequences
+
+```php
+// GOOD - warns about impact
+// WARNING: This migration drops the legacy_users table permanently
+Schema::dropIfExists('legacy_users');
+```

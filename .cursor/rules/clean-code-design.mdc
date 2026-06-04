@@ -1,0 +1,164 @@
+---
+description: Clean code design and object rules for classes, services, dependency injection, and data structures
+globs: "**/*.{php,ts}"
+alwaysApply: false
+---
+
+# Clean Code: Design & Objects
+
+## Prefer polymorphism over if/else chains
+
+```php
+// BAD
+public function calculateDiscount(string $type): float
+{
+    if ($type === 'premium') return 0.2;
+    elseif ($type === 'vip') return 0.3;
+    else return 0;
+}
+
+// GOOD
+enum MemberType: string {
+    case Premium = 'premium';
+    case Vip = 'vip';
+    case Regular = 'regular';
+
+    public function discount(): float
+    {
+        return match ($this) {
+            self::Premium => 0.2,
+            self::Vip => 0.3,
+            self::Regular => 0,
+        };
+    }
+}
+```
+
+## Use dependency injection
+
+```php
+// BAD
+class OrderService {
+    public function process(): void {
+        $gateway = new StripeGateway();
+    }
+}
+
+// GOOD
+class OrderService {
+    public function __construct(private PaymentGateway $gateway) {}
+}
+```
+
+## Follow Law of Demeter - don't chain through objects
+
+```php
+// BAD
+$city = $order->getCustomer()->getAddress()->getCity();
+
+// GOOD
+$city = $order->shippingCity();
+```
+
+## Hide internal structure
+
+```php
+// BAD
+class Wallet {
+    public float $balance = 0;
+}
+$wallet->balance += 100;
+
+// GOOD
+class Wallet {
+    private float $balance = 0;
+    public function deposit(float $amount): void { $this->balance += $amount; }
+    public function getBalance(): float { return $this->balance; }
+}
+```
+
+## Classes should be small and do one thing
+
+```php
+// BAD
+class UserService {
+    public function createUser() { ... }
+    public function sendEmail() { ... }
+    public function generateReport() { ... }
+    public function processPayment() { ... }
+}
+
+// GOOD
+class UserService { public function create(CreateUserData $data): User { ... } }
+class NotificationService { public function sendWelcome(User $user): void { ... } }
+```
+
+## Keep few instance variables
+
+## Base class should know nothing about derivatives
+
+```php
+// BAD
+abstract class Payment {
+    public function process(): void {
+        if ($this instanceof CreditCardPayment) { ... }
+    }
+}
+
+// GOOD
+abstract class Payment {
+    abstract public function process(): void;
+}
+```
+
+## Prefer many focused functions over flag-based behavior
+
+```php
+// BAD
+public function export(string $format): string { ... }
+
+// GOOD
+public function exportToPdf(): string { ... }
+public function exportToCsv(): string { ... }
+```
+
+## Prefer non-static methods (testable, injectable)
+
+```php
+// BAD
+class PriceCalculator {
+    public static function calculate(float $price, float $tax): float { ... }
+}
+
+// GOOD
+class PriceCalculator {
+    public function calculate(float $price, float $tax): float { ... }
+}
+```
+
+## Avoid hybrid structures (half object, half data)
+
+```php
+// BAD - exposes data AND has business logic
+class User {
+    public string $name;
+    public string $email;
+    public function sendWelcomeEmail(): void { ... }
+}
+
+// GOOD - either a DTO or an object with encapsulation
+class UserData { public function __construct(public string $name, public string $email) {} }
+class UserService { public function sendWelcomeEmail(UserData $user): void { ... } }
+```
+
+## Prevent over-configurability - keep configurable data at high levels
+
+```php
+// BAD - config scattered in deep logic
+private function calculateShipping(): float {
+    $rate = env('SHIPPING_RATE', 0.05);
+}
+
+// GOOD - config injected from top level
+public function __construct(private float $shippingRate) {}
+```
