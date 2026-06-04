@@ -1,6 +1,6 @@
 # 0011 — Tech stack
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-06-04
 
 ## Context

@@ -1,6 +1,6 @@
 # 0001 — Character data: three-layer separation
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-06-04
 
 ## Context

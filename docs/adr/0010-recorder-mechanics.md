@@ -1,6 +1,6 @@
 # 0010 — Recorder mechanics (beat record + legibility)
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-06-04
 
 ## Context

@@ -1,6 +1,6 @@
 # O2 — Beat document + `BEAT_DONE` + boundary events
 
-> **Status:** Proposed (open) · **Domain:** directing · **Owning ADR(s):** depends-on 0008; touches 0003/0004; **home = a new ADR (Beat document + boundaries)** · **Last Updated:** 2026-06-04
+> **Status:** Closed (designed) → **[ADR 0015](../../adr/0015-beat-document-and-boundaries.md)** (`Proposed`) · **Domain:** directing · depends-on 0008; touches 0003/0004 · **Last Updated:** 2026-06-04
 
 ## Summary
 

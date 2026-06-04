@@ -1,6 +1,6 @@
 # O3 — Internal-state schema
 
-> **Status:** Proposed (open) · **Domain:** session · **Owning ADR(s):** amend 0001 (or a small new ADR); touches 0004/0005/0006/0007/0010 · **Last Updated:** 2026-06-04
+> **Status:** Closed (designed) → **[ADR 0014](../../adr/0014-internal-state-schema.md)** (`Proposed`) · **Domain:** session · touches 0004/0005/0006/0007/0010 · **Last Updated:** 2026-06-04
 
 ## Summary
 

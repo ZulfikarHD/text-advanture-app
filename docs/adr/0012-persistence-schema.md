@@ -1,6 +1,6 @@
 # 0012 — Persistence schema (two-realm, multi-save)
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-06-04
 - **Scope note:** This ADR locks the persistence **strategy** and the schema for the **settled** subsystem (ADR 0001–0010) plus skeletal structural tables. Column-level detail for the still-open O1/O2/O3 work is **deferred** (see below). The living, column-level schema lives in [`../architecture/DATABASE.md`](../architecture/DATABASE.md); this ADR is the decision of record.
 

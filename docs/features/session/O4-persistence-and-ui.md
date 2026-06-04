@@ -1,6 +1,6 @@
 # O4 — Persistence + tech stack + UI
 
-> **Status:** In progress (tech stack + persistence locked; UI open) · **Domain:** session / ui · **Owning ADR(s):** [ADR 0011](../../adr/0011-tech-stack.md) (tech stack), [ADR 0012](../../adr/0012-persistence-schema.md) (persistence); UI ADR pending · **Last Updated:** 2026-06-04
+> **Status:** In progress (tech stack + persistence designed; UI + orchestration open) · **Domain:** session / ui · **Owning ADR(s):** [ADR 0011](../../adr/0011-tech-stack.md) (tech stack), [ADR 0012](../../adr/0012-persistence-schema.md) (persistence) — both `Proposed`; UI ADR + orchestration ADR pending · **Last Updated:** 2026-06-04
 
 ## Summary
 

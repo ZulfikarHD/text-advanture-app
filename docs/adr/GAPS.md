@@ -1,8 +1,11 @@
 # Open items — measured against the flow
 
-> Each open item below now has a lean feature spec under [`../features/`](../features/README.md):
+> Each item below has a lean feature spec under [`../features/`](../features/README.md):
 > O1 → `features/narrator/O1-narrator-loop.md`, O2 → `features/directing/O2-beat-document.md`,
 > O3 → `features/session/O3-internal-state-schema.md`, O4 → `features/session/O4-persistence-and-ui.md`.
+>
+> **Update (2026-06-04): O1–O3 are now closed** by ADR 0016 / 0015 / 0014 (and the card/compile gap by
+> ADR 0013). What remains is O4 + the items surfaced by the coherence audit.
 
 > **Reset note (2026-06-04).** An earlier version of this file was a 16-item "architecture audit"
 > that treated the engine like a generic backend and inflated the list with subsystems the design
@@ -23,57 +26,45 @@ The flow (the spine everything hangs off):
 → [NARRATOR_RESUMES]
 ```
 
-The **NPC behaviour subsystem (ADR 0001–0010) is built**. What's open is everything *around* it that
-makes the loop run.
+The **NPC behaviour subsystem (ADR 0001–0010)** and the **narrator / authoring side (ADR 0013–0016)**
+are now **designed** (all `Proposed`). What remains is implementation + the UI/orchestration items below.
+
+---
+
+## Closed at the design level (now ADRs · all `Proposed`)
+
+| Item | Closed by |
+|------|-----------|
+| **O1** — Narrator internals (prose under POV contract, handoff detection, mesh-awareness rule, witness tagging, resume anchor, in-loop sequencing) | [ADR 0016](0016-narrator-agent-and-turn-loop.md) |
+| **O2** — Beat document + `BEAT_DONE` + scene/chapter boundary events + nudge derivation | [ADR 0015](0015-beat-document-and-boundaries.md) |
+| **O3** — Internal-state schema (active emotions + baseline drift, mood, motivation, masks; appraisal writes emotions) | [ADR 0014](0014-internal-state-schema.md) |
+| **Authoring & compile pipeline** (bible → card / registers / sensitivities / lorebook + reveal ledger) — an unfiled gap surfaced mid-design | [ADR 0013](0013-authoring-and-compile-pipeline.md) |
+
+The column-level schema for all of these is in [`../architecture/DATABASE.md`](../architecture/DATABASE.md).
 
 ---
 
 ## Open
 
-### O1 — Narrator internals
-The narrator is the spine of the flow and is still undesigned. Needs:
-- **Prose generation** under the chapter **POV contract**.
-- **Handoff detection** — how `NARRATOR_TURN` decides `PLAYER_MOMENT` vs `NPC_MOMENT` vs `BEAT_COMPLETE`.
-- **Mesh-awareness rule** — the prompt rule that keeps the narrator from revealing what a character
-  wouldn't know (this is the brief's existing soft rule; it lives here as a prompt directive, **not**
-  a separate "leak-guard subsystem").
-- **Witness tagging** — the per-beat `witnessed_by` + fidelity the assembler (0007) and recorder
-  (0010) already consume.
-- **Resume anchor** wiring (the brief's micro-continuity block).
-- **In-loop sequencing** — where appraisal (0003/0005), decay (0004), and the interaction queue fire
-  within a beat. (This is "define the loop," not a new orchestrator — the state machine already is it.)
-- Touches: brief (session state machine, three-agents), 0003, 0004, 0005, 0007, 0008, 0010.
-- Home: a new ADR — **Narrator agent + turn loop**.
+### O4 — UI + orchestration + cost/latency
+- **UI** — prose display, player input (incl. a **delivery/tone** channel), the relationship viewer
+  (fed by the 0003 audit log), and the **single review-gate surface** shared by deltas (0003),
+  emotion proposals (0014), nudge compile (0008), beat records (0010), and **card compiles** (0013).
+- **Compile→act orchestration** — sequencing the many LLM calls per beat (narrator ×2 + per-NPC ×2),
+  with caching/batching beyond 0007's per-block note (cost / latency).
+- Home: a new **UI ADR** + an **orchestration ADR**. (Persistence + tech stack are settled — 0011/0012.)
 
-### O2 — Beat document + `BEAT_DONE` + boundary events
-- Authoring format for a beat: **intent / goal / word-budget** (the word-budget + goal-satisfaction +
-  stall signals that the nudge ladder, ADR 0008, already depends on).
-- How the **psychological nudge is derived** from a beat.
-- What fires **`BEAT_DONE`**.
-- The **scene/chapter boundary events** that programmatically trigger drift-batching (0003) and decay
-  (0004) — today only `BEAT_DONE` is named; the chapter→scene→beat hierarchy needs explicit events.
-- Touches: brief, 0003, 0004, 0008.
-- Home: a new ADR — **Beat document + boundaries**.
-
-### O3 — Internal-state schema
-The one place the "complete" NPC subsystem is actually incomplete: ADR 0001 *names* a per-character
-internal-state layer and the assembler injects it as `[SELF]` every NPC turn (0007), 0006 step 4 reads
-"current emotional state," and 0010 reads awareness+mask — but **no ADR defines its shape**: an active
-emotion, `motivation` (referenced by the interaction queue and `[SELF]`), the mask data, what *writes*
-transient emotions (0005 moves edge axes, not internal emotions), and the "own clock" decay. Finish the
-layer that already exists; don't invent a new one.
-- Touches: 0001, 0004, 0005, 0006, 0007, 0010.
-- Home: amend 0001 (or a small new ADR) — **Internal-state schema**.
-
-### O4 — Session persistence + tech stack + UI
-Brief-named and still open:
-- **Persistence** — what's saved/loaded; DB choice.
-- **Tech stack** — framework, hosting, and the **compile→act** orchestration from 0007.
-- **UI** — prose display, player input, the relationship viewer (fed by the 0003 audit log), and the
-  **single review-gate surface** shared by deltas (0003), nudge compile (0008), and beat records (0010).
-- **Cost/latency budget** — a 3-NPC beat is ~10+ LLM calls; a holistic caching/batching plan beyond
-  0007's per-block caching note. (A planning concern, not a blocker.)
-- Home: deferred until the loop is real (tech-stack ADR + UI ADR).
+### Surfaced by the 2026-06-04 coherence audit
+- **Interaction-queue mechanics** — relevance → priority (`RESPOND_NOW / WAIT / SILENT / INTERRUPT`)
+  + the player-inaction timer. Referenced by ADR 0016 §5 but never got its own ADR. Home: fold into
+  the orchestration ADR, or a small **Interaction-queue ADR**.
+- **Shared tunable config** — a home + format for the severity rubric (0005), elapsed-time buckets
+  (0015), and emotion drift caps (0014). Home: a config ADR / seeders (tracked as PH-8).
+- **Offline compile tooling** — the bible→card command ADR 0013 assumes. Implementation.
+- **Authoring content** — only Luna's bible exists; the engine needs ≥2 characters (Vixia is
+  referenced throughout). Content, not architecture.
+- **Auth / multi-user scope** — single-author vs multi-user is undecided (the starter kit ships
+  Fortify). Settle when the UI ADR lands.
 
 ---
 

@@ -1,6 +1,6 @@
 # 0006 — Register / relational-mode system
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-06-04
 
 ## Context

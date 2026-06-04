@@ -1,6 +1,6 @@
 # 0009 — POV projection (perspective leak guard)
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-06-04
 - **Revision (2026-06-04):** replaced the original "behavior-only / no emotion labels" rule with the
   **perceived-read** model. The first version asked the actor model to decode emotion from a bare

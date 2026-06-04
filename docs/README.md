@@ -14,15 +14,19 @@ The whole design rests on **context isolation** between three agents, plus three
 
 ## Status at a glance
 
+> **All ADRs are `Proposed` (planning stage)** — editable in place until we build to them; the design is complete, the app is not built yet.
+
 | Area | State |
 |------|-------|
-| NPC behaviour subsystem (ADR 0001–0010) | **Designed & accepted** |
-| Narrator loop + turn sequencing (**O1**) | Open — see [adr/GAPS.md](./adr/GAPS.md) |
-| Beat document + `BEAT_DONE` (**O2**) | Open |
-| Internal-state schema (**O3**) | Open |
-| Persistence + tech stack + UI (**O4**) | Tech stack ([ADR 0011](./adr/0011-tech-stack.md)) + persistence ([ADR 0012](./adr/0012-persistence-schema.md)) locked; schema in [architecture/DATABASE.md](./architecture/DATABASE.md); UI open; app not built yet |
+| NPC behaviour subsystem (ADR 0001–0010) | **Designed** (`Proposed`) |
+| Narrator loop + turn sequencing (**O1**) | **Designed** → [ADR 0016](./adr/0016-narrator-agent-and-turn-loop.md) |
+| Beat document + `BEAT_DONE` (**O2**) | **Designed** → [ADR 0015](./adr/0015-beat-document-and-boundaries.md) |
+| Internal-state schema (**O3**) | **Designed** → [ADR 0014](./adr/0014-internal-state-schema.md) |
+| Authoring & compile pipeline | **Designed** → [ADR 0013](./adr/0013-authoring-and-compile-pipeline.md) |
+| Tech stack + persistence | **Designed** → [ADR 0011](./adr/0011-tech-stack.md) / [0012](./adr/0012-persistence-schema.md); schema in [architecture/DATABASE.md](./architecture/DATABASE.md) |
+| UI + orchestration (**O4**) | **Open** — UI, compile→act orchestration, interaction-queue ADR; app not built yet |
 
-## Tech stack (locked — [ADR 0011](./adr/0011-tech-stack.md))
+## Tech stack ([ADR 0011](./adr/0011-tech-stack.md) — `Proposed`)
 
 - **Backend:** Laravel 13.x (PHP 8.3+), pragmatic Service pattern
 - **Frontend:** Vue 3 + Inertia.js v3.x, Wayfinder (typed routes, **not** Ziggy), Tailwind 4, shadcn-vue
@@ -37,7 +41,7 @@ The whole design rests on **context isolation** between three agents, plus three
 |-----------|-------|
 | The folder/naming standard | [DOCUMENTATION_STRUCTURE.md](./DOCUMENTATION_STRUCTURE.md) |
 | The consolidated architecture snapshot | [directed_interactive_novel_engine_v2.html](./directed_interactive_novel_engine_v2.html) |
-| Why each decision was made | [adr/README.md](./adr/README.md) (ADR 0001–0010) |
+| Why each decision was made | [adr/README.md](./adr/README.md) (ADR 0001–0016) |
 | What's still open | [adr/GAPS.md](./adr/GAPS.md) (O1–O4) |
 | System design in structured form | [architecture/ARCHITECTURE.md](./architecture/ARCHITECTURE.md) |
 | The proposed database schema | [architecture/DATABASE.md](./architecture/DATABASE.md) |
@@ -48,6 +52,6 @@ The whole design rests on **context isolation** between three agents, plus three
 
 ## Conventions reminder
 
-- ADRs are **4-digit** and **immutable** (supersede, don't edit).
+- ADRs are **4-digit**. While `Proposed` (planning) they're **edited in place**; once `Accepted` (building to them) they're **append-only** (supersede, don't edit). See [adr/README.md](./adr/README.md).
 - Audit logs (`business_logic_logs/`, `security_logs/`) are **append-only**, dated `YYYY-MM-DD`.
 - Filenames `kebab-case`; meta-docs `UPPER_SNAKE`; subsystem folders lowercase. **Case-sensitive.**

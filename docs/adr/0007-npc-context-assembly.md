@@ -1,6 +1,6 @@
 # 0007 — NPC context assembly
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-06-04
 
 ## Context

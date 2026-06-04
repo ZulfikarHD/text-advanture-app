@@ -22,7 +22,7 @@ The engine's vocabulary, with the ADR/brief that defines each term. Read this be
 | **knowledge_boundary** | What a character currently knows / does NOT know (clamped per chapter). | ADR 0001 |
 | **Relationship edge** | Directed, owner-perspective record of how `from` sees `to` (`A→B ≠ B→A`). | ADR 0002 |
 | **Internal state** | Per-character transient layer: mood, active emotions, motivation, masks. Decays on its own clock. | ADR 0001, O3 |
-| **base_opacity** | Card disposition (poker-face ↔ expressive) that seeds register composure. | ADR 0010 |
+| **base_opacity** | Character-level disposition (poker-face ↔ expressive) that seeds register composure; stored on `characters` (DATABASE.md §3.2), not per-chapter. | ADR 0010 |
 
 ## Axes & awareness
 

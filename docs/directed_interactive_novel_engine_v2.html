@@ -21,13 +21,13 @@
 </style>
 <div class="doc">
   <h1>Directed Interactive Novel Engine — Architecture Brief v3.1</h1>
-  <div class="subtitle">Handoff document · June 2026 · Status: <strong>NPC behaviour subsystem COMPLETE</strong> (ADR 0001–0007); <strong>Narrator subsystem IN PROGRESS</strong> — nudge, POV projection, recorder done (ADR 0008–0010); beat doc + narrator loop next. Full decision log lives in <code>docs/adr/</code> — this brief is the snapshot; the ADRs hold the <em>why</em>.</div>
+  <div class="subtitle">Handoff document · June 2026 · Status: <strong>full design drafted</strong> — NPC behaviour (ADR 0001–0010), tech/persistence (0011–0012), and the authoring + narrator side (0013–0016: compile pipeline, internal-state schema, beat document, narrator turn loop). <strong>All ADRs are <code>Proposed</code> (planning stage)</strong>; what remains is implementation + the O4 UI ADR. Full decision log lives in <code>docs/adr/</code> — this brief is the snapshot; the ADRs hold the <em>why</em>.</div>
 
   <h2>Project summary</h2>
   <p>A custom interactive fiction engine built on top of the Claude API. Not a SillyTavern config — a purpose-built web app. The player experiences a story chapter-by-chapter with authored prose quality, player input moments, and NPC agent turns. A hidden beat document steers all agents toward chapter goals without explicit plot instructions. v3 closes the full NPC behaviour subsystem: how a character <em>is</em>, <em>feels</em>, <em>changes</em>, <em>scars</em>, and <em>expresses</em> — and how all of that compiles into a single in-character LLM call. v3.1 adds the Narrator's first pieces — a <strong>directed-pressure nudge</strong> (the only authorial steering channel), <strong>per-scene POV projection</strong>, and the <strong>recorder</strong> — establishing <strong>three leak guards</strong> (own feelings · authorial omniscience · others' hidden truth) and one shared human review gate.</p>
 
   <h2>Decision log <span class="badge new">v3.1</span></h2>
-  <p>Decisions are recorded as ADRs in <code>docs/adr/</code> (append-only, dated). Snapshot:</p>
+  <p>Decisions are recorded as ADRs in <code>docs/adr/</code> (dated; <code>Proposed</code> &amp; editable while we plan, append-only once we build to them). Snapshot:</p>
   <table>
     <tr><th>ADR</th><th>Decision</th></tr>
     <tr><td>0001</td><td>Character data: three-layer separation (source bible → card / edges / internal state)</td></tr>
@@ -40,6 +40,12 @@
     <tr><td>0008</td><td>Psychological nudge — directed-pressure model (escalation ladder, leak-checked)</td></tr>
     <tr><td>0009</td><td>POV projection — perceived-read leak guard (hedged reads, two legibility dials)</td></tr>
     <tr><td>0010</td><td>Recorder mechanics — two-layer beat record + derived legibility</td></tr>
+    <tr><td>0011</td><td>Tech stack — Laravel 13 + Vue/Inertia v3 + Wayfinder + Tailwind/shadcn-vue + MariaDB</td></tr>
+    <tr><td>0012</td><td>Persistence schema — two-realm (authoring immutable / save mutable), multi-save fork</td></tr>
+    <tr><td>0013</td><td>Authoring &amp; compile pipeline — bible → card / registers / sensitivities / lorebook (+ reveal ledger)</td></tr>
+    <tr><td>0014</td><td>Internal-state schema — the <code>[SELF]</code> layer (active emotions + baseline drift, mood, motivation, masks)</td></tr>
+    <tr><td>0015</td><td>Beat document + <code>BEAT_DONE</code> + boundary events (decay/gap keyed to elapsed bucket)</td></tr>
+    <tr><td>0016</td><td>Narrator agent + turn loop (two-call turn, in-loop sequencing, context inventory)</td></tr>
   </table>
 
   <h2>Three agents — layered context isolation <span class="badge core">core</span></h2>
@@ -274,34 +280,34 @@ Continue from here."</pre>
 
   <h2>What is not yet decided</h2>
   <ul>
-    <li><strong>Beat document authoring format</strong> — how a beat declares its intent / goal / word-budget, and what fires <code>BEAT_DONE</code> (the nudge producer, ADR 0008, depends on this)</li>
-    <li><strong>Narrator loop internals</strong> — prose generation, handoff-signal scanning, the mesh-awareness rule (atmosphere / body-language only), and resume-anchor wiring</li>
-    <li><strong>Session state schema + persistence</strong> — what is saved/loaded; DB choice</li>
-    <li><strong>UI/UX</strong> — prose display, player input (incl. a delivery/tone channel), the relationship viewer (fed by the audit log), and the shared review-gate surface (deltas + nudge compile + beat records)</li>
-    <li><strong>Tech stack</strong> — framework, hosting, orchestration of the compile→act calls</li>
+    <li><strong>UI / UX (O4)</strong> — prose display, player input (incl. a delivery/tone channel), the relationship viewer (fed by the audit log), and the shared review-gate surface (deltas + nudge compile + beat records + card compiles)</li>
+    <li><strong>Compile→act orchestration</strong> — how the many LLM calls per beat are sequenced, cached, and queued (cost / latency)</li>
+    <li><strong>Interaction queue</strong> — relevance / priority logic for who acts at an <code>NPC_MOMENT</code> (referenced by ADR 0016, not yet its own ADR)</li>
+    <li><strong>Shared tunable config</strong> — home + format for the severity rubric, elapsed-time buckets, and emotion drift caps</li>
+    <li><strong>Offline compile tooling</strong> — the bible→card command (ADR 0013); plus authoring content (only Luna's bible exists today)</li>
   </ul>
-  <p class="note">Decided since v2 (now in ADRs): data schema for card/edges, which axes are live, delta calculation, time-based drift, and now the directed-pressure nudge, POV projection, and recorder (0008–0010).</p>
+  <p class="note">Now decided (in ADRs, all <code>Proposed</code> — planning stage): three-layer character data, edge schema + live axes, delta engine + decay/scars, appraisal taxonomy, register system, NPC assembly, nudge, POV projection, recorder (0001–0010); tech stack + persistence (0011–0012); authoring/compile pipeline, internal-state schema, beat document + boundaries, narrator turn loop (0013–0016).</p>
 
   <h2>Suggested next steps</h2>
   <ul>
-    <li><strong>Beat document</strong> — intent / goal / word-budget format + <code>BEAT_DONE</code> criteria (unblocks the nudge producer, ADR 0008)</li>
-    <li><strong>Narrator loop</strong> — prose generation, handoff scanning, mesh-awareness rule, resume anchor</li>
-    <li>Session state + persistence, then tech stack</li>
-    <li>Prototype narrator → player → narrator loop before wiring NPCs</li>
-    <li>Add the NPC behaviour subsystem (already specified) once the narrator loop is stable</li>
+    <li><strong>Generate migrations</strong> from <code>DATABASE.md</code> (authoring set + save set, ADR 0012)</li>
+    <li><strong>O4 UI ADR</strong> — review-gate surface, relationship viewer, player input + delivery channel</li>
+    <li><strong>Orchestration ADR</strong> — compile→act call sequencing, caching, queues (cost / latency)</li>
+    <li>Author a second bible (Vixia) so the engine has ≥2 characters to demo</li>
+    <li>Prototype the narrator → player → narrator loop (ADR 0016) before wiring NPC turns</li>
   </ul>
 
   <hr>
   <button class="copy-btn" onclick="copyAll()">Copy all as text</button>
-  <p class="note">Paste into a new Claude conversation to resume. Start with: "Continue from this architecture brief. ADR 0001–0010 are done (NPC subsystem + nudge / POV projection / recorder) — let's design the beat document and narrator loop next."</p>
+  <p class="note">Paste into a new Claude conversation to resume. Start with: "Continue from this architecture brief. ADR 0001–0016 are drafted (all <code>Proposed</code>) — the design is complete; let's move to implementation (migrations from DATABASE.md), the O4 UI ADR, and the compile→act orchestration ADR."</p>
 </div>
 
 <script>
 function copyAll() {
   const text = `# Directed Interactive Novel Engine — Architecture Brief v3.1
-Handoff · June 2026 · Status: NPC subsystem COMPLETE (0001–0007); Narrator IN PROGRESS —
-nudge/POV/recorder done (0008–0010); beat doc + narrator loop next.
-Full decision log in docs/adr/ (this brief is the snapshot; ADRs hold the why).
+Handoff · June 2026 · Status: full design drafted — NPC behaviour (0001–0010), tech/persistence
+(0011–0012), authoring + narrator side (0013–0016). All ADRs Proposed (planning); next is
+implementation + the O4 UI ADR. Full decision log in docs/adr/ (this brief is the snapshot).
 
 ---
 

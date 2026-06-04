@@ -1,6 +1,6 @@
 # Architecture — Directed Interactive Novel Engine
 
-> **Living snapshot** distilled from the [architecture brief](../directed_interactive_novel_engine_v2.html) and [ADR 0001–0010](../adr/README.md). · **Last Updated:** 2026-06-04
+> **Living snapshot** distilled from the [architecture brief](../directed_interactive_novel_engine_v2.html) and [ADR 0001–0016](../adr/README.md) (all `Proposed` — planning stage). · **Last Updated:** 2026-06-04
 >
 > The ADRs are the source of truth for the *why*. This file is the structured *what*. Where they disagree, the ADR wins.
 
@@ -39,7 +39,7 @@ Full diagram: [Diagrams/Agents/Context_Isolation.md](./Diagrams/Agents/Context_I
       └── [BEAT_COMPLETE]   → chapter wrap → summary generated
 ```
 
-The state machine **is** the conductor — there is no separate orchestrator (see [GAPS](../adr/GAPS.md), "removed from the earlier audit"). What's still open (**O1**) is the narrator loop's *internals*: prose generation under the POV contract, handoff detection, the mesh-awareness rule, witness tagging, the resume anchor, and **in-loop sequencing** (where appraisal, decay, and the interaction queue fire within a beat). Full diagram: [Diagrams/Engine/Session_State_Machine.md](./Diagrams/Engine/Session_State_Machine.md).
+The state machine **is** the conductor — there is no separate orchestrator (see [GAPS](../adr/GAPS.md), "removed from the earlier audit"). The narrator loop's *internals* — prose generation under the POV contract, handoff detection, the mesh-awareness rule, witness tagging, the resume anchor, and **in-loop sequencing** (recorder → appraisal → drift/rupture; boundaries fire the batched subsystems) — are specified in **[ADR 0016](../adr/0016-narrator-agent-and-turn-loop.md)** (mirrored in §6.5 below). Full diagram: [Diagrams/Engine/Session_State_Machine.md](./Diagrams/Engine/Session_State_Machine.md).
 
 ### Narrator resume anchor (micro-continuity)
 
@@ -122,6 +122,57 @@ DECODE (how well it's read)   applied per observer at PROJECTION
 
 ---
 
+## 6.5 Narrator prompt + final context inventory (ADR 0016)
+
+The narrator turn is **two calls** — a prose call (structured output: prose · handoff · inferred elapsed bucket) and a separate **recorder** sub-call (§6). The narrator sees the **beat doc (full)** and the **full mesh** — the NPC never does.
+
+```
+NARRATOR_CALL
+ system:
+   [POV CONTRACT]    scene pov_mode + pov_anchor + tone (ADR 0009)
+   [MESH-AWARENESS]  full mesh → atmosphere / body-language / room-dynamics ONLY; never reveal what a
+                     present character would not know; perceived reads MUST be hedged
+   [BEAT]            current beat intent / goal / word_budget (ADR 0015)
+   [DIRECTOR STATE]  word-budget warnings + ceiling pushes (engine → narrator, ADR 0008)
+   [LOREBOOK]        keyword-matched world facts (ADR 0013)
+   [SCENE STATE]     present characters · immediate context (~2000 tok) · scene summary
+ user:
+   [RESUME ANCHOR]   scene type · last line · POV · tone  (when resuming)
+   "Continue narrating."
+```
+
+**Final context inventory — every prompt slot → its producer.**
+
+*Narrator prompt:*
+
+| Slot | Produced by |
+|------|-------------|
+| POV contract | scene (ADR 0009 / 0015) |
+| Mesh-awareness directive + full mesh | ADR 0016 rule + edges (ADR 0002) |
+| Beat (intent / goal / budget) | beat doc (ADR 0015) |
+| Director state (budget warnings / ceiling) | engine clock (ADR 0008 / 0015) |
+| Lorebook (world facts) | keyword match (ADR 0013) |
+| Scene state (present chars · immediate ctx · summary) | context-memory (ADR 0012 / 0015) |
+| Resume anchor | `sessions.resume_anchor` (ADR 0012) |
+
+*NPC prompt (consolidates §5 with the now-settled producers):*
+
+| Slot | Produced by |
+|------|-------------|
+| `[IDENTITY]` card + knowledge_boundary | per-chapter card snapshot (ADR 0013) |
+| `[SELF]` mood · emotions · motivation | internal state (ADR 0014) |
+| `[SNAPSHOT]` edges, value×awareness folded | edges (ADR 0002) + fold (ADR 0007) |
+| `[MASKS]` topic_flags + global/state masks | edge `topic_flags` (ADR 0002) + masks (ADR 0014) |
+| `[DIRECTIVES]` resolved register | registers (ADR 0006, compiled ADR 0013) |
+| `[NUDGE]` directed-pressure, leak-checked | nudge derivation (ADR 0015 / 0008) |
+| `[SCENE RULES]` POV / tone | scene (ADR 0009) |
+| `[LOREBOOK]` knowledge-bounded world facts | keyword match clamped by knowledge_boundary (ADR 0013) |
+| user `[SCENE EXCERPT]` | recorder `surface` (ADR 0010), witness-filtered + POV-projected (ADR 0009), decoded via reads_target (ADR 0006) |
+
+In-loop order: **recorder → appraisal (over each character's projected `surface`) → review gate → ruptures in-scene / drift batched** (ADR 0016 §4).
+
+---
+
 ## 7. Three leak guards + one review gate
 
 | Guard | Stops leaking | Where |
@@ -132,7 +183,7 @@ DECODE (how well it's read)   applied per observer at PROJECTION
 
 **Safety** (no leak) is structural and model-independent — it holds even on Haiku, enforced by the **hedged-attribution rule** (unhedged "is sad / is lying" rejected) + `knowledge_boundary` blocks on hidden facts. **Fidelity** (correct emotional read) is best-effort and human-backstopped.
 
-One **review gate** (`propose → review → commit`) serves three producers: deltas (ADR 0003), nudge-compile (ADR 0008), and beat records (ADR 0010). The human is the fidelity floor.
+One **review gate** (`propose → review → commit`) serves the producers: deltas + **emotion proposals** (ADR 0003 / 0014), nudge-compile (ADR 0008), beat records (ADR 0010), and **card compiles** (ADR 0013). The human is the fidelity floor.
 
 ---
 
@@ -155,7 +206,7 @@ Appraisal **proposes**; the review gate **commits** with a mandatory `trigger` +
 
 ```
 IMMEDIATE CONTEXT    raw exchanges, last ~2000 tokens
-SCENE SUMMARY        compressed after each scene unit (also where drift + decay are applied)
+SCENE SUMMARY        compressed after each scene unit (batched drift applies here; decay + emotion gap-drift when the boundary declares a real elapsed gap)
 CHAPTER LOG          key beat events for continuity
 LOREBOOK             world facts, injected on keyword match
 ```
@@ -164,4 +215,6 @@ LOREBOOK             world facts, injected on keyword match
 
 ## 10. What's open
 
-See [../adr/GAPS.md](../adr/GAPS.md): **O1** narrator loop, **O2** beat document + `BEAT_DONE` + boundary events, **O3** internal-state schema, **O4** persistence + tech stack + UI. Tech stack is now locked ([../README.md](../README.md)); the schema is drafted in [DATABASE.md](./DATABASE.md).
+The original flow gaps are **closed at the design level** (all ADRs `Proposed`): **O1** narrator loop → [ADR 0016](../adr/0016-narrator-agent-and-turn-loop.md), **O2** beat document + boundaries → [ADR 0015](../adr/0015-beat-document-and-boundaries.md), **O3** internal-state schema → [ADR 0014](../adr/0014-internal-state-schema.md), and the authoring/compile pipeline → [ADR 0013](../adr/0013-authoring-and-compile-pipeline.md). Tech stack + persistence are designed ([ADR 0011](../adr/0011-tech-stack.md) / [0012](../adr/0012-persistence-schema.md)); the full schema is in [DATABASE.md](./DATABASE.md).
+
+**Genuinely open (O4 + audit):** the UI (review-gate surface, relationship viewer, player input + delivery channel); the **compile→act orchestration** + cost/latency/caching/queues; the **interaction-queue** mechanics (referenced by ADR 0016, no ADR yet); a **home/format for the shared tunable config** (severity rubric, elapsed buckets, drift caps); the offline **compile tooling**; and authoring content (only Luna's bible exists). See [../adr/GAPS.md](../adr/GAPS.md).

@@ -1,6 +1,6 @@
 # O1 — Narrator loop + turn sequencing
 
-> **Status:** Proposed (open) · **Domain:** narrator · **Owning ADR(s):** depends-on 0003/0004/0005/0007/0008/0010; **home = a new ADR (Narrator agent + turn loop)** · **Last Updated:** 2026-06-04
+> **Status:** Closed (designed) → **[ADR 0016](../../adr/0016-narrator-agent-and-turn-loop.md)** (`Proposed`) · **Domain:** narrator · depends-on 0003/0004/0005/0007/0008/0010 · **Last Updated:** 2026-06-04
 
 ## Summary
 
