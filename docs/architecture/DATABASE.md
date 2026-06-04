@@ -19,6 +19,7 @@ flowchart LR
     stories --> chapters
     stories --> lorebook_entries
     stories --> reveal_ledger
+    stories --> chapter_outlines
     chapters --> scenes
     scenes --> beats
     characters --> character_cards
@@ -28,8 +29,12 @@ flowchart LR
   subgraph libraries [GLOBAL SHARED LIBRARIES - app-wide, no story_id]
     register_archetypes
     universal_priors
+    character_archetypes
+    prompt_blocks
+    model_profiles
   end
   register_archetypes --> registers
+  character_archetypes -.seeds.-> characters
   subgraph save [SAVE REALM - mutable, per playthrough]
     sessions --> relationship_edges
     relationship_edges --> edge_axes
@@ -45,6 +50,7 @@ flowchart LR
     sessions --> scene_summaries
     sessions --> chapter_logs
     sessions --> events
+    sessions --> llm_calls
   end
   authoring -.forks initial state into.-> save
 ```
@@ -220,6 +226,66 @@ Unique `(chapter_id, number)`.
 
 Unique `(scene_id, number)`.
 
+### 3.13 `character_archetypes` — seedable whole-character library (ADR 0018) · **global, no `story_id`**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `slug` | `VARCHAR(120)` | unique; `koakuma`, `stoic_guardian`, … |
+| `name` | `VARCHAR(150)` | |
+| `description` | `TEXT NULL` | |
+| `base_opacity` | `TINYINT UNSIGNED` | default opacity this archetype seeds (ADR 0010) |
+| `suggested_live_axes` | `JSON` | e.g. `["affection","trust","romantic","fear"]` (ADR 0002) |
+| `default_disposition_priors` | `JSON` | edge-seed priors by target trait (ADR 0002) |
+| `default_registers` | `JSON` | register slugs / archetype refs to instantiate (ADR 0006) |
+| `default_sensitivities` | `JSON` | sensitivity seeds (ADR 0005) |
+| `voice_scaffold` | `JSON NULL` | speech subset + tells starter (ADR 0006) |
+
+Seeds **character creation** (ADR 0018); a starting point, never a constraint. Distinct from the
+register-grammar-only `register_archetypes` (§3.5) — it *references* those among `default_registers`.
+
+### 3.14 `prompt_blocks` — prompt-block registry (ADR 0020) · **global, no `story_id`**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `key` | `VARCHAR(40)` | unique; `IDENTITY`, `SELF`, `SNAPSHOT`, `MASKS`, `DIRECTIVES`, `NUDGE`, `SCENE_RULES`, `SCENE_EXCERPT`, `POV_CONTRACT`, `MESH_AWARENESS`, `BEAT`, `DIRECTOR_STATE`, `LOREBOOK`, `SCENE_STATE`, `RESUME_ANCHOR` |
+| `agent` | `ENUM('narrator','npc','both')` | which agent's prompt uses it (ADR 0016) |
+| `section` | `ENUM('system','user')` | where it renders |
+| `label` | `VARCHAR(60)` | rendered tag, e.g. `[MASKS]` |
+| `purpose` | `TEXT` | human description (renders into the glossary) |
+| `source_producers` | `JSON` | `[{adr,table}]` — where the block's data comes from (ADR 0016 inventory) |
+| `compile_instruction` | `TEXT NULL` | instruction the `compiler` role uses to fold this block (ADR 0007/0017) |
+| `leak_rules` | `JSON` | `["awareness_fold"\|"knowledge_boundary"\|"hedged_attribution"\|"own_perspective_only"\|"omniscient_authoring"\|"none"]` |
+| `order_index` | `INT` | order within its `section` |
+| `is_active` | `BOOLEAN` default `true` | |
+
+Single source of truth for every prompt block: drives the assembler (block selection / order / fold
+/ leak-rule enforcement) **and** renders the human block reference (ADR 0020). Seeded with ~15 rows.
+
+### 3.15 `chapter_outlines` — raw author outline + compile linkage (ADR 0019)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `story_id` | FK → `stories` | |
+| `chapter_id` | FK → `chapters` `NULL` | set once a chapter is compiled out of this outline (an outline may span chapters) |
+| `raw_text` | `LONGTEXT` | the author's free outline, verbatim; **never injected at runtime** |
+| `status` | `ENUM('draft','compiled','manual')` | `manual` = beats authored directly, no compile (ADR 0019 §3) |
+| `review_item_id` | FK → `review_items` `NULL` | the `outline_compile` review record |
+
+Compiles to `chapters` / `scenes` / `beats` (§3.10–3.12) through the shared review gate (ADR 0019).
+
+### 3.16 `model_profiles` — LLM role → model config (ADR 0017) · **global defaults + per-story override**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `scope` | `ENUM('global','story')` | `global` rows are defaults; `story` rows override |
+| `story_id` | FK → `stories` `NULL` | null for `global` |
+| `role` | `ENUM(...)` | `llm_role`: `narrator_prose`, `recorder`, `npc_major`, `npc_minor`, `compiler`, `appraiser`, `beat_judge`, `nudge_compiler` (ADR 0017 §2) |
+| `model_slug` | `VARCHAR(120)` | OpenRouter slug, e.g. `anthropic/claude-sonnet-4` |
+| `params` | `JSON NULL` | `{ temperature, max_tokens, … }` |
+| `is_active` | `BOOLEAN` default `true` | |
+
+Unique `(scope, story_id, role)`. Per-story overrides also expressible via `stories.settings.model_roles`.
+
 ---
 
 ## 4. Save realm (runtime — mutable, scoped to a `session`)
@@ -379,7 +445,7 @@ Unique `(session_id, character_id)`.
 | Column | Type | Notes |
 |--------|------|-------|
 | `session_id` | FK → `sessions` `NULL` | null for authoring-time compiles (`card_compile`) |
-| `producer_type` | `ENUM('delta','emotion_delta','nudge_compile','beat_record','card_compile')` | |
+| `producer_type` | `ENUM('delta','emotion_delta','nudge_compile','beat_record','card_compile','bible_generate','outline_compile')` | `bible_generate` (ADR 0018) + `outline_compile` (ADR 0019) added |
 | `producer_id` | `BIGINT UNSIGNED NULL` | polymorphic ref to the proposed row |
 | `payload` | `JSON` | proposed content |
 | `status` | `ENUM('pending','accepted','edited','rejected')` | |
@@ -424,15 +490,35 @@ Unique `(session_id, character_id)`.
 
 The `events` window is compacted into `scene_summaries` at `SCENE_DONE` to bound growth.
 
+### 4.16 `llm_calls` — **APPEND-ONLY** call log (ADR 0017)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `session_id` | FK → `sessions` `NULL` | null = an **authoring-time** call (card/outline/bible compile) |
+| `story_id` | FK → `stories` `NULL` | |
+| `role` | `ENUM(...)` | `llm_role` (ADR 0017 §2) |
+| `model_slug` | `VARCHAR(120)` | resolved slug actually called |
+| `status` | `ENUM('ok','retry','failed')` | `llm_call_status` |
+| `prompt_tokens` / `completion_tokens` | `INT NULL` | usage |
+| `cost_micros_usd` | `BIGINT NULL` | provider cost in USD micro-units (Rupiah is a display rendering) |
+| `latency_ms` | `INT NULL` | |
+| `error` | `TEXT NULL` | on `failed` |
+| `review_item_id` | FK → `review_items` `NULL` | set when the call produced a reviewable artifact |
+| `messages` | `JSON NULL` | full request body — **debug-only** (may contain `true_state`; save-realm-sensitive, never agent-readable, ADR 0017 §5) |
+| `created_at` | `TIMESTAMP` | **no `updated_at`** |
+
+Cost/latency record behind the O4 planning (ADR 0017 §4); never read by any narrative agent.
+
 ---
 
 ## 5. Isolation & integrity at the DB layer
 
 - **`beat_true_states` is split out** of `beat_records` so the assembler's "read `surface` only" query *physically cannot* pull another character's private state — the ADR 0007/0009/0010 boundary made structural.
 - **`knowledge_boundary` on the card** gates lorebook injection and blocks hidden facts (ADR 0013) — the reveal ledger feeds it.
-- **Append-only tables** (`axis_deltas`, `beat_records` + children, `nudges`) carry only `created_at`; never `UPDATE`/`DELETE`. Corrections are new rows through the review gate.
-- **Authoring/save crossover:** a `card_compile` review lives in `review_items` with a **null `session_id`** — the one deliberate authoring-realm row in a save-realm table (ADR 0013). `register_archetypes` / `universal_priors` are **global** (no `story_id`); per-character customization lives in `registers` / `sensitivities`.
-- **Enums** (PHP enum + DB enum/string): `axis`, `awareness_mode`, `delta_channel`, `delta_source`, `fidelity`, `nudge_level`, `target`, `state_node`, `review_status`, `producer_type`, `model_tier`, `elapsed_bucket`, `event_type`, `handoff`.
+- **Append-only tables** (`axis_deltas`, `beat_records` + children, `nudges`, `llm_calls`) carry only `created_at`; never `UPDATE`/`DELETE`. Corrections are new rows through the review gate.
+- **`llm_calls` is save-realm-sensitive, never agent-readable** (ADR 0017 §5): an NPC act prompt embeds that character's own `true_state` via its SELF block, so a logged request body is as sensitive as the save realm and is single-author-scoped; full `messages` are stored only when debugging is on.
+- **Authoring/save crossover:** `card_compile` / `bible_generate` / `outline_compile` reviews live in `review_items` with a **null `session_id`** — deliberate authoring-realm rows in a save-realm table (ADR 0013/0018/0019). `register_archetypes` / `universal_priors` / `character_archetypes` / `prompt_blocks` / `model_profiles` (global rows) are **global** (no `story_id`); per-character customization lives in `registers` / `sensitivities`.
+- **Enums** (PHP enum + DB enum/string): `axis`, `awareness_mode`, `delta_channel`, `delta_source`, `fidelity`, `nudge_level`, `target`, `state_node`, `review_status`, `producer_type`, `model_tier`, `elapsed_bucket`, `event_type`, `handoff`, and (new) `llm_role`, `llm_call_status`, `model_scope`, `block_agent`, `block_section`, `outline_status`, `creation_mode` (the last is process metadata on the `review_items` payload, not a column).
 - **Indexing:** FK columns indexed; uniques as noted; add MariaDB **generated columns** for any JSON sub-field we later filter on (e.g. `knowledge_boundary` flags).
 
 ---
@@ -455,12 +541,16 @@ The `events` window is compacted into `scene_summaries` at `SCENE_DONE` to bound
 | Internal-state schema | **0014** | ✅ `internal_states` / `active_emotions` (baseline + drift_cap) |
 | Beat document + boundaries | **0015** | ✅ `beats` / `scenes.elapsed_*` / `chapters.word_cap` |
 | Narrator loop | **0016** | ✅ `sessions` loop state / `scene_summaries` / `chapter_logs` / `events` |
+| LLM orchestration + OpenRouter | **0017** | ✅ `model_profiles` (config) + `llm_calls` (append-only log) + `stories.settings.model_roles` |
+| Character creation + archetypes | **0018** | ✅ `character_archetypes` (global) + `review_items.bible_generate`; reuses ADR 0013 targets |
+| Outline compilation | **0019** | ✅ `chapter_outlines` + `review_items.outline_compile`; targets the ADR 0015 `chapters`/`scenes`/`beats` |
+| Prompt block registry | **0020** | ✅ `prompt_blocks` (global, ~15 seeded) |
 
-**Remaining (implementation, not schema design):** generate Laravel migrations from this doc (authoring set + save set, per ADR 0012); seed the universal-priors library + register-archetype library; tune the shared severity/elapsed/drift rubric config.
+**Remaining (implementation, not schema design):** generate Laravel migrations from this doc (authoring set + save set, per ADR 0012); seed the universal-priors / register-archetype / **character-archetype** / **prompt-block** libraries + **`model_profiles`** defaults; tune the shared severity/elapsed/drift rubric config.
 
 ---
 
 ## Related Documentation
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) · [Diagrams/Data/Persistence_Erd.md](./Diagrams/Data/Persistence_Erd.md)
-- ADR [0001](../adr/0001-character-data-three-layer-separation.md)–[0010](../adr/0010-recorder-mechanics.md) · [0012](../adr/0012-persistence-schema.md) · [0013](../adr/0013-authoring-and-compile-pipeline.md)–[0016](../adr/0016-narrator-agent-and-turn-loop.md) · [GAPS](../adr/GAPS.md)
+- ADR [0001](../adr/0001-character-data-three-layer-separation.md)–[0010](../adr/0010-recorder-mechanics.md) · [0012](../adr/0012-persistence-schema.md) · [0013](../adr/0013-authoring-and-compile-pipeline.md)–[0016](../adr/0016-narrator-agent-and-turn-loop.md) · [0017](../adr/0017-llm-orchestration-openrouter.md)–[0020](../adr/0020-prompt-block-registry.md) · [GAPS](../adr/GAPS.md)

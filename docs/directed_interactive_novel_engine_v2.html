@@ -21,7 +21,7 @@
 </style>
 <div class="doc">
   <h1>Directed Interactive Novel Engine — Architecture Brief v3.1</h1>
-  <div class="subtitle">Handoff document · June 2026 · Status: <strong>full design drafted</strong> — NPC behaviour (ADR 0001–0010), tech/persistence (0011–0012), and the authoring + narrator side (0013–0016: compile pipeline, internal-state schema, beat document, narrator turn loop). <strong>All ADRs are <code>Proposed</code> (planning stage)</strong>; what remains is implementation + the O4 UI ADR. Full decision log lives in <code>docs/adr/</code> — this brief is the snapshot; the ADRs hold the <em>why</em>.</div>
+  <div class="subtitle">Handoff document · June 2026 · Status: <strong>full design drafted</strong> — NPC behaviour (ADR 0001–0010), tech/persistence (0011–0012), the authoring + narrator side (0013–0016: compile pipeline, internal-state schema, beat document, narrator turn loop), and the LLM client + authoring tools (0017–0020: OpenRouter/<code>LlmClient</code>, character creation + archetypes, outline compilation, prompt block registry). <strong>All ADRs are <code>Proposed</code> (planning stage)</strong>; what remains is implementation + the O4 UI ADR. Full decision log lives in <code>docs/adr/</code> — this brief is the snapshot; the ADRs hold the <em>why</em>.</div>
 
   <h2>Project summary</h2>
   <p>A custom interactive fiction engine built on top of the Claude API. Not a SillyTavern config — a purpose-built web app. The player experiences a story chapter-by-chapter with authored prose quality, player input moments, and NPC agent turns. A hidden beat document steers all agents toward chapter goals without explicit plot instructions. v3 closes the full NPC behaviour subsystem: how a character <em>is</em>, <em>feels</em>, <em>changes</em>, <em>scars</em>, and <em>expresses</em> — and how all of that compiles into a single in-character LLM call. v3.1 adds the Narrator's first pieces — a <strong>directed-pressure nudge</strong> (the only authorial steering channel), <strong>per-scene POV projection</strong>, and the <strong>recorder</strong> — establishing <strong>three leak guards</strong> (own feelings · authorial omniscience · others' hidden truth) and one shared human review gate.</p>
@@ -46,6 +46,10 @@
     <tr><td>0014</td><td>Internal-state schema — the <code>[SELF]</code> layer (active emotions + baseline drift, mood, motivation, masks)</td></tr>
     <tr><td>0015</td><td>Beat document + <code>BEAT_DONE</code> + boundary events (decay/gap keyed to elapsed bucket)</td></tr>
     <tr><td>0016</td><td>Narrator agent + turn loop (two-call turn, in-loop sequencing, context inventory)</td></tr>
+    <tr><td>0017</td><td>LLM orchestration &amp; OpenRouter client — provider gateway + thin <code>LlmClient</code>, model-role tiering, <code>model_profiles</code> / <code>llm_calls</code></td></tr>
+    <tr><td>0018</td><td>Character creation pipeline (AI / manual / hybrid) + <code>character_archetypes</code> library</td></tr>
+    <tr><td>0019</td><td>Outline compilation — free outline → chapters / scenes / beats (+ manual path)</td></tr>
+    <tr><td>0020</td><td>Prompt block registry — machine-readable block specs that drive assembly and render the block reference</td></tr>
   </table>
 
   <h2>Three agents — layered context isolation <span class="badge core">core</span></h2>

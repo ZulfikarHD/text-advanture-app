@@ -39,6 +39,10 @@ are now **designed** (all `Proposed`). What remains is implementation + the UI/o
 | **O2** — Beat document + `BEAT_DONE` + scene/chapter boundary events + nudge derivation | [ADR 0015](0015-beat-document-and-boundaries.md) |
 | **O3** — Internal-state schema (active emotions + baseline drift, mood, motivation, masks; appraisal writes emotions) | [ADR 0014](0014-internal-state-schema.md) |
 | **Authoring & compile pipeline** (bible → card / registers / sensitivities / lorebook + reveal ledger) — an unfiled gap surfaced mid-design | [ADR 0013](0013-authoring-and-compile-pipeline.md) |
+| **LLM client / orchestration** — OpenRouter gateway, thin `LlmClient`, model-role tiering, `model_profiles` / `llm_calls` (resolves the ADR 0011 "AI SDK candidate" note; partially closes O4 cost/latency) | [ADR 0017](0017-llm-orchestration-openrouter.md) |
+| **O5** — Character creation (AI / manual / hybrid) + the `character_archetypes` library | [ADR 0018](0018-character-creation-pipeline.md) |
+| **O6** — Outline compilation (free outline → chapters / scenes / beats; manual path) | [ADR 0019](0019-outline-compilation.md) |
+| **O7** — Prompt block registry (machine-readable block specs driving assembly + docs) | [ADR 0020](0020-prompt-block-registry.md) |
 
 The column-level schema for all of these is in [`../architecture/DATABASE.md`](../architecture/DATABASE.md).
 
@@ -51,8 +55,10 @@ The column-level schema for all of these is in [`../architecture/DATABASE.md`](.
   (fed by the 0003 audit log), and the **single review-gate surface** shared by deltas (0003),
   emotion proposals (0014), nudge compile (0008), beat records (0010), and **card compiles** (0013).
 - **Compile→act orchestration** — sequencing the many LLM calls per beat (narrator ×2 + per-NPC ×2),
-  with caching/batching beyond 0007's per-block note (cost / latency).
-- Home: a new **UI ADR** + an **orchestration ADR**. (Persistence + tech stack are settled — 0011/0012.)
+  with caching/batching beyond 0007's per-block note (cost / latency). The **client** is now settled
+  ([ADR 0017](0017-llm-orchestration-openrouter.md): OpenRouter + `LlmClient`, model-role tiering, `llm_calls` log); only the
+  **sequencing/queueing/batching** remains for the orchestration ADR.
+- Home: a new **UI ADR** + an **orchestration ADR**. (Persistence + tech stack + LLM client are settled — 0011/0012/0017.)
 
 ### Surfaced by the 2026-06-04 coherence audit
 - **Interaction-queue mechanics** — relevance → priority (`RESPOND_NOW / WAIT / SILENT / INTERRUPT`)
@@ -60,7 +66,8 @@ The column-level schema for all of these is in [`../architecture/DATABASE.md`](.
   the orchestration ADR, or a small **Interaction-queue ADR**.
 - **Shared tunable config** — a home + format for the severity rubric (0005), elapsed-time buckets
   (0015), and emotion drift caps (0014). Home: a config ADR / seeders (tracked as PH-8).
-- **Offline compile tooling** — the bible→card command ADR 0013 assumes. Implementation.
+- **Offline compile tooling** — the bible→card command ADR 0013 assumes. The authoring *surfaces*
+  are now designed (character creation [O5](0018-character-creation-pipeline.md), outline compilation [O6](0019-outline-compilation.md)); the CLI/command + UI are implementation.
 - **Authoring content** — only Luna's bible exists; the engine needs ≥2 characters (Vixia is
   referenced throughout). Content, not architecture.
 - **Auth / multi-user scope** — single-author vs multi-user is undecided (the starter kit ships

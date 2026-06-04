@@ -15,7 +15,8 @@ Everything around the loop that makes it run: how state is saved/loaded, the fra
 | **Review-gate UI** | Open — one surface for deltas (0003) + nudge-compile (0008) + beat records (0010). |
 | **Relationship viewer** | Open — reads the `axis_deltas` append-only audit log (0003). |
 | **Player input** | Open — prose + optional tone tag + ambiguity prompt (the sourced delivery channel, ADR 0010). |
-| **Cost/latency** | Open (planning) — a 3-NPC beat is ~10+ LLM calls; caching/batching beyond ADR 0007's per-block note. |
+| **LLM client / orchestration** | **Locked** — [ADR 0017](../../adr/0017-llm-orchestration-openrouter.md): OpenRouter gateway + thin `LlmClient`, model-role tiering, `model_profiles` / `llm_calls`. |
+| **Cost/latency** | Partially addressed — the `llm_calls` log + caching ref land in [ADR 0017](../../adr/0017-llm-orchestration-openrouter.md); call sequencing/batching/queues remain open (future orchestration ADR). A 3-NPC beat is ~10+ LLM calls. |
 
 ## Goal & non-goals
 
@@ -29,7 +30,7 @@ The persistence layer encodes the isolation boundary (`beat_true_states` split o
 ## Open questions
 
 - Database driver: pinned in [ADR 0011](../../adr/0011-tech-stack.md) to MariaDB 11.7 (dev) / MySQL-8-compatible schema.
-- Is the Laravel AI SDK the orchestration layer for compile→act, or a thin custom client?
+- ~~Is the Laravel AI SDK the orchestration layer for compile→act, or a thin custom client?~~ **Resolved by [ADR 0017](../../adr/0017-llm-orchestration-openrouter.md):** thin provider-agnostic `LlmClient` over the OpenRouter gateway; Prism / AI SDK remain a drop-in behind it.
 - Multi-save UX: forking, naming, reset.
 
 ## Related Documentation

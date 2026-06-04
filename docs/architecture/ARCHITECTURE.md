@@ -171,6 +171,8 @@ NARRATOR_CALL
 
 In-loop order: **recorder → appraisal (over each character's projected `surface`) → review gate → ruptures in-scene / drift batched** (ADR 0016 §4).
 
+This inventory is now **backed by data**: the [`prompt_blocks` registry](../adr/0020-prompt-block-registry.md) (ADR 0020) defines each block's purpose, source producers, fold instruction, order, and the **leak rules** that gate it — the assembler reads it to build the prompt, and the human block reference renders from the same rows (one definition, two surfaces). Every LLM call here goes through the [OpenRouter `LlmClient`](../adr/0017-llm-orchestration-openrouter.md) (ADR 0017), routed by **role** (`narrator_prose`, `recorder`, `npc_major`, `npc_minor`, `compiler`, …) and logged to `llm_calls`.
+
 ---
 
 ## 7. Three leak guards + one review gate
@@ -183,7 +185,7 @@ In-loop order: **recorder → appraisal (over each character's projected `surfac
 
 **Safety** (no leak) is structural and model-independent — it holds even on Haiku, enforced by the **hedged-attribution rule** (unhedged "is sad / is lying" rejected) + `knowledge_boundary` blocks on hidden facts. **Fidelity** (correct emotional read) is best-effort and human-backstopped.
 
-One **review gate** (`propose → review → commit`) serves the producers: deltas + **emotion proposals** (ADR 0003 / 0014), nudge-compile (ADR 0008), beat records (ADR 0010), and **card compiles** (ADR 0013). The human is the fidelity floor.
+One **review gate** (`propose → review → commit`) serves the producers: deltas + **emotion proposals** (ADR 0003 / 0014), nudge-compile (ADR 0008), beat records (ADR 0010), **card compiles** (ADR 0013), **bible generation** (ADR 0018), and **outline compiles** (ADR 0019). The human is the fidelity floor.
 
 ---
 
@@ -215,6 +217,6 @@ LOREBOOK             world facts, injected on keyword match
 
 ## 10. What's open
 
-The original flow gaps are **closed at the design level** (all ADRs `Proposed`): **O1** narrator loop → [ADR 0016](../adr/0016-narrator-agent-and-turn-loop.md), **O2** beat document + boundaries → [ADR 0015](../adr/0015-beat-document-and-boundaries.md), **O3** internal-state schema → [ADR 0014](../adr/0014-internal-state-schema.md), and the authoring/compile pipeline → [ADR 0013](../adr/0013-authoring-and-compile-pipeline.md). Tech stack + persistence are designed ([ADR 0011](../adr/0011-tech-stack.md) / [0012](../adr/0012-persistence-schema.md)); the full schema is in [DATABASE.md](./DATABASE.md).
+The original flow gaps are **closed at the design level** (all ADRs `Proposed`): **O1** narrator loop → [ADR 0016](../adr/0016-narrator-agent-and-turn-loop.md), **O2** beat document + boundaries → [ADR 0015](../adr/0015-beat-document-and-boundaries.md), **O3** internal-state schema → [ADR 0014](../adr/0014-internal-state-schema.md), and the authoring/compile pipeline → [ADR 0013](../adr/0013-authoring-and-compile-pipeline.md). Tech stack + persistence are designed ([ADR 0011](../adr/0011-tech-stack.md) / [0012](../adr/0012-persistence-schema.md)); the full schema is in [DATABASE.md](./DATABASE.md). A second design cluster adds the **LLM client** ([ADR 0017](../adr/0017-llm-orchestration-openrouter.md): OpenRouter + `LlmClient`, model-role tiering, `llm_calls`), **character creation** + archetype library ([ADR 0018](../adr/0018-character-creation-pipeline.md), O5), **outline compilation** ([ADR 0019](../adr/0019-outline-compilation.md), O6), and the **prompt block registry** ([ADR 0020](../adr/0020-prompt-block-registry.md), O7).
 
-**Genuinely open (O4 + audit):** the UI (review-gate surface, relationship viewer, player input + delivery channel); the **compile→act orchestration** + cost/latency/caching/queues; the **interaction-queue** mechanics (referenced by ADR 0016, no ADR yet); a **home/format for the shared tunable config** (severity rubric, elapsed buckets, drift caps); the offline **compile tooling**; and authoring content (only Luna's bible exists). See [../adr/GAPS.md](../adr/GAPS.md).
+**Genuinely open (O4 + audit):** the UI (review-gate surface, relationship viewer, player input + delivery channel); the **compile→act orchestration** *sequencing/queues* — the LLM **client** is now settled (ADR 0017), only call-batching/caching remain; the **interaction-queue** mechanics (referenced by ADR 0016, no ADR yet); a **home/format for the shared tunable config** (severity rubric, elapsed buckets, drift caps — the LLM tier→slug part now homes in `model_profiles`); and authoring content (only Luna's bible exists). See [../adr/GAPS.md](../adr/GAPS.md).

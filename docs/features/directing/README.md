@@ -7,7 +7,8 @@ The **only** channel from authorial / story intent into the narrative: the psych
 | Concern | ADR / item | Status |
 |---------|-----------|--------|
 | Psychological nudge (directed-pressure, escalation ladder, leak-checked) | [ADR 0008](../../adr/0008-psychological-nudge.md) | **Built** |
-| Beat document authoring format + `BEAT_DONE` + boundary events | **O2** ([GAPS](../../adr/GAPS.md)) | **Open** → [O2-beat-document.md](./O2-beat-document.md) |
+| Beat document authoring format + `BEAT_DONE` + boundary events | **O2** ([GAPS](../../adr/GAPS.md)) | **Designed** → [O2-beat-document.md](./O2-beat-document.md) ([ADR 0015](../../adr/0015-beat-document-and-boundaries.md)) |
+| Outline compilation (free outline → chapters / scenes / beats; manual path) | **O6** ([GAPS](../../adr/GAPS.md)) | **Designed** → [O6-outline-compiler.md](./O6-outline-compiler.md) ([ADR 0019](../../adr/0019-outline-compilation.md)) |
 
 ## Note
 

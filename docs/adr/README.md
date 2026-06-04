@@ -30,8 +30,10 @@ Lightweight [MADR](https://adr.github.io/madr/): **Context -> Decision -> Altern
 The NPC behaviour subsystem (ADR 0001–0010) and the narrator-side / authoring design
 (ADR 0013–0016) are now drafted (all `Proposed`). The original flow gaps are closed at the design
 level: **O1** → ADR 0016, **O2** → ADR 0015, **O3** → ADR 0014, and the authoring/compile gap →
-ADR 0013. What remains is **implementation** (migrations, the compile→act orchestration, UI) plus
-the **O4 UI ADR** — tracked in [`GAPS.md`](GAPS.md).
+ADR 0013. A second design cluster adds the **LLM client** (OpenRouter, ADR 0017), **character
+creation** + archetype library (ADR 0018, **O5**), **outline compilation** (ADR 0019, **O6**), and
+the **prompt block registry** (ADR 0020, **O7**). What remains is **implementation** (migrations,
+the compile→act orchestration, UI) plus the **O4 UI ADR** — tracked in [`GAPS.md`](GAPS.md).
 
 ## Index
 
@@ -53,3 +55,7 @@ the **O4 UI ADR** — tracked in [`GAPS.md`](GAPS.md).
 | [0014](0014-internal-state-schema.md) | Internal-state schema (the `[SELF]` layer) | Proposed |
 | [0015](0015-beat-document-and-boundaries.md) | Beat document + `BEAT_DONE` + boundary events | Proposed |
 | [0016](0016-narrator-agent-and-turn-loop.md) | Narrator agent + turn loop | Proposed |
+| [0017](0017-llm-orchestration-openrouter.md) | LLM orchestration & OpenRouter client (model-role tiering, `llm_calls`) | Proposed |
+| [0018](0018-character-creation-pipeline.md) | Character creation pipeline (AI / manual / hybrid) + archetype library | Proposed |
+| [0019](0019-outline-compilation.md) | Outline compilation (free outline → chapters / scenes / beats) | Proposed |
+| [0020](0020-prompt-block-registry.md) | Prompt block registry (machine-readable block specs) | Proposed |

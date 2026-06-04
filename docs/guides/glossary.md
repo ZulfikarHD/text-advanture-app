@@ -108,3 +108,19 @@ The engine's vocabulary, with the ADR/brief that defines each term. Read this be
 | **Context-memory layers** | immediate (~2000 tok) · scene summary · chapter log · lorebook. | brief |
 | **Resume anchor** | Micro-continuity block the narrator uses to resume after a pause. | brief |
 | **Model tiering** | Major NPC = full card (Sonnet); minor NPC = compressed (Haiku). | ADR 0007 |
+
+## Authoring & LLM (ADR 0017–0020)
+
+| Term | Meaning | Source |
+|------|---------|--------|
+| **OpenRouter** | The provider gateway (OpenAI-compatible) all LLM calls route through. | ADR 0017 |
+| **`LlmClient`** | Provider-agnostic interface over the gateway; OpenRouter is the first impl (Prism / AI SDK swap behind it). | ADR 0017 |
+| **Model role** | The per-call role (`narrator_prose`, `recorder`, `npc_major`, `compiler`, …) that resolves to a model slug + params. | ADR 0017 |
+| **`model_profiles`** | The role → model-slug + params config; global defaults + per-story override. | ADR 0017 |
+| **`llm_calls`** | Append-only per-call log (tokens, cost, latency, status); save-realm-sensitive, never agent-readable. | ADR 0017 |
+| **Creation mode** | How a character is authored: `ai` / `manual` / `hybrid`. | ADR 0018 |
+| **Character archetype** | A seedable whole-character template (priors + registers + sensitivities + voice + opacity); distinct from a register archetype. | ADR 0018 |
+| **Outline compile** | Turning a free-text outline into reviewed `chapters` / `scenes` / `beats`. | ADR 0019 |
+| **`chapter_outlines`** | The author's raw free outline, stored verbatim; never injected at runtime. | ADR 0019 |
+| **Prompt block registry** | The `prompt_blocks` table defining every prompt block (purpose + source + compile instruction + leak rules); drives assembly and renders the block reference. | ADR 0020 |
+| **`leak_rules`** | The per-block list naming which existing leak guard applies (awareness_fold / knowledge_boundary / hedged_attribution / own_perspective_only / omniscient_authoring). | ADR 0020 |

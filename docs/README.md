@@ -24,7 +24,11 @@ The whole design rests on **context isolation** between three agents, plus three
 | Internal-state schema (**O3**) | **Designed** → [ADR 0014](./adr/0014-internal-state-schema.md) |
 | Authoring & compile pipeline | **Designed** → [ADR 0013](./adr/0013-authoring-and-compile-pipeline.md) |
 | Tech stack + persistence | **Designed** → [ADR 0011](./adr/0011-tech-stack.md) / [0012](./adr/0012-persistence-schema.md); schema in [architecture/DATABASE.md](./architecture/DATABASE.md) |
-| UI + orchestration (**O4**) | **Open** — UI, compile→act orchestration, interaction-queue ADR; app not built yet |
+| LLM client (OpenRouter) | **Designed** → [ADR 0017](./adr/0017-llm-orchestration-openrouter.md) (model-role tiering, `model_profiles` / `llm_calls`) |
+| Character creation + archetypes (**O5**) | **Designed** → [ADR 0018](./adr/0018-character-creation-pipeline.md) |
+| Outline compilation (**O6**) | **Designed** → [ADR 0019](./adr/0019-outline-compilation.md) |
+| Prompt block registry (**O7**) | **Designed** → [ADR 0020](./adr/0020-prompt-block-registry.md) |
+| UI + orchestration (**O4**) | **Open** — UI, compile→act *sequencing*, interaction-queue ADR; app not built yet |
 
 ## Tech stack ([ADR 0011](./adr/0011-tech-stack.md) — `Proposed`)
 
@@ -32,7 +36,7 @@ The whole design rests on **context isolation** between three agents, plus three
 - **Frontend:** Vue 3 + Inertia.js v3.x, Wayfinder (typed routes, **not** Ziggy), Tailwind 4, shadcn-vue
 - **Tooling:** pnpm, Vite 7
 - **Database:** MySQL 8 / MariaDB 11.7 (wire-compatible; Laravel `mariadb` driver)
-- **LLM orchestration:** Claude API (Laravel AI SDK is a candidate for the compile→act calls)
+- **LLM orchestration:** Claude models via the **OpenRouter** gateway behind a thin `LlmClient` ([ADR 0017](./adr/0017-llm-orchestration-openrouter.md); Prism / Laravel AI SDK remain a future swap behind it)
 - **Standards:** Timezone Asia/Jakarta (WIB), currency Rupiah (Rp)
 
 ## Navigation
@@ -41,7 +45,7 @@ The whole design rests on **context isolation** between three agents, plus three
 |-----------|-------|
 | The folder/naming standard | [DOCUMENTATION_STRUCTURE.md](./DOCUMENTATION_STRUCTURE.md) |
 | The consolidated architecture snapshot | [directed_interactive_novel_engine_v2.html](./directed_interactive_novel_engine_v2.html) |
-| Why each decision was made | [adr/README.md](./adr/README.md) (ADR 0001–0016) |
+| Why each decision was made | [adr/README.md](./adr/README.md) (ADR 0001–0020) |
 | What's still open | [adr/GAPS.md](./adr/GAPS.md) (O1–O4) |
 | System design in structured form | [architecture/ARCHITECTURE.md](./architecture/ARCHITECTURE.md) |
 | The proposed database schema | [architecture/DATABASE.md](./architecture/DATABASE.md) |

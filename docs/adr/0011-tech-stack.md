@@ -26,7 +26,7 @@ Build a **single Laravel + Inertia application** (no separate SPA/API split):
 | Build | **Vite 7**, package manager **pnpm** |
 | Auth | Laravel **Fortify** via the official Vue starter kit (passkeys available) |
 | Database | **MariaDB 11.7** in development (what's available), **MySQL 8-compatible** schema; Laravel `mariadb` connection driver |
-| LLM | **Claude API**; the **Laravel AI SDK** (stable in L13) is the candidate orchestration layer for compile→act |
+| LLM | **Claude models via the OpenRouter gateway** — see [ADR 0017](0017-llm-orchestration-openrouter.md) (thin provider-agnostic `LlmClient`; Prism / Laravel AI SDK remain a future swap behind it) |
 | Conventions | Timezone Asia/Jakarta (WIB), currency Rupiah (Rp) |
 
 The official **Laravel Vue starter kit** is the scaffold (it ships Inertia v3, Wayfinder, Tailwind 4, shadcn-vue, Fortify auth out of the box).
@@ -47,3 +47,4 @@ The official **Laravel Vue starter kit** is the scaffold (it ships Inertia v3, W
 - **MariaDB vs MySQL** is pinned to *MariaDB 11.7 in dev, MySQL-8-compatible schema*; revisit only if a MySQL-only feature is needed (resolves [PLACEHOLDER_TRACKING](../guides/PLACEHOLDER_TRACKING.md) PH-3).
 - Unblocks **ADR 0012** (persistence schema) and the future UI ADR.
 - The locked stack is mirrored (snapshot) in [`../README.md`](../README.md); this ADR is the decision of record.
+- **Update (2026-06-04):** the LLM client/orchestration left open here is resolved by **[ADR 0017](0017-llm-orchestration-openrouter.md)** (OpenRouter gateway + thin `LlmClient`, model-role tiering, `model_profiles` / `llm_calls`). The "Laravel AI SDK candidate" note is superseded by that ADR; the SDK / Prism remain a drop-in behind the interface.

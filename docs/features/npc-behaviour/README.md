@@ -16,6 +16,12 @@ How a character **is**, **feels**, **changes**, **scars**, and **expresses** —
 | Register / relational-mode system | [ADR 0006](../../adr/0006-register-relational-mode-system.md) |
 | NPC context assembly (compiler + isolation boundary) | [ADR 0007](../../adr/0007-npc-context-assembly.md) |
 
+## Feature specs
+
+| Spec | Concern | ADR |
+|------|---------|-----|
+| [O5-character-creation.md](./O5-character-creation.md) | Character creation (AI / manual / hybrid) + the `character_archetypes` library | [ADR 0018](../../adr/0018-character-creation-pipeline.md) (depends-on [0013](../../adr/0013-authoring-and-compile-pipeline.md)) |
+
 ## When to add a feature doc here
 
 Only when implementing a concrete slice (e.g. "edge decay job", "appraisal proposal endpoint"). Use the template and link the ADR it realizes. Terms are defined in [../../guides/glossary.md](../../guides/glossary.md).
