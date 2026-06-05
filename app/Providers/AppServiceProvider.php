@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\Llm\LlmClient;
+use App\Services\Llm\OpenRouterClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +17,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // OpenRouter is the active LLM transport behind the provider-agnostic
+        // interface (ADR 0017 §1); swapping providers is a rebind, not a caller
+        // change.
+        $this->app->bind(LlmClient::class, OpenRouterClient::class);
     }
 
     /**

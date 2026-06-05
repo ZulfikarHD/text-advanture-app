@@ -113,7 +113,24 @@ Sprint 4 (S-4.1.2 / S-4.2.x / S-5.1.x) migrated the 5 global libraries (`registe
 php artisan config:show services.openrouter   # base_url default; .env: OPENROUTER_BASE_URL
 ```
 
-  No key is needed to boot or run tests; the live `LlmClient` / connection test is Sprint 5.
+  No key is needed to boot or run tests; the live `LlmClient` and connection test landed in Sprint 5 — see §11.
+
+## 11. LLM client & connection test (Sprint 5)
+
+Sprint 5 built the LLM client on top of the Sprint-4 schema ([ADR 0017](../../adr/0017-llm-orchestration-openrouter.md)). It is a backend subsystem with three settings surfaces (Provider connection test, Model roles, Usage); there is no engine caller yet.
+
+- **`laravel/ai` was removed.** `composer remove laravel/ai` dropped the package; `config/ai.php` and the `…_create_agent_conversations_table` migration were deleted (the SDK had no per-request DB-key support). If you pull this change with an old DB, `agent_conversations` lingers as a stale table — `php artisan migrate:fresh` (local/test only) gives a clean schema. The SDK remains a future swap *behind* the `App\Contracts\Llm\LlmClient` interface.
+- **The key comes from the DB, never `.env`.** `OpenRouterClient` authenticates with the **owner's** decrypted `provider_credentials` key (PH-18). Only the gateway URL + transport tunables are config:
+
+```bash
+php artisan config:show services.openrouter
+# base_url, timeout, connect_timeout, max_retries, retry_base_delay_ms, log_messages
+```
+
+- **Transport tunables** (`.env`, all optional): `OPENROUTER_TIMEOUT` (60s), `OPENROUTER_CONNECT_TIMEOUT` (10s), `OPENROUTER_MAX_RETRIES` (2 → 3 attempts; retries 429/5xx + malformed structured output with exponential backoff), `OPENROUTER_RETRY_BASE_DELAY_MS` (250).
+- **`OPENROUTER_LOG_MESSAGES`** (default `false`) is the debug gate (S-5.3.2): when on, full message bodies are persisted to `llm_calls.messages`. Leave it **off** outside debugging — `llm_calls` is as sensitive as the save realm (a prompt can embed a character's private state), and the column is `#[Hidden]` regardless.
+- **Connection test** (Settings → Provider → "Test connection"): probes `GET {base_url}/models` with the owner's key. It validates the key only — it never writes `llm_calls`. Fully testable with `Http::fake()`.
+- **Owner-scoped log:** `llm_calls` gained a nullable `user_id` (PH-20); the **Settings → Usage** screen renders the owner's calls (deferred prop, USD cost, WIB time).
 
 ## Related
 

@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\LlmCallStatus;
 use App\Enums\LlmRole;
 use App\Models\LlmCall;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,6 +19,9 @@ class LlmCallFactory extends Factory
     public function definition(): array
     {
         return [
+            // Null by default so append-only/schema tests can insert without an
+            // authenticated owner; real calls always stamp the owner.
+            'user_id' => null,
             'session_id' => null,
             'story_id' => null,
             'role' => LlmRole::NarratorProse,
@@ -31,5 +35,13 @@ class LlmCallFactory extends Factory
             'review_item_id' => null,
             'messages' => null,
         ];
+    }
+
+    /**
+     * Attribute the call to a specific owner.
+     */
+    public function forOwner(User $user): static
+    {
+        return $this->state(fn (): array => ['user_id' => $user->getKey()]);
     }
 }

@@ -501,20 +501,21 @@ The `events` window is compacted into `scene_summaries` at `SCENE_DONE` to bound
 
 | Column | Type | Notes |
 |--------|------|-------|
+| `user_id` | FK → `users` `NULL` | **owner** of the call — `BelongsToOwner`/`OwnerScope` scopes the Usage log (Sprint 5, PH-20); nullable so unauthenticated/system calls and existing append-only tests stay valid |
 | `session_id` | FK → `sessions` `NULL` | null = an **authoring-time** call (card/outline/bible compile) |
 | `story_id` | FK → `stories` `NULL` | |
 | `role` | `ENUM(...)` | `llm_role` (ADR 0017 §2) |
 | `model_slug` | `VARCHAR(120)` | resolved slug actually called |
 | `status` | `ENUM('ok','retry','failed')` | `llm_call_status` |
 | `prompt_tokens` / `completion_tokens` | `INT NULL` | usage |
-| `cost_micros_usd` | `BIGINT NULL` | provider cost in USD micro-units (Rupiah is a display rendering) |
+| `cost_micros_usd` | `BIGINT NULL` | provider cost in USD micro-units (**rendered in USD** to match the USD OpenRouter balance, PH-12) |
 | `latency_ms` | `INT NULL` | |
 | `error` | `TEXT NULL` | on `failed` |
 | `review_item_id` | FK → `review_items` `NULL` | set when the call produced a reviewable artifact |
 | `messages` | `JSON NULL` | full request body — **debug-only** (may contain `true_state`; save-realm-sensitive, never agent-readable, ADR 0017 §5) |
 | `created_at` | `TIMESTAMP` | **no `updated_at`** |
 
-Cost/latency record behind the O4 planning (ADR 0017 §4); never read by any narrative agent.
+Cost/latency record behind the O4 planning (ADR 0017 §4); never read by any narrative agent. The **Sprint-5 LLM client** (`OpenRouterClient` behind `App\Contracts\Llm\LlmClient`) writes these rows through `LlmCallLogger`; the **Settings → Usage** screen renders the owner's rows (USD cost, WIB time).
 
 ---
 

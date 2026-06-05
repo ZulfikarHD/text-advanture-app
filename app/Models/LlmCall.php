@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\LlmCallStatus;
 use App\Enums\LlmRole;
 use App\Models\Concerns\AppendOnly;
+use App\Models\Concerns\BelongsToOwner;
 use Database\Factories\LlmCallFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -18,11 +19,14 @@ use Illuminate\Support\Carbon;
  *
  * APPEND-ONLY ({@see AppendOnly}); carries only `created_at`. Records role,
  * resolved model, token usage, provider cost (USD micro-units), latency, and
- * status per call. `messages` is debug-gated and save-realm-sensitive (it may
- * embed a character's `true_state`), so it is marked Hidden and is never an
- * agent-readable source. Cost renders in Rupiah for display only.
+ * status per call. Owner-scoped via {@see BelongsToOwner} (`user_id`) so one
+ * user can never read another's call history. `messages` is debug-gated and
+ * save-realm-sensitive (it may embed a character's `true_state`), so it is
+ * marked Hidden and is never an agent-readable source. Cost is provider-
+ * reported USD micro-units, displayed as USD.
  *
  * @property int $id
+ * @property int|null $user_id
  * @property int|null $session_id
  * @property int|null $story_id
  * @property LlmRole $role
@@ -38,6 +42,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $created_at
  */
 #[Fillable([
+    'user_id',
     'session_id',
     'story_id',
     'role',
@@ -55,7 +60,7 @@ use Illuminate\Support\Carbon;
 class LlmCall extends Model
 {
     /** @use HasFactory<LlmCallFactory> */
-    use AppendOnly, HasFactory;
+    use AppendOnly, BelongsToOwner, HasFactory;
 
     public const UPDATED_AT = null;
 

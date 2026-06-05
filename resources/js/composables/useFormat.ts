@@ -98,6 +98,33 @@ export function formatRupiah(
 }
 
 /**
+ * Format a provider cost (stored as USD micro-units) as a USD amount.
+ *
+ * LLM/provider cost is rendered in USD - not converted to Rupiah - because an
+ * OpenRouter balance is held in USD, so showing USD keeps spend reconcilable
+ * against the provider dashboard (PH-12). Uses up to 6 fraction digits so
+ * sub-cent per-call costs are still legible. Returns `''` for nullish input.
+ *
+ * @param micros - Provider cost in USD micro-units (1e-6 USD), or nullish.
+ * @returns The USD currency string (e.g. `$0.001234`), or `''` when nullish.
+ * @example
+ * formatUsdFromMicros(1234)  // "$0.001234"
+ * formatUsdFromMicros(50000) // "$0.05"
+ */
+export function formatUsdFromMicros(micros: number | null | undefined): string {
+    if (micros === null || micros === undefined || Number.isNaN(micros)) {
+        return '';
+    }
+
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6,
+    }).format(micros / 1_000_000);
+}
+
+/**
  * Reactive formatting bound to the backend display standards.
  *
  * Reads `timezone`, `locale`, and `currency` from shared Inertia props so the
