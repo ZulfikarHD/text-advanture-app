@@ -1,3 +1,4 @@
+import type { AppStandards } from '@/composables/useFormat';
 import type { Auth } from '@/types/auth';
 
 // Extend ImportMeta interface for Vite...
@@ -18,6 +19,7 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            standards: AppStandards;
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

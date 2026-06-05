@@ -69,6 +69,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Display Timezone & Currency (Project Standards)
+    |--------------------------------------------------------------------------
+    |
+    | Timestamps are always stored in UTC (see "timezone" above). These values
+    | drive how data is *rendered* to the user: wall-clock time in Asia/Jakarta
+    | (WIB) and monetary values (e.g. provider cost) in Rupiah. They are shared
+    | with the frontend so formatting stays consistent. (ADR 0011, S-1.1.2.)
+    |
+    */
+
+    'display_timezone' => env('APP_DISPLAY_TIMEZONE', 'Asia/Jakarta'),
+
+    'display_locale' => env('APP_DISPLAY_LOCALE', 'id-ID'),
+
+    'currency' => env('APP_CURRENCY', 'IDR'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

@@ -53,6 +53,22 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_users_are_redirected_to_their_intended_destination_after_login()
+    {
+        $user = User::factory()->create();
+
+        // Visiting a protected page as a guest stores the intended URL...
+        $this->get(route('profile.edit'))->assertRedirect(route('login'));
+
+        $response = $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        // ...so after login we land there, not on the default home.
+        $response->assertRedirect(route('profile.edit', absolute: false));
+    }
+
     public function test_users_can_not_authenticate_with_invalid_password()
     {
         $user = User::factory()->create();
@@ -63,6 +79,21 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
+    }
+
+    public function test_invalid_credentials_do_not_disclose_which_field_was_wrong()
+    {
+        $user = User::factory()->create();
+
+        $response = $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ]);
+
+        // Fortify returns a single generic error keyed to email; the password
+        // field is never named, so the response cannot reveal which was wrong.
+        $response->assertSessionHasErrors('email');
+        $response->assertSessionDoesntHaveErrors('password');
     }
 
     public function test_users_can_logout()

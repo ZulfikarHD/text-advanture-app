@@ -6,6 +6,8 @@
 >
 > **Conventions.** Every table has `id` `BIGINT UNSIGNED` PK (auto-increment) unless noted. FKs are `<name>_id` `BIGINT UNSIGNED`. `created_at` / `updated_at` are `TIMESTAMP` (Laravel `timestamps()`). **Append-only** tables carry `created_at` only and are never `UPDATE`/`DELETE`d. Enums are stored as DB `ENUM`/`VARCHAR` and mirrored by a PHP enum. Money (none yet) would be integer Rupiah; times are UTC in DB, rendered Asia/Jakarta.
 
+> **Build status (Sprint 1, 2026-06-05).** The engine is now realized in config: default connection `mariadb` (`config/database.php`), dev DB `novel_engine`, test DB `novel_engine_test`; migrations are reversible (up/down verified). Only **foundation** tables are migrated so far — `users`, `password_reset_tokens`, `sessions`, two-factor columns, `passkeys`, `cache`, `jobs`. The two realms below (authoring/save) and the global libraries land in **Sprint 3–4** (E4).
+
 ---
 
 ## 1. Core idea — two realms

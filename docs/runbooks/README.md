@@ -2,13 +2,17 @@
 
 Operational and diagnostic playbooks for production / integration incidents.
 
-> **Status: empty skeleton.** Populated when there's something to operate.
-
 ## Naming
 
 ```
 runbooks/{topic}-diagnostics.md     # e.g. claude-api-diagnostics.md
 ```
+
+## Index
+
+| Runbook | Purpose |
+|---------|---------|
+| [local-setup-diagnostics.md](./local-setup-diagnostics.md) | Clean-clone boot, MariaDB connection triage, lint/build/test gate, production checklist |
 
 ## Likely first runbooks
 

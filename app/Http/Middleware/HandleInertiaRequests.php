@@ -41,6 +41,13 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // Project display standards: time rendered in WIB, money in Rupiah.
+            // Storage stays UTC; these only drive client-side formatting.
+            'standards' => [
+                'timezone' => config('app.display_timezone'),
+                'locale' => config('app.display_locale'),
+                'currency' => config('app.currency'),
+            ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
