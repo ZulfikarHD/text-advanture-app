@@ -20,6 +20,8 @@ api/{domain}/{domain}-{resource}.md   # subsystem-scoped (e.g. session/session-r
 | [usage.md](./usage.md) | Owner-scoped LLM usage / cost log (`usage.index`, deferred prop, Sprint 5) |
 | [reviews.md](./reviews.md) | Owner-scoped review gate (`reviews.index/accept/update/reject`, deferred prop, Sprint 6) |
 | [stories.md](./stories.md) | Story CRUD: workspace list, create/edit/delete (`stories.store/edit/update/destroy`, Sprint 7) |
+| [story-overview.md](./story-overview.md) | Per-story overview: derived counts + play-readiness (`stories.show`, E1.2) |
+| [story-settings.md](./story-settings.md) | Per-story settings: default POV + model-role overrides (`stories.settings.edit/update`, E1.2) |
 
 > **Sprint 3 added no HTTP endpoints.** S-4.1.1 is a data-layer change only — the authoring-realm schema, models, and `StoryPolicy` exist, but **story/authoring CRUD endpoints arrive in Phase 2** (story & world management). Theming stays cookie-based on the static `appearance.edit` surface (see [account.md](./account.md)); the new shell theme toggle calls no backend route.
 >

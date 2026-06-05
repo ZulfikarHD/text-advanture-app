@@ -71,6 +71,19 @@ class Story extends Model
     }
 
     /**
+     * Save-realm playthroughs forked from this story's authoring template.
+     *
+     * Used only for the read-derived save count on the story overview; saves
+     * are never copied by duplicate/import (ADR 0012).
+     *
+     * @return HasMany<PlaySession, $this>
+     */
+    public function playSessions(): HasMany
+    {
+        return $this->hasMany(PlaySession::class);
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

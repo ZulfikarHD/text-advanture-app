@@ -85,7 +85,7 @@ Full ERD: [Diagrams/Data/Persistence_Erd.md](./Diagrams/Data/Persistence_Erd.md)
 | `slug` | `VARCHAR(120)` | **unique per owner** (`unique (user_id, slug)` — Sprint 7, relaxed from global unique). Derived from `title` via `Str::slug()` when omitted; auto-suffixed on per-owner collision |
 | `title` | `VARCHAR(200)` | |
 | `description` | `TEXT NULL` | |
-| `settings` | `JSON NULL` | per-story config (default POV, model tiers, tunable rubric overrides) |
+| `settings` | `JSON NULL` | per-story config. **Realized (E1.2):** `settings.default_pov` (`App\Enums\PovMode`). Per-role model overrides live in `model_profiles` scope=`story` (§3.16), **not** here; rubric/elapsed/drift tunables deferred (PH-29) |
 
 ### 3.2 `characters`
 
@@ -291,7 +291,7 @@ Compiles to `chapters` / `scenes` / `beats` (§3.10–3.12) through the shared r
 | `params` | `JSON NULL` | `{ temperature, max_tokens, … }` |
 | `is_active` | `BOOLEAN` default `true` | |
 
-Unique `(scope, story_id, role)`. Per-story overrides also expressible via `stories.settings.model_roles`.
+Unique `(scope, story_id, role)`. Per-story overrides are **realized as scope=`story` rows** (E1.2, S-1.2.1) — written/cleared by the per-story Settings surface (`StorySettingsService`) and preferred over `global` rows by `ModelRoleResolver`.
 
 ---
 

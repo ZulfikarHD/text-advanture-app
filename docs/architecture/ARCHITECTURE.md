@@ -288,3 +288,13 @@ Sprint 7 is the first Phase 2 sprint: the workspace becomes a live authoring sur
 - **Sidebar nav.** Workspace `isActive` now also matches `/stories/*` paths.
 
 Routes: `stories.store` / `stories.edit` / `stories.update` / `stories.destroy`. Endpoint/props contracts: [../api/stories.md](../api/stories.md). Diagram: [Diagrams/Authoring/Story_Crud_Flow.md](./Diagrams/Authoring/Story_Crud_Flow.md).
+
+### Sprint 8 — Per-story settings & overview (E1.2)
+
+E1.2 turns the single edit page into a **per-story workspace** with an **Overview · Details · Settings** sub-nav. The workspace shell (`resources/js/layouts/stories/Layout.vue`, wired via `name.startsWith('stories/')` in `app.ts`) reads a shared `story` prop and renders the tab bar; **Details** is the existing edit form.
+
+- **Settings (S-1.2.1).** `StorySettingsController@edit/@update` + `StorySettingsService`. The **default POV** is stored in `stories.settings.default_pov` (new `App\Enums\PovMode`, default `third_limited`); per-role **model overrides** are stored as `model_profiles` rows scope=`Story`. A save runs atomically (`DB::transaction`): write the POV, then per role `updateOrCreate` the story profile when its override is on, else **delete** it so the role falls back to the global default. `ModelRoleResolver` already prefers the story row (per-story override → global default), so no resolver change was needed. Validation: `UpdateStorySettingsRequest` (`default_pov` enum + `roles[]` with `required_if` override). **Resolves PH-19** (per-story overrides now have a UI) and **PH-28** (the workspace now has a Settings tab).
+- **Overview (S-1.2.2).** `StoryOverviewController@show` + `StoryOverviewService`. Seven **derived counts** (characters / chapters / scenes / beats / lorebook / reveal-ledger / saves — the last via the new `Story::playSessions()` relation) and a **play-readiness gate** recomputed on every read: ≥ 1 character, a chapter with a scene and a beat, and a resolvable model for every `LlmRole`. The gate enumerates what's missing and is built to be reused by the full readiness checklist UI (E2.1 / S-2.1.2). Nothing here is stored.
+- **Entry point.** The dashboard story card title now opens the **Overview** (`stories.show`); edit/delete actions are unchanged.
+
+Per-story **rubric/tunable** overrides stay deferred to E5.1 (**PH-29**) — they need a global rubric config home first (PH-8). Routes: `stories.show` / `stories.settings.edit` / `stories.settings.update`. Endpoint/props contracts: [../api/story-overview.md](../api/story-overview.md) · [../api/story-settings.md](../api/story-settings.md). Diagram: [Diagrams/Authoring/Story_Settings_Overview_Flow.md](./Diagrams/Authoring/Story_Settings_Overview_Flow.md).

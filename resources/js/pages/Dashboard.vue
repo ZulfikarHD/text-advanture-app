@@ -9,6 +9,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { BookOpen, Pencil, Plus, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
+import StoryController from '@/actions/App/Http/Controllers/Stories/StoryController';
 import EmptyState from '@/components/EmptyState.vue';
 import CreateStoryDialog from '@/components/stories/CreateStoryDialog.vue';
 import { Button } from '@/components/ui/button';
@@ -21,8 +22,8 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { useConfirm } from '@/composables/useConfirm';
-import StoryController from '@/actions/App/Http/Controllers/Stories/StoryController';
 import { dashboard } from '@/routes';
+import { show as storyShow } from '@/routes/stories';
 
 type StorySummary = {
     id: number;
@@ -130,7 +131,13 @@ defineOptions({
             >
                 <CardHeader>
                     <CardTitle class="line-clamp-1">
-                        {{ story.title }}
+                        <Link
+                            :href="storyShow(story.slug)"
+                            class="transition-colors hover:text-primary focus-visible:text-primary focus-visible:outline-none"
+                            :data-test="`open-story-${story.slug}`"
+                        >
+                            {{ story.title }}
+                        </Link>
                     </CardTitle>
                     <CardDescription class="font-mono text-xs">
                         {{ story.slug }}

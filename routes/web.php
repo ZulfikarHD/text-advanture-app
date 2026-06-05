@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Reviews\ReviewController;
 use App\Http\Controllers\Stories\StoryController;
+use App\Http\Controllers\Stories\StoryOverviewController;
+use App\Http\Controllers\Stories\StorySettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -16,6 +18,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('stories/{story:slug}/edit', [StoryController::class, 'edit'])->name('stories.edit');
     Route::put('stories/{story:slug}', [StoryController::class, 'update'])->name('stories.update');
     Route::delete('stories/{story:slug}', [StoryController::class, 'destroy'])->name('stories.destroy');
+
+    // Per-story workspace surfaces (E1.2). Overview is the workspace entry; the
+    // settings screen carries default POV + model-role overrides.
+    Route::get('stories/{story:slug}', [StoryOverviewController::class, 'show'])->name('stories.show');
+    Route::get('stories/{story:slug}/settings', [StorySettingsController::class, 'edit'])->name('stories.settings.edit');
+    Route::put('stories/{story:slug}/settings', [StorySettingsController::class, 'update'])
+        ->middleware('throttle:12,1')
+        ->name('stories.settings.update');
 
     // Shared review gate (S-6.2). Item routes bind under the owner scope, so a
     // foreign proposal resolves to 404; writes are throttled.

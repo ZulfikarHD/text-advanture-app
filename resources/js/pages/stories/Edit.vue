@@ -1,17 +1,17 @@
 <script setup lang="ts">
 /**
- * Stories/Edit - dedicated edit page for a single story (S-1.1.2).
+ * Stories/Edit - the Details tab of a story's workspace (S-1.1.2).
  *
  * Renders the shared StoryFormFields bound to StoryController@update via
- * Wayfinder. Breadcrumb links back to the Workspace. Room for per-story
- * settings/overview tabs in Sprint 8 (S-1.2.x).
+ * Wayfinder. The per-story workspace layout supplies the title and tab nav, so
+ * this page only renders the details form for the "Details" surface.
  */
 import { Form, Head } from '@inertiajs/vue3';
+import StoryController from '@/actions/App/Http/Controllers/Stories/StoryController';
 import AlertError from '@/components/AlertError.vue';
 import Heading from '@/components/Heading.vue';
 import StoryFormFields from '@/components/stories/StoryFormFields.vue';
 import { Button } from '@/components/ui/button';
-import StoryController from '@/actions/App/Http/Controllers/Stories/StoryController';
 import { dashboard } from '@/routes';
 
 type StoryData = {
@@ -29,30 +29,26 @@ defineOptions({
     layout: {
         breadcrumbs: [
             { title: 'Workspace', href: dashboard() },
-            {
-                title: 'Edit story',
-                href: '',
-            },
+            { title: 'Details', href: '' },
         ],
     },
 });
 </script>
 
 <template>
-    <Head :title="`Edit · ${props.story.title}`" />
+    <Head :title="`${props.story.title} · Details`" />
 
-    <div class="flex h-full flex-1 flex-col gap-6 p-4">
+    <section class="max-w-xl space-y-6">
         <Heading
-            :title="props.story.title"
+            variant="small"
+            title="Story details"
             description="Update your story's title, slug, and description."
         />
 
         <Form
-            v-bind="
-                StoryController.update.form({ story: props.story.slug })
-            "
+            v-bind="StoryController.update.form({ story: props.story.slug })"
             :options="{ preserveScroll: true }"
-            class="max-w-xl space-y-6"
+            class="space-y-6"
             v-slot="{ errors, processing }"
         >
             <AlertError
@@ -74,5 +70,5 @@ defineOptions({
                 </Button>
             </div>
         </Form>
-    </div>
+    </section>
 </template>

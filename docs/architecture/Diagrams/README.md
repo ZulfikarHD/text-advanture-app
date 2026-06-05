@@ -25,5 +25,6 @@ Mermaid diagrams, grouped by subject. Filenames use `Title_Case`.
 | Account ownership & isolation | [App/Account_Ownership_Isolation.md](./App/Account_Ownership_Isolation.md) |
 | App shell & navigation | [App/App_Shell_Navigation.md](./App/App_Shell_Navigation.md) |
 | Story CRUD flow | [Authoring/Story_Crud_Flow.md](./Authoring/Story_Crud_Flow.md) |
+| Story settings & overview flow | [Authoring/Story_Settings_Overview_Flow.md](./Authoring/Story_Settings_Overview_Flow.md) |
 
 > Keep diagrams free of explicit colors/styling so they render correctly in light and dark mode.
