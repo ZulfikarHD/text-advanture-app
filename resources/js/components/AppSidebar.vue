@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Settings } from '@lucide/vue';
+import { BookOpen, ClipboardCheck, Settings } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -17,6 +17,7 @@ import {
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { dashboard } from '@/routes';
 import { edit as editProfile } from '@/routes/profile';
+import { index as reviewsIndex } from '@/routes/reviews';
 import type { NavItem } from '@/types';
 
 const { isCurrentOrParentUrl } = useCurrentUrl();
@@ -30,6 +31,12 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: dashboard(),
         icon: BookOpen,
         isActive: isCurrentOrParentUrl(dashboard()),
+    },
+    {
+        title: 'Review',
+        href: reviewsIndex(),
+        icon: ClipboardCheck,
+        isActive: isCurrentOrParentUrl('/reviews'),
     },
     {
         title: 'Settings',

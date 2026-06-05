@@ -132,6 +132,29 @@ php artisan config:show services.openrouter
 - **Connection test** (Settings → Provider → "Test connection"): probes `GET {base_url}/models` with the owner's key. It validates the key only — it never writes `llm_calls`. Fully testable with `Http::fake()`.
 - **Owner-scoped log:** `llm_calls` gained a nullable `user_id` (PH-20); the **Settings → Usage** screen renders the owner's calls (deferred prop, USD cost, WIB time).
 
+## 12. Global libraries & review gate (Sprint 6)
+
+Sprint 6 (S-6.1 / S-6.2) seeds the five global libraries and adds the review-gate foundation.
+
+- **Seed the libraries** (idempotent — safe to re-run, keyed on natural keys):
+
+```bash
+php artisan db:seed --class=GlobalLibrarySeeder   # priors, register/character archetypes, prompt blocks, model profiles
+php artisan db:seed                                # also runs the above, then the dev Test User (guarded against duplicates)
+```
+
+  Expected rows after seeding: 4 `universal_priors`, 4 `register_archetypes`, 1 `character_archetypes` (`koakuma`), 16 `prompt_blocks`, 8 `model_profiles` (one per `LlmRole`). Re-running changes nothing (`updateOrCreate`).
+
+- **Model roles are now seeded.** Settings → Model roles is no longer empty on a fresh install — every role resolves to a default slug; the "mid" appraiser tier seeds `anthropic/claude-3.5-sonnet` (PH-26). Defaults stay author-editable.
+- **Review gate** lives at the top-level **Review** sidebar entry (`/reviews`). With no producers yet it shows the empty teaching state; it is fully nav-reachable (no URL typing).
+- **Test-database guard (safety).** `tests/TestCase.php::guardTestDatabase()` aborts the suite before any migration unless the resolved DB name contains `test` (or is `:memory:`). Since `RefreshDatabase` wipes its connection, a misconfigured `DB_DATABASE=novel_engine` fails fast instead of destroying dev data:
+
+```
+RuntimeException: Refusing to run tests against database [novel_engine]: it is not a test database.
+```
+
+  Fix by pointing `DB_DATABASE` at `novel_engine_test` (already pinned in `phpunit.xml`).
+
 ## Related
 
 - [../architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md) §11 — Application foundation

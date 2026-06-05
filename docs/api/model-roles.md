@@ -2,7 +2,7 @@
 
 Endpoint and Inertia-props contract for the **model-role mapping** settings surface (S-5.2.2): the global `LlmRole` → model-slug + params mapping the engine routes by. Routes are consumed through **Wayfinder** typed helpers (`@/routes/model-roles`, `@/actions/App/Http/Controllers/Settings/ModelRoleController`). Everything requires the `auth` middleware.
 
-> Engine calls are routed by **role**, never a hard-coded slug ([ADR 0017](../adr/0017-llm-orchestration-openrouter.md) §2). This screen edits the **global** defaults (`model_profiles` scope=`Global`, `story_id` null). Per-story overrides (scope=`Story`) await story management (Phase 2, PH-19). Defaults are seeded in Sprint 6, so the screen also configures roles from empty.
+> Engine calls are routed by **role**, never a hard-coded slug ([ADR 0017](../adr/0017-llm-orchestration-openrouter.md) §2). This screen edits the **global** defaults (`model_profiles` scope=`Global`, `story_id` null). Per-story overrides (scope=`Story`) await story management (Phase 2, PH-19). Defaults are **now seeded** (Sprint 6 `ModelProfileSeeder` — one global row per `LlmRole`, the "mid" appraiser tier seeds `anthropic/claude-3.5-sonnet`, PH-26), so the screen ships pre-filled rather than empty; the values stay author-editable.
 
 ## 1. Endpoints
 

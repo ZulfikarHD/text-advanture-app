@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ProducerType;
 use App\Enums\ReviewStatus;
+use App\Models\Concerns\BelongsToOwner;
 use Database\Factories\ReviewItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +18,8 @@ use Illuminate\Support\Carbon;
  * Polymorphic by `producer_type`; moves pending -> accepted | edited | rejected
  * with reviewer + timestamp. A null `session_id` is an authoring-time compile
  * (card/outline/bible) - a deliberate authoring-realm row in a save-realm
- * table. Edits are captured separately in `edited_payload`.
+ * table. Edits are captured separately in `edited_payload`. Owner-scoped via a
+ * direct `user_id` so null-session proposals stay isolated per account.
  *
  * @property int $id
  * @property int|null $session_id
@@ -30,6 +32,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $reviewed_by
  */
 #[Fillable([
+    'user_id',
     'session_id',
     'producer_type',
     'producer_id',
@@ -42,7 +45,7 @@ use Illuminate\Support\Carbon;
 class ReviewItem extends Model
 {
     /** @use HasFactory<ReviewItemFactory> */
-    use HasFactory;
+    use BelongsToOwner, HasFactory;
 
     /**
      * @return BelongsTo<PlaySession, $this>
@@ -50,6 +53,16 @@ class ReviewItem extends Model
     public function session(): BelongsTo
     {
         return $this->belongsTo(PlaySession::class, 'session_id');
+    }
+
+    /**
+     * The payload to commit: the author's edits when present, else the original.
+     *
+     * @return array<string, mixed>
+     */
+    public function committedPayload(): array
+    {
+        return $this->edited_payload ?? $this->payload;
     }
 
     /**

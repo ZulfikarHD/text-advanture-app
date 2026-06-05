@@ -18,6 +18,7 @@ Mermaid diagrams, grouped by subject. Filenames use `Title_Case`.
 | Agent context isolation | [Agents/Context_Isolation.md](./Agents/Context_Isolation.md) |
 | Session state machine | [Engine/Session_State_Machine.md](./Engine/Session_State_Machine.md) |
 | LLM client flow (role → client → log) | [Engine/Llm_Client_Flow.md](./Engine/Llm_Client_Flow.md) |
+| Review gate flow (propose → decide) | [Engine/Review_Gate_Flow.md](./Engine/Review_Gate_Flow.md) |
 | Persistence ERD (draft) | [Data/Persistence_Erd.md](./Data/Persistence_Erd.md) |
 | Auth sign-in & route protection | [App/Auth_Signin_Flow.md](./App/Auth_Signin_Flow.md) |
 | Account ownership & isolation | [App/Account_Ownership_Isolation.md](./App/Account_Ownership_Isolation.md) |

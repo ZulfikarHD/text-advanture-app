@@ -19,4 +19,20 @@ enum ProducerType: string
     case CardCompile = 'card_compile';
     case BibleGenerate = 'bible_generate';
     case OutlineCompile = 'outline_compile';
+
+    /**
+     * A short human label for the producer (review-gate UI).
+     */
+    public function label(): string
+    {
+        return match ($this) {
+            self::Delta => 'Relationship delta',
+            self::EmotionDelta => 'Emotion delta',
+            self::NudgeCompile => 'Nudge compile',
+            self::BeatRecord => 'Beat record',
+            self::CardCompile => 'Card compile',
+            self::BibleGenerate => 'Bible generation',
+            self::OutlineCompile => 'Outline compile',
+        };
+    }
 }

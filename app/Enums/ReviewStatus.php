@@ -15,4 +15,25 @@ enum ReviewStatus: string
     case Accepted = 'accepted';
     case Edited = 'edited';
     case Rejected = 'rejected';
+
+    /**
+     * A short human label for the status (review-gate UI).
+     */
+    public function label(): string
+    {
+        return match ($this) {
+            self::Pending => 'Pending',
+            self::Accepted => 'Accepted',
+            self::Edited => 'Edited',
+            self::Rejected => 'Rejected',
+        };
+    }
+
+    /**
+     * Whether the item still awaits a decision.
+     */
+    public function isPending(): bool
+    {
+        return $this === self::Pending;
+    }
 }
