@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
 import { LogOut, Settings } from '@lucide/vue';
+import AppearanceTabs from '@/components/AppearanceTabs.vue';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -38,6 +39,14 @@ defineProps<Props>();
             </Link>
         </DropdownMenuItem>
     </DropdownMenuGroup>
+    <DropdownMenuSeparator />
+    <!-- Quick theme toggle: theme is reachable from the shell, not only Settings -->
+    <DropdownMenuLabel class="px-2 pb-1 text-xs font-normal text-muted-foreground">
+        Theme
+    </DropdownMenuLabel>
+    <div class="px-1 pb-1">
+        <AppearanceTabs block />
+    </div>
     <DropdownMenuSeparator />
     <DropdownMenuItem :as-child="true">
         <Link

@@ -6,7 +6,11 @@
 >
 > **Conventions.** Every table has `id` `BIGINT UNSIGNED` PK (auto-increment) unless noted. FKs are `<name>_id` `BIGINT UNSIGNED`. `created_at` / `updated_at` are `TIMESTAMP` (Laravel `timestamps()`). **Append-only** tables carry `created_at` only and are never `UPDATE`/`DELETE`d. Enums are stored as DB `ENUM`/`VARCHAR` and mirrored by a PHP enum. Money (none yet) would be integer Rupiah; times are UTC in DB, rendered Asia/Jakarta.
 
-> **Build status (Sprint 1, 2026-06-05).** The engine is now realized in config: default connection `mariadb` (`config/database.php`), dev DB `novel_engine`, test DB `novel_engine_test`; migrations are reversible (up/down verified). Only **foundation** tables are migrated so far — `users`, `password_reset_tokens`, `sessions`, two-factor columns, `passkeys`, `cache`, `jobs`. The two realms below (authoring/save) and the global libraries land in **Sprint 3–4** (E4).
+> **Build status (Sprint 3, 2026-06-05).** The engine is realized in config: default connection `mariadb` (`config/database.php`), dev DB `novel_engine`, test DB `novel_engine_test`; migrations are reversible (up/down verified). **Foundation** tables migrated in Sprint 1 — `users`, `password_reset_tokens`, `sessions`, two-factor columns, `passkeys`, `cache`, `jobs`. **Authoring realm** migrated in Sprint 3 (S-4.1.1): `stories` (now **owner-scoped** — carries `user_id`, deviating from §3.1 below), `chapters`, `characters`, `scenes`, `beats`, `character_cards`, `reveal_ledger`, `lorebook_entries`, `registers`, `sensitivities`, `chapter_outlines` — each with its PHP enum + Eloquent model + factory. **Deferred FK constraints** — resolved in Sprint 4 (see below).
+
+> **Build status (Sprint 4, 2026-06-05).** The **global libraries** (S-4.1.2) and the **save realm** (S-4.2.1) are now migrated, each with its PHP enum(s) + Eloquent model + `casts()` + factory. **Global:** `register_archetypes`, `universal_priors`, `character_archetypes`, `prompt_blocks`, `model_profiles` (the only library carrying a nullable `story_id` override). **Save (16):** `play_sessions`, `review_items`, `relationship_edges`, `edge_axes`, `axis_deltas`, `internal_states`, `active_emotions`, `acquired_sensitivities`, `beat_records`, `beat_true_states`, `beat_witnesses`, `nudges`, `scene_summaries`, `chapter_logs`, `events`, `llm_calls`. The six strict append-only tables (`axis_deltas`, `beat_records` + `beat_true_states` + `beat_witnesses`, `nudges`, `llm_calls`) use the `App\Models\Concerns\AppendOnly` trait (block `UPDATE`/`DELETE`; `created_at` only), enforced by `AppendOnlyInvariantTest`. **PH-16 resolved:** the three deferred FKs (`registers.archetype_id`, `character_cards.review_item_id`, `chapter_outlines.review_item_id`) are now real constraints. **Naming divergence (PH-17):** §4.1's `sessions` is realized as **`play_sessions`** (model `PlaySession`) because Laravel already owns the `sessions` table for the database session driver; child FK columns keep the spec name `session_id`. **Provider keys (S-5.1.1/5.1.3):** new owner-scoped `provider_credentials` (§7) — a divergence from ADR 0017 §1's `.env` key (PH-18). Reversibility (`migrate:fresh` → `rollback` → `migrate`) is verified by `SaveRealmMigrationTest`.
+
+> **Build status (Sprint 6, 2026-06-05).** The five **global libraries are now seeded** (S-6.1): `GlobalLibrarySeeder` runs idempotent per-library seeders (`updateOrCreate` on natural keys) — 4 universal priors, 4 register archetypes, 1 character archetype (`koakuma`), 16 prompt blocks (the narrator `LOREBOOK` keyed `LOREBOOK_NARRATOR`, PH-25), and 8 global `model_profiles` (one per `LlmRole`). The **review-gate foundation** (S-6.2) adds `ReviewGateService` (propose/accept/edit/reject + `committedPayload`), the owner-scoped top-level `/reviews` surface, and a nullable **`user_id` on `review_items`** (§4.12, PH-20) so null-session authoring proposals stay account-isolated. Per-producer commit handlers are deferred to Phase 7 E4 (PH-27). Verified by `GlobalLibrariesSeedTest` + `ReviewGateTest`.
 
 ---
 
@@ -77,6 +81,7 @@ Full ERD: [Diagrams/Data/Persistence_Erd.md](./Diagrams/Data/Persistence_Erd.md)
 
 | Column | Type | Notes |
 |--------|------|-------|
+| `user_id` | FK → `users` | **owner** (ADR 0012); adopts `BelongsToOwner` + `StoryPolicy`. **Built in Sprint 3** (S-4.1.1) ahead of the original Phase-2 plan — children inherit isolation transitively (see PH-16) |
 | `slug` | `VARCHAR(120)` | unique |
 | `title` | `VARCHAR(200)` | |
 | `description` | `TEXT NULL` | |
@@ -294,6 +299,8 @@ Unique `(scope, story_id, role)`. Per-story overrides also expressible via `stor
 
 ### 4.1 `sessions` — a save + loop state (ADR 0012/0016)
 
+> **Built as `play_sessions`** (model `PlaySession`). The framework reserves the `sessions` table for the database session driver, so the save-realm table is named `play_sessions`; every child FK column below keeps the spec name `session_id` and constrains to `play_sessions` (PH-17).
+
 | Column | Type | Notes |
 |--------|------|-------|
 | `story_id` | FK → `stories` | |
@@ -446,6 +453,7 @@ Unique `(session_id, character_id)`.
 
 | Column | Type | Notes |
 |--------|------|-------|
+| `user_id` | FK → `users` `NULL` | owner scope (S-6.2, PH-20); null-session authoring proposals are isolated per account via `BelongsToOwner` |
 | `session_id` | FK → `sessions` `NULL` | null for authoring-time compiles (`card_compile`) |
 | `producer_type` | `ENUM('delta','emotion_delta','nudge_compile','beat_record','card_compile','bible_generate','outline_compile')` | `bible_generate` (ADR 0018) + `outline_compile` (ADR 0019) added |
 | `producer_id` | `BIGINT UNSIGNED NULL` | polymorphic ref to the proposed row |
@@ -496,26 +504,27 @@ The `events` window is compacted into `scene_summaries` at `SCENE_DONE` to bound
 
 | Column | Type | Notes |
 |--------|------|-------|
+| `user_id` | FK → `users` `NULL` | **owner** of the call — `BelongsToOwner`/`OwnerScope` scopes the Usage log (Sprint 5, PH-20); nullable so unauthenticated/system calls and existing append-only tests stay valid |
 | `session_id` | FK → `sessions` `NULL` | null = an **authoring-time** call (card/outline/bible compile) |
 | `story_id` | FK → `stories` `NULL` | |
 | `role` | `ENUM(...)` | `llm_role` (ADR 0017 §2) |
 | `model_slug` | `VARCHAR(120)` | resolved slug actually called |
 | `status` | `ENUM('ok','retry','failed')` | `llm_call_status` |
 | `prompt_tokens` / `completion_tokens` | `INT NULL` | usage |
-| `cost_micros_usd` | `BIGINT NULL` | provider cost in USD micro-units (Rupiah is a display rendering) |
+| `cost_micros_usd` | `BIGINT NULL` | provider cost in USD micro-units (**rendered in USD** to match the USD OpenRouter balance, PH-12) |
 | `latency_ms` | `INT NULL` | |
 | `error` | `TEXT NULL` | on `failed` |
 | `review_item_id` | FK → `review_items` `NULL` | set when the call produced a reviewable artifact |
 | `messages` | `JSON NULL` | full request body — **debug-only** (may contain `true_state`; save-realm-sensitive, never agent-readable, ADR 0017 §5) |
 | `created_at` | `TIMESTAMP` | **no `updated_at`** |
 
-Cost/latency record behind the O4 planning (ADR 0017 §4); never read by any narrative agent.
+Cost/latency record behind the O4 planning (ADR 0017 §4); never read by any narrative agent. The **Sprint-5 LLM client** (`OpenRouterClient` behind `App\Contracts\Llm\LlmClient`) writes these rows through `LlmCallLogger`; the **Settings → Usage** screen renders the owner's rows (USD cost, WIB time).
 
 ---
 
 ## 5. Isolation & integrity at the DB layer
 
-- **`beat_true_states` is split out** of `beat_records` so the assembler's "read `surface` only" query *physically cannot* pull another character's private state — the ADR 0007/0009/0010 boundary made structural.
+- **`beat_true_states` is split out** of `beat_records` so the assembler's "read `surface` only" query *physically cannot* pull another character's private state — the ADR 0007/0009/0010 boundary made structural. Proven by `SaveRealmSchemaTest::test_beat_surface_is_structurally_isolated_from_private_true_state`.
 - **`knowledge_boundary` on the card** gates lorebook injection and blocks hidden facts (ADR 0013) — the reveal ledger feeds it.
 - **Append-only tables** (`axis_deltas`, `beat_records` + children, `nudges`, `llm_calls`) carry only `created_at`; never `UPDATE`/`DELETE`. Corrections are new rows through the review gate.
 - **`llm_calls` is save-realm-sensitive, never agent-readable** (ADR 0017 §5): an NPC act prompt embeds that character's own `true_state` via its SELF block, so a logged request body is as sensitive as the save realm and is single-author-scoped; full `messages` are stored only when debugging is on.
@@ -543,12 +552,30 @@ Cost/latency record behind the O4 planning (ADR 0017 §4); never read by any nar
 | Internal-state schema | **0014** | ✅ `internal_states` / `active_emotions` (baseline + drift_cap) |
 | Beat document + boundaries | **0015** | ✅ `beats` / `scenes.elapsed_*` / `chapters.word_cap` |
 | Narrator loop | **0016** | ✅ `sessions` loop state / `scene_summaries` / `chapter_logs` / `events` |
-| LLM orchestration + OpenRouter | **0017** | ✅ `model_profiles` (config) + `llm_calls` (append-only log) + `stories.settings.model_roles` |
+| LLM orchestration + OpenRouter | **0017** | ✅ `model_profiles` (config) + `llm_calls` (append-only log) + `stories.settings.model_roles` + `provider_credentials` (§7, per-owner key — divergence from §1, PH-18) |
 | Character creation + archetypes | **0018** | ✅ `character_archetypes` (global) + `review_items.bible_generate`; reuses ADR 0013 targets |
 | Outline compilation | **0019** | ✅ `chapter_outlines` + `review_items.outline_compile`; targets the ADR 0015 `chapters`/`scenes`/`beats` |
 | Prompt block registry | **0020** | ✅ `prompt_blocks` (global, ~15 seeded) |
 
 **Remaining (implementation, not schema design):** generate Laravel migrations from this doc (authoring set + save set, per ADR 0012); seed the universal-priors / register-archetype / **character-archetype** / **prompt-block** libraries + **`model_profiles`** defaults; tune the shared severity/elapsed/drift rubric config.
+
+---
+
+## 7. `provider_credentials` — per-owner LLM key (S-5.1.1/5.1.3, ADR 0017 §1)
+
+Owner-scoped (like `stories`), **not** part of either realm. One encrypted API key per user per provider so each account uses its own quota.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `user_id` | FK → `users` | owner; `BelongsToOwner` global scope |
+| `provider` | `ENUM('openrouter')` default `openrouter` | the gateway |
+| `api_key` | `TEXT` | **encrypted at rest** (model `encrypted` cast); `#[Hidden]` — never serialized |
+| `last_four` | `VARCHAR(8) NULL` | for the masked display (`••••••••last4`) |
+| `base_url` | `VARCHAR(255) NULL` | optional override of `config('services.openrouter.base_url')` |
+
+Unique `(user_id, provider)`. The raw key never reaches the client — props expose only the computed `masked_key`. Managed through `Settings\ProviderController` (edit/update/destroy) + `ProviderCredentialService`; covered by `ProviderCredentialTest` / `ProviderSettingsTest`.
+
+> **Divergence (PH-18).** ADR 0017 §1 sketched a single `.env` API key. The program NFR ("API keys encrypted at rest, scoped to owner") and the `BelongsToOwner` docblock (which already names "API keys" as an owned model) take precedence, so the key is a **per-owner encrypted DB record**. Only the provider `base_url` stays in `.env`/config.
 
 ---
 

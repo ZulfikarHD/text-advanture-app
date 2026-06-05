@@ -3,6 +3,8 @@
 - **Status:** Proposed
 - **Date:** 2026-06-04
 
+> **Implementation note (Sprint 5, 2026-06-05).** The decisions below are now built: `App\Contracts\Llm\LlmClient` (interface) + `App\Services\Llm\OpenRouterClient` (thin `Http` implementation, bound in `AppServiceProvider`), `ModelRoleResolver`, `LlmCallLogger`, and `ConnectionTester`, with role/structured/log/connection-test tests. Two adjustments to the sketch above: **(1)** the key is **not** a single `.env` value — it is the per-owner encrypted `provider_credentials` row (PH-18), read at call time. **(2)** The **`laravel/ai`** SDK named as a candidate swap has been **removed from the project** — it has no official per-request DB-key support ([#105](https://github.com/laravel/ai/issues/105); only unsafe global-config mutation works), which conflicts with the per-owner store. The thin `Http` client is the implemented choice; Prism / an SDK remain a future swap **behind the interface** (PH-21). The `llm_calls` log also gained a nullable `user_id` + `BelongsToOwner` so it is owner-scoped (PH-20).
+
 ## Context
 
 [ADR 0011](0011-tech-stack.md) named the **Claude API** as the LLM and the **Laravel AI SDK** as a

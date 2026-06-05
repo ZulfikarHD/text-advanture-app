@@ -15,11 +15,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Global libraries are idempotent and required on every install.
+        $this->call(GlobalLibrarySeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Guard the unique email so re-running the seeder never duplicates the
+        // dev account; the factory still supplies the hashed password.
+        if (User::query()->where('email', 'test@example.com')->doesntExist()) {
+            User::factory()->create([
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+            ]);
+        }
     }
 }

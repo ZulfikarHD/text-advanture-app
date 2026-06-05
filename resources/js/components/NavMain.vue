@@ -27,7 +27,14 @@ const { isCurrentUrl } = useCurrentUrl();
                     :is-active="item.isActive ?? isCurrentUrl(item.href)"
                     :tooltip="item.title"
                 >
-                    <Link :href="item.href">
+                    <Link
+                        :href="item.href"
+                        :aria-current="
+                            (item.isActive ?? isCurrentUrl(item.href))
+                                ? 'page'
+                                : undefined
+                        "
+                    >
                         <component :is="item.icon" />
                         <span>{{ item.title }}</span>
                     </Link>
