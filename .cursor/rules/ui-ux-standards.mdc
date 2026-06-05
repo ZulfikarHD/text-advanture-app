@@ -1,0 +1,35 @@
+---
+description: DINE UI/UX consistency floor — Laws of UX + iOS-grade behavior for all Vue front-end work
+globs: resources/js/**/*.vue
+alwaysApply: false
+---
+
+# UI/UX Standards (the consistency floor)
+
+DINE's design language is **"Quiet Editorial"**: a calm, literary reading surface wrapped in iOS-grade chrome. Every screen must (1) be defensible by a named **Law of UX** and (2) **behave like iOS**.
+
+> For depth (palette/tokens, typography, motion, iOS patterns, per-surface law mapping) **read the `ui-ux-standards` skill** at `.cursor/skills/ui-ux-standards/`. This rule is the always-on floor.
+
+## Non-negotiables
+
+1. **Tokens only.** Use semantic tokens (`bg-background`, `text-foreground`, `text-muted-foreground`, `bg-primary`, `bg-card`, `border-border`, `ring-ring`, `bg-destructive`). Never hard-code hex/`rgb()` or raw palette utilities (`bg-zinc-800`). New colors → add a token in `resources/css/app.css`.
+2. **Dark-mode parity** on every surface; body text contrast ≥ 4.5:1.
+3. **≥ 44px touch targets** (`h-11`, `size-11` for icon buttons) — Fitts's Law.
+4. **One primary action per view** (`primary`); everything else `secondary`/`outline`/`ghost` — Hick's Law.
+5. **Four states, always:** loading / empty / error / success. Use **skeletons** (not spinners) for waits > ~400ms — Doherty Threshold. Empty states teach the next step.
+6. **iOS surfaces:** secondary tasks → bottom **Sheet** (mobile/tablet) or centered **Dialog** (desktop); discrete choices → **action sheet**; 2–4 options → **segmented control**; booleans → **switch**.
+7. **Animate with `motion-v`** (motion.dev), not hand-written CSS transitions — springs/iOS easing, `whilePress` tap feedback, `AnimatePresence` for enter/exit; always gate with `useReducedMotion()`. (shadcn/reka primitives keep their built-in animations.)
+8. **Confirm destructive actions** (action sheet/dialog, `destructive` color + Cancel). Offer Undo where reversible.
+9. **Reading is sacred:** prose uses `font-serif`, `max-w-prose` (~66ch), `leading-[1.75]`, scalable size, no chrome/accent/motion intruding.
+10. **Keyboard + a11y:** visible `focus-visible:ring-ring`, logical tab order, labelled controls, single root element.
+
+## CSS & reuse
+
+- **Tailwind-first.** Use utilities; only drop to a scoped `<style>`/custom CSS when a custom component truly can't be expressed in Tailwind (then drive it from tokens).
+- **Reuse** existing `@/components/ui/*` (button, card, dialog, sheet, dropdown-menu, select, input, checkbox, alert, badge, breadcrumb, sidebar, skeleton, spinner, tooltip, sonner…). Need `switch`/`tabs`/`radio-group`? Add via the shadcn-vue CLI matching the `ui/` convention — don't hand-roll. Merge classes with `cn()` from `@/lib/utils`.
+
+## Project standards
+
+- Cost → **Rupiah (Rp)** display; time → **Asia/Jakarta (WIB)**.
+- Routes via **Wayfinder**, never Ziggy `route()`.
+- Never render a character's private `true_state` in any player/review view.
