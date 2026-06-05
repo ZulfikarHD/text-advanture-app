@@ -87,6 +87,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Self-Registration Toggle
+    |--------------------------------------------------------------------------
+    |
+    | Controls whether visitors can create their own account. The deployment is
+    | single-author by default but can be opened to invited multi-user setups.
+    | When disabled, the register page and POST endpoint return 404 and the
+    | "Sign up" links are hidden; existing users can still sign in. (S-2.2.3.)
+    |
+    */
+
+    'registration_enabled' => env('REGISTRATION_ENABLED', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

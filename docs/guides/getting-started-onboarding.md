@@ -55,10 +55,14 @@ docs/                                            # ADRs, architecture, features,
 
 ## 5. Auth & access model
 
-Auth surfaces are the only public pages; everything else is behind the `auth` middleware. There is **no role hierarchy** — "multi-user" means account *isolation* (each owner sees only their own content), which is implemented in Sprint 2. After signing in you land on `/dashboard` (or your intended destination if you were redirected from a protected page).
+Auth surfaces are the only public pages; everything else is behind the `auth` middleware. After signing in you land on `/dashboard` (the **Workspace**) — or your intended destination if you were redirected from a protected page. The sidebar surfaces **Workspace** + **Settings** (Play arrives in Phase 5).
 
-See: [auth sign-in flow diagram](../architecture/Diagrams/App/Auth_Signin_Flow.md) · [auth API contract](../api/auth.md).
+- **Account isolation (Sprint 2).** There is **no role hierarchy** — "multi-user" means account *isolation* (each owner sees only their own content). Owned models adopt `App\Models\Concerns\BelongsToOwner` (applies `OwnerScope`, stamps `user_id` on create) and a policy extending `App\Policies\OwnerPolicy`. A foreign row is invisible (route-model binding → **404**); an out-of-scope row checked against the policy is **403**. Stories (Phase 2) are the first owned model; today the invariants are proven by `tests/Feature/Auth/OwnershipIsolationTest.php`.
+- **Registration toggle (Sprint 2).** `REGISTRATION_ENABLED` (`config('app.registration_enabled')`, default `true`) gates self-registration; when off, `/register` is 404 and the sign-up links hide via the shared `canRegister` prop. Sign-in is unaffected.
+- **No email verification.** It was removed in Sprint 2 (it was a no-op) — no `verified` middleware and **no mailer needed to sign in**.
 
-## 6. What exists today (Phase 1, Sprint 1)
+See: [auth sign-in flow diagram](../architecture/Diagrams/App/Auth_Signin_Flow.md) · [auth API contract](../api/auth.md) · [account & ownership contract](../api/account.md) · [ownership isolation diagram](../architecture/Diagrams/App/Account_Ownership_Isolation.md).
 
-The app boots, authenticates, and navigates — but has **no stories yet**. The narrative engine (characters, beats, narrator loop, delta engine, review gate) is designed in the [ADRs](../adr/README.md) and built across Phases 2–7. To understand the destination, read [ARCHITECTURE.md](../architecture/ARCHITECTURE.md).
+## 6. What exists today (Phase 1, Sprints 1–2)
+
+The app boots, authenticates, isolates accounts, and navigates the **Workspace + Settings** shell — but has **no stories yet**. Sprint 2 added the multi-user account-isolation foundation, the registration toggle, and the app shell; the workspace home is an empty state pointing toward story creation. The narrative engine (characters, beats, narrator loop, delta engine, review gate) is designed in the [ADRs](../adr/README.md) and built across Phases 2–7. To understand the destination, read [ARCHITECTURE.md](../architecture/ARCHITECTURE.md).

@@ -47,7 +47,7 @@ flowchart TD
 
 ## Notes
 
-- `auth` guards every authoring/play surface; `verified` is also applied but is a no-op until `User` implements `MustVerifyEmail` (tracked PH-10, reconciled in Sprint 2).
+- `auth` guards every authoring/play surface. Email verification was removed in Sprint 2 (the `verified` guard was a no-op — PH-10 resolved), so there is no `verified` middleware and no mailer is needed to sign in. Owner-scoping for owned resources is layered on top of `auth` — see [Account_Ownership_Isolation.md](./Account_Ownership_Isolation.md).
 - The throttle key is `Str::transliterate(Str::lower(email).'|'.ip)` — see `FortifyServiceProvider::configureRateLimiting()`.
 - Times shown anywhere render in Asia/Jakarta via the shared `standards` prop + `useFormat` composable.
 

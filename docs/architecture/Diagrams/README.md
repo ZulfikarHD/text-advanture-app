@@ -19,5 +19,7 @@ Mermaid diagrams, grouped by subject. Filenames use `Title_Case`.
 | Session state machine | [Engine/Session_State_Machine.md](./Engine/Session_State_Machine.md) |
 | Persistence ERD (draft) | [Data/Persistence_Erd.md](./Data/Persistence_Erd.md) |
 | Auth sign-in & route protection | [App/Auth_Signin_Flow.md](./App/Auth_Signin_Flow.md) |
+| Account ownership & isolation | [App/Account_Ownership_Isolation.md](./App/Account_Ownership_Isolation.md) |
+| App shell & navigation | [App/App_Shell_Navigation.md](./App/App_Shell_Navigation.md) |
 
 > Keep diagrams free of explicit colors/styling so they render correctly in light and dark mode.

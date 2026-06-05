@@ -21,6 +21,7 @@ declare module '@inertiajs/core' {
             auth: Auth;
             standards: AppStandards;
             sidebarOpen: boolean;
+            canRegister: boolean;
             [key: string]: unknown;
         };
     }

@@ -41,6 +41,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // Drives whether the "Sign up" affordances render; the server still
+            // enforces the toggle on the register routes. (S-2.2.3.)
+            'canRegister' => (bool) config('app.registration_enabled'),
             // Project display standards: time rendered in WIB, money in Rupiah.
             // Storage stays UTC; these only drive client-side formatting.
             'standards' => [

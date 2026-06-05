@@ -19,6 +19,10 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        // Closes the POST path when self-registration is disabled so the
+        // toggle cannot be bypassed by posting directly. (S-2.2.3.)
+        abort_unless(config('app.registration_enabled'), 404);
+
         Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),

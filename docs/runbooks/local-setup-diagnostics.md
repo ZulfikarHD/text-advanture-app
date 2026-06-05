@@ -72,6 +72,16 @@ vendor/bin/pint --dirty --format agent   # PHP formatting
 - `.env` is never committed (it is gitignored). Secrets (`APP_KEY`, `DB_PASSWORD`) live only in the environment.
 - Password policy auto-strengthens in production (`AppServiceProvider`: min 12, mixed case, uncompromised).
 
+## 8. Feature toggles & mail (Sprint 2)
+
+- **Self-registration** is controlled by `REGISTRATION_ENABLED` (`.env`, default `true` → `config('app.registration_enabled')`). Set `REGISTRATION_ENABLED=false` for a single-author deployment: the `/register` page and POST return **404** and the "Sign up" links disappear, while existing users can still sign in. Run `php artisan config:clear` after changing it (and `config:cache` rebuilds on deploy).
+
+```bash
+php artisan tinker --execute 'var_dump(config("app.registration_enabled"));'
+```
+
+- **No mailer is required to sign in.** Email verification was removed in Sprint 2 (PH-10), so the default `MAIL_MAILER=log` is fine for local auth work; mail config only matters once a feature actually sends mail (e.g. password-reset links).
+
 ## Related
 
 - [../architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md) §11 — Application foundation

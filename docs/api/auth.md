@@ -12,7 +12,7 @@ Endpoint and Inertia-props contract for the Phase 1 / Sprint 1 auth surface. Rou
 | POST | `/login` | `login.store` | guest | Authenticate; throttled 5/min per `email\|ip` |
 | POST | `/logout` | `logout` | auth | Invalidate the session |
 | GET | `/` | `home` | public | Landing page (`Welcome`) with a Log in link |
-| GET | `/dashboard` | `dashboard` | auth, verified | Workspace home (post-login destination) |
+| GET | `/dashboard` | `dashboard` | auth | Workspace home (post-login destination) |
 
 Wayfinder usage (client):
 
@@ -22,7 +22,7 @@ import { login, logout } from '@/routes';
 // <Link :href="logout()" method="post" as="button">Log out</Link>
 ```
 
-Out of Sprint 1 scope but registered by the starter kit (documented in later sprints): register, password reset, email verification, two-factor challenge, passkeys.
+Out of Sprint 1 scope but registered by the starter kit: register (now gated by the Sprint 2 registration toggle — see [account.md](./account.md)), password reset, two-factor challenge, passkeys. **Email verification was removed in Sprint 2** (PH-10): there is no `verified` middleware and no verification routes/pages.
 
 ## 2. POST `/login` (login.store)
 
@@ -56,12 +56,14 @@ Provided by `App\Http\Middleware\HandleInertiaRequests::share()`:
   "name": "DINE",
   "auth": { "user": null | { "id": 1, "name": "...", "email": "...", "email_verified_at": "...", "created_at": "...", "updated_at": "..." } },
   "standards": { "timezone": "Asia/Jakarta", "locale": "id-ID", "currency": "IDR" },
-  "sidebarOpen": true
+  "sidebarOpen": true,
+  "canRegister": true
 }
 ```
 
 - `auth.user` is the `#[Hidden]`-filtered model — `password`, `two_factor_secret`, `two_factor_recovery_codes`, and `remember_token` are **never** serialized to the client.
 - `standards` drives all client-side date/money formatting (see `resources/js/composables/useFormat.ts`). No secrets are shared.
+- `canRegister` mirrors `config('app.registration_enabled')` (Sprint 2 / S-2.2.3). It only hides the sign-up affordances; the server still enforces the toggle on the register routes (see [account.md](./account.md) §registration toggle).
 
 ## 5. Page-specific props
 
@@ -79,6 +81,7 @@ Provided by `App\Http\Middleware\HandleInertiaRequests::share()`:
 
 ## Related
 
+- [account.md](./account.md) — account management, registration toggle & ownership contract (Sprint 2)
 - [../architecture/Diagrams/App/Auth_Signin_Flow.md](../architecture/Diagrams/App/Auth_Signin_Flow.md) — sequence + route-protection diagrams
 - [../architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md) §11 — Application foundation
 - [../manual-qa-check/ui/S-1-foundation-auth.md](../manual-qa-check/ui/S-1-foundation-auth.md) — manual QA path
