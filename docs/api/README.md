@@ -14,6 +14,9 @@ api/{domain}/{domain}-{resource}.md   # subsystem-scoped (e.g. session/session-r
 | Contract | Covers |
 |----------|--------|
 | [auth.md](./auth.md) | Sign-in / sign-out / route protection (Fortify) + shared Inertia props (Sprint 1) |
+| [account.md](./account.md) | Profile / password / appearance (`appearance.edit`) + account deletion (Sprint 2) |
+
+> **Sprint 3 added no HTTP endpoints.** S-4.1.1 is a data-layer change only — the authoring-realm schema, models, and `StoryPolicy` exist, but **story/authoring CRUD endpoints arrive in Phase 2** (story & world management). Theming stays cookie-based on the static `appearance.edit` surface (see [account.md](./account.md)); the new shell theme toggle calls no backend route.
 
 ## Expected first contracts (when O1/O4 begin)
 

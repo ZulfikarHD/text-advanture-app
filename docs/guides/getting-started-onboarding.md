@@ -46,10 +46,15 @@ php artisan tinker --execute 'App\Models\User::factory()->create(["email" => "yo
 ```
 app/Http/Middleware/HandleInertiaRequests.php   # shared Inertia props (auth, standards)
 app/Providers/FortifyServiceProvider.php        # auth views, rate limiters
+app/Models/                                      # User + authoring realm (Story, Chapter, Character, …)
+app/Enums/                                       # backed enums mirrored by DB enums (ModelTier, OutlineStatus, …)
+app/Policies/OwnerPolicy.php, StoryPolicy.php   # ownership authorization
 config/app.php                                   # timezone (UTC) + display_timezone/locale/currency
 resources/js/pages/                             # Inertia page components (auth/, settings/, Dashboard, Welcome)
-resources/js/composables/useFormat.ts           # WIB date + Rupiah formatting
+resources/js/components/                         # EmptyState, ErrorState, ConfirmDialog, ui/* primitives
+resources/js/composables/                        # useFormat (WIB/Rupiah), useAppearance (theme), useConfirm
 routes/web.php, routes/settings.php             # web + settings routes
+database/migrations/, database/factories/        # authoring-realm schema + factories
 docs/                                            # ADRs, architecture, features, audits, runbooks (this folder's parent)
 ```
 
@@ -57,12 +62,12 @@ docs/                                            # ADRs, architecture, features,
 
 Auth surfaces are the only public pages; everything else is behind the `auth` middleware. After signing in you land on `/dashboard` (the **Workspace**) — or your intended destination if you were redirected from a protected page. The sidebar surfaces **Workspace** + **Settings** (Play arrives in Phase 5).
 
-- **Account isolation (Sprint 2).** There is **no role hierarchy** — "multi-user" means account *isolation* (each owner sees only their own content). Owned models adopt `App\Models\Concerns\BelongsToOwner` (applies `OwnerScope`, stamps `user_id` on create) and a policy extending `App\Policies\OwnerPolicy`. A foreign row is invisible (route-model binding → **404**); an out-of-scope row checked against the policy is **403**. Stories (Phase 2) are the first owned model; today the invariants are proven by `tests/Feature/Auth/OwnershipIsolationTest.php`.
+- **Account isolation (Sprint 2 foundation, Sprint 3 first model).** There is **no role hierarchy** — "multi-user" means account *isolation* (each owner sees only their own content). Owned models adopt `App\Models\Concerns\BelongsToOwner` (applies `OwnerScope`, stamps `user_id` on create) and a policy extending `App\Policies\OwnerPolicy`. A foreign row is invisible (route-model binding → **404**); an out-of-scope row checked against the policy is **403**. **`Story` is the first real owned model** (Sprint 3: `BelongsToOwner` + `StoryPolicy`); authoring children (chapters, scenes, characters, …) carry no `user_id` and are isolated transitively through their story. Invariants are proven by `tests/Feature/Auth/OwnershipIsolationTest.php` (abstract foundation) and `tests/Feature/Authoring/StoryOwnershipTest.php` (the real model).
 - **Registration toggle (Sprint 2).** `REGISTRATION_ENABLED` (`config('app.registration_enabled')`, default `true`) gates self-registration; when off, `/register` is 404 and the sign-up links hide via the shared `canRegister` prop. Sign-in is unaffected.
 - **No email verification.** It was removed in Sprint 2 (it was a no-op) — no `verified` middleware and **no mailer needed to sign in**.
 
 See: [auth sign-in flow diagram](../architecture/Diagrams/App/Auth_Signin_Flow.md) · [auth API contract](../api/auth.md) · [account & ownership contract](../api/account.md) · [ownership isolation diagram](../architecture/Diagrams/App/Account_Ownership_Isolation.md).
 
-## 6. What exists today (Phase 1, Sprints 1–2)
+## 6. What exists today (Phase 1, Sprints 1–3)
 
-The app boots, authenticates, isolates accounts, and navigates the **Workspace + Settings** shell — but has **no stories yet**. Sprint 2 added the multi-user account-isolation foundation, the registration toggle, and the app shell; the workspace home is an empty state pointing toward story creation. The narrative engine (characters, beats, narrator loop, delta engine, review gate) is designed in the [ADRs](../adr/README.md) and built across Phases 2–7. To understand the destination, read [ARCHITECTURE.md](../architecture/ARCHITECTURE.md).
+The app boots, authenticates, isolates accounts, themes (light/dark/system, with a quick toggle in the user menu), and navigates the **Workspace + Settings** shell — but has **no story-authoring UI yet**. Sprint 2 added the account-isolation foundation, the registration toggle, and the shell; Sprint 3 added the theming/accessibility polish (skip-link, tokenized `Welcome`), reusable four-state components (`EmptyState`/`ErrorState`) plus a promise-based `useConfirm()` for destructive actions, and stood up the **authoring-realm schema** — 11 tables with enums, models, and factories, with `stories` as the first owner-scoped model. The workspace home is still an empty state pointing toward story creation (authoring CRUD is Phase 2). The narrative engine (narrator loop, delta engine, review gate) is designed in the [ADRs](../adr/README.md) and built across Phases 2–7. To understand the destination, read [ARCHITECTURE.md](../architecture/ARCHITECTURE.md).

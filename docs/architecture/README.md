@@ -9,7 +9,7 @@ System design, data flow, persistence schema, and diagrams for the Directed Inte
 | File | Purpose | Status |
 |------|---------|--------|
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | The system: three agents + isolation, session state machine, turn loop, context-memory layers, the behavior equation | Living snapshot |
-| [DATABASE.md](./DATABASE.md) | Proposed two-realm persistence schema (authoring vs save) | **DRAFT** — becomes an ADR when O4 lands |
+| [DATABASE.md](./DATABASE.md) | Two-realm persistence schema (authoring vs save); living detail of [ADR 0012](../adr/0012-persistence-schema.md) | Living — foundation (Sprint 1) + authoring realm (Sprint 3) built; save realm pending |
 | [Diagrams/](./Diagrams/README.md) | Mermaid diagrams (agents, engine, data) | Living |
 
 ## See also

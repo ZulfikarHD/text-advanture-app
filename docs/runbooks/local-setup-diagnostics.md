@@ -82,6 +82,24 @@ php artisan tinker --execute 'var_dump(config("app.registration_enabled"));'
 
 - **No mailer is required to sign in.** Email verification was removed in Sprint 2 (PH-10), so the default `MAIL_MAILER=log` is fine for local auth work; mail config only matters once a feature actually sends mail (e.g. password-reset links).
 
+## 9. Authoring-realm schema (Sprint 3)
+
+Sprint 3 (S-4.1.1) migrated the 11 authoring tables (`stories`, `chapters`, `characters`, `scenes`, `beats`, `character_cards`, `reveal_ledger`, `lorebook_entries`, `registers`, `sensitivities`, `chapter_outlines`). They are part of the normal migration set, so the clean-clone `php artisan migrate` (§1) creates them — no extra step.
+
+- **Apply just the new tables (incremental):** `php artisan migrate` — runs any not-yet-run authoring migrations.
+- **Verify reversibility** (the DoD is "both realms migrate and roll back cleanly"):
+
+```bash
+php artisan migrate:fresh   # drops everything and re-runs all migrations
+php artisan migrate:rollback # rolls back the last batch; children drop before parents (no FK error)
+php artisan migrate          # re-apply
+```
+
+  This is also asserted automatically by `tests/Feature/Database/AuthoringRealmMigrationTest.php`.
+
+- **Deferred FKs (PH-16).** `character_cards.review_item_id`, `chapter_outlines.review_item_id`, and `registers.archetype_id` are nullable columns **without** an FK constraint yet — the referenced tables (`review_items`, `register_archetypes`) arrive in Sprint 4. Inserting any value (or null) is allowed; referential integrity is added with those tables.
+- **`migrate:fresh` is blocked in production** (`DB::prohibitDestructiveCommands` in `AppServiceProvider`) — it only runs in local/testing.
+
 ## Related
 
 - [../architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md) §11 — Application foundation

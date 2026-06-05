@@ -6,7 +6,7 @@
 >
 > **Conventions.** Every table has `id` `BIGINT UNSIGNED` PK (auto-increment) unless noted. FKs are `<name>_id` `BIGINT UNSIGNED`. `created_at` / `updated_at` are `TIMESTAMP` (Laravel `timestamps()`). **Append-only** tables carry `created_at` only and are never `UPDATE`/`DELETE`d. Enums are stored as DB `ENUM`/`VARCHAR` and mirrored by a PHP enum. Money (none yet) would be integer Rupiah; times are UTC in DB, rendered Asia/Jakarta.
 
-> **Build status (Sprint 1, 2026-06-05).** The engine is now realized in config: default connection `mariadb` (`config/database.php`), dev DB `novel_engine`, test DB `novel_engine_test`; migrations are reversible (up/down verified). Only **foundation** tables are migrated so far — `users`, `password_reset_tokens`, `sessions`, two-factor columns, `passkeys`, `cache`, `jobs`. The two realms below (authoring/save) and the global libraries land in **Sprint 3–4** (E4).
+> **Build status (Sprint 3, 2026-06-05).** The engine is realized in config: default connection `mariadb` (`config/database.php`), dev DB `novel_engine`, test DB `novel_engine_test`; migrations are reversible (up/down verified). **Foundation** tables migrated in Sprint 1 — `users`, `password_reset_tokens`, `sessions`, two-factor columns, `passkeys`, `cache`, `jobs`. **Authoring realm** migrated in Sprint 3 (S-4.1.1): `stories` (now **owner-scoped** — carries `user_id`, deviating from §3.1 below), `chapters`, `characters`, `scenes`, `beats`, `character_cards`, `reveal_ledger`, `lorebook_entries`, `registers`, `sensitivities`, `chapter_outlines` — each with its PHP enum + Eloquent model + factory. **Deferred FK constraints** (columns present, nullable, no constraint yet): `character_cards.review_item_id`, `chapter_outlines.review_item_id` (→ save-realm `review_items`), `registers.archetype_id` (→ global `register_archetypes`) — see PH-16. The **save realm** and **global libraries** land in **Sprint 4** (E4.2 / E4.1.2).
 
 ---
 
@@ -77,6 +77,7 @@ Full ERD: [Diagrams/Data/Persistence_Erd.md](./Diagrams/Data/Persistence_Erd.md)
 
 | Column | Type | Notes |
 |--------|------|-------|
+| `user_id` | FK → `users` | **owner** (ADR 0012); adopts `BelongsToOwner` + `StoryPolicy`. **Built in Sprint 3** (S-4.1.1) ahead of the original Phase-2 plan — children inherit isolation transitively (see PH-16) |
 | `slug` | `VARCHAR(120)` | unique |
 | `title` | `VARCHAR(200)` | |
 | `description` | `TEXT NULL` | |

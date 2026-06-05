@@ -23,7 +23,7 @@ The whole design rests on **context isolation** between three agents, plus three
 | Beat document + `BEAT_DONE` (**O2**) | **Designed** → [ADR 0015](./adr/0015-beat-document-and-boundaries.md) |
 | Internal-state schema (**O3**) | **Designed** → [ADR 0014](./adr/0014-internal-state-schema.md) |
 | Authoring & compile pipeline | **Designed** → [ADR 0013](./adr/0013-authoring-and-compile-pipeline.md) |
-| Tech stack + persistence | **Designed** → [ADR 0011](./adr/0011-tech-stack.md) / [0012](./adr/0012-persistence-schema.md); schema in [architecture/DATABASE.md](./architecture/DATABASE.md) |
+| Tech stack + persistence | **Designed + foundation/authoring built** → [ADR 0011](./adr/0011-tech-stack.md) / [0012](./adr/0012-persistence-schema.md); schema in [architecture/DATABASE.md](./architecture/DATABASE.md). Foundation tables (Sprint 1) + the **authoring realm** with owner-scoped `stories` (Sprint 3) are migrated |
 | LLM client (OpenRouter) | **Designed** → [ADR 0017](./adr/0017-llm-orchestration-openrouter.md) (model-role tiering, `model_profiles` / `llm_calls`) |
 | Character creation + archetypes (**O5**) | **Designed** → [ADR 0018](./adr/0018-character-creation-pipeline.md) |
 | Outline compilation (**O6**) | **Designed** → [ADR 0019](./adr/0019-outline-compilation.md) |
