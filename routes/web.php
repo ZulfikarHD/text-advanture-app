@@ -1,12 +1,21 @@
 <?php
 
 use App\Http\Controllers\Reviews\ReviewController;
+use App\Http\Controllers\Stories\StoryController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
 
 Route::middleware(['auth'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    // Workspace dashboard — story list (S-1.1.2).
+    Route::get('dashboard', [StoryController::class, 'index'])->name('dashboard');
+
+    // Story CRUD (S-1.1.1 / S-1.1.2). Bind by slug under the owner scope so a
+    // foreign story resolves to 404 without leaking existence.
+    Route::post('stories', [StoryController::class, 'store'])->name('stories.store');
+    Route::get('stories/{story:slug}/edit', [StoryController::class, 'edit'])->name('stories.edit');
+    Route::put('stories/{story:slug}', [StoryController::class, 'update'])->name('stories.update');
+    Route::delete('stories/{story:slug}', [StoryController::class, 'destroy'])->name('stories.destroy');
 
     // Shared review gate (S-6.2). Item routes bind under the owner scope, so a
     // foreign proposal resolves to 404; writes are throttled.

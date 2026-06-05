@@ -19,7 +19,7 @@ flowchart LR
         Content["AppContent (page slot + breadcrumbs)"]
     end
 
-    Workspace -->|"active when path is /dashboard*"| Content
+    Workspace -->|"active when path is /dashboard* or /stories/*"| Content
     Settings -->|"active across /settings/* area"| Content
 ```
 
@@ -34,24 +34,29 @@ flowchart TD
     Fallback --> Indicate
 ```
 
-## Workspace empty state (no stories yet)
+## Workspace states (Sprint 7)
 
 ```mermaid
 stateDiagram-v2
     [*] --> Empty
-    Empty: Workspace empty state
     Empty: "No stories yet" + guidance
-    Empty: primary action = New story (disabled, "coming soon")
-    Empty --> Phase2: story authoring ships (Phase 2)
-    Phase2: Story list + create flow
+    Empty: primary action = New story button → CreateStoryDialog
+    Empty --> Populated: author creates first story
+    Populated: Card grid (1/2/3 cols responsive)
+    Populated: "New story" button in header
+    Populated --> Edit: click edit icon on card
+    Edit: /stories/slug/edit (dedicated page)
+    Edit --> Populated: save or navigate back
+    Populated --> Populated: delete (useConfirm → redirect)
 ```
 
 ## Notes
 
-- Only **Workspace** + **Settings** are surfaced; **Play** is intentionally deferred to Phase 5 (no dead nav items).
+- Only **Workspace** + **Review** + **Settings** are surfaced; **Play** is intentionally deferred to Phase 5 (no dead nav items).
 - Settings links to the profile landing (`profile.edit`) but is highlighted across the entire `/settings/*` area via a prefix match, so Profile / Security / Appearance all show the Settings tab active.
-- The empty state is the required **empty** UI state: it teaches the next step rather than showing a blank screen, and the create affordance is a clearly-disabled control — every surface stays reachable by navigation, with no link to an unbuilt page.
-- The starter-kit external "Repository / Documentation" footer links were removed as irrelevant to the product shell.
+- Workspace is active for both `/dashboard` and `/stories/*` paths, keeping the edit page contextually linked.
+- The empty state is the required **empty** UI state: it teaches the next step with a create CTA. The populated state shows a responsive card grid with edit (pencil → dedicated page) and delete (trash → useConfirm dialog, never native `confirm()`).
+- Story creation is inline via Dialog (desktop); edit is a dedicated page (room for per-story tabs in S-1.2.x).
 
 ## Related
 

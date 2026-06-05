@@ -15,10 +15,10 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
+import type { NavItem } from '@/types';
 import { dashboard } from '@/routes';
 import { edit as editProfile } from '@/routes/profile';
 import { index as reviewsIndex } from '@/routes/reviews';
-import type { NavItem } from '@/types';
 
 const { isCurrentOrParentUrl } = useCurrentUrl();
 
@@ -30,7 +30,9 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: 'Workspace',
         href: dashboard(),
         icon: BookOpen,
-        isActive: isCurrentOrParentUrl(dashboard()),
+        isActive:
+            isCurrentOrParentUrl(dashboard()) ||
+            isCurrentOrParentUrl('/stories'),
     },
     {
         title: 'Review',

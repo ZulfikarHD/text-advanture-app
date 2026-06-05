@@ -276,3 +276,15 @@ Sprint 5 builds the LLM client on top of the Sprint-4 schema (E5.2 / E5.3 / S-5.
 - **Connection test (S-5.1.2).** `App\Services\Llm\ConnectionTester` probes OpenRouter `/models` with the owner's key and returns reachable models or the provider's failure reason. Surfaced on the Provider page through Inertia v3 `useHttp` (inline result, no native alert). It is **key validation, not a role call** — it never writes `llm_calls`. Throttled (6/min).
 
 Diagram: [Diagrams/Engine/Llm_Client_Flow.md](./Diagrams/Engine/Llm_Client_Flow.md). Endpoint/props contracts: [../api/provider.md](../api/provider.md) (connection test) + [../api/model-roles.md](../api/model-roles.md) + [../api/usage.md](../api/usage.md). Setup & config: [../runbooks/local-setup-diagnostics.md](../runbooks/local-setup-diagnostics.md) §11.
+
+### Sprint 7 — Story CRUD & workspace list (Phase 2 kickoff)
+
+Sprint 7 is the first Phase 2 sprint: the workspace becomes a live authoring surface. Stories are the first owned model with an **HTTP + UI surface** — everything before this was schema/data-layer only.
+
+- **Per-owner slug uniqueness.** The global `stories_slug_unique` constraint is relaxed to a composite `(user_id, slug)` unique index. Two different owners can now hold the same slug; a single owner still cannot. Slug is derived from title via `Str::slug()` when omitted, auto-suffixed (`-2`, `-3`, …) on collision.
+- **Story CRUD (S-1.1.1 / S-1.1.2).** `StoryController` (index/store/edit/update/destroy) with route-model binding by `{story:slug}` under the owner scope — foreign stories resolve to 404. Business logic is in `StoryService` (atomic via `DB::transaction`; slug derivation + uniqueness centralised). Validation via `StoreStoryRequest` / `UpdateStoryRequest` with per-owner slug uniqueness rules.
+- **Workspace dashboard (S-1.1.2).** `/dashboard` now renders via `StoryController@index`, passing the owner's stories as an Inertia prop. Empty state teaches the next step; populated state is a card grid. Story creation opens a **Dialog** (desktop) from the dashboard — no page navigation for the fast create path. Edit is a dedicated `/stories/{slug}/edit` page (room for per-story settings/overview tabs in S-1.2.x).
+- **Delete with confirmation (S-1.1.2).** `useConfirm()` dialog, destructive styling, toast on success. Cascade to authoring children handled by FK `cascadeOnDelete`. Never `window.confirm()`.
+- **Sidebar nav.** Workspace `isActive` now also matches `/stories/*` paths.
+
+Routes: `stories.store` / `stories.edit` / `stories.update` / `stories.destroy`. Endpoint/props contracts: [../api/stories.md](../api/stories.md). Diagram: [Diagrams/Authoring/Story_Crud_Flow.md](./Diagrams/Authoring/Story_Crud_Flow.md).

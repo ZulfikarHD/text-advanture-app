@@ -155,6 +155,8 @@ RuntimeException: Refusing to run tests against database [novel_engine]: it is n
 
   Fix by pointing `DB_DATABASE` at `novel_engine_test` (already pinned in `phpunit.xml`).
 
+- **Story slug collision (Sprint 7).** The `stories` table uses a **per-owner unique** slug (`unique (user_id, slug)`). If you see a `UNIQUE constraint` error when creating a story, the slug already exists for that owner. When slug is omitted the service derives one from the title and auto-suffixes (`-2`, `-3`, …) on collision. If you supply an explicit slug that collides, the form request rejects it with a validation error. Two different owners *can* hold the same slug — the constraint is not global.
+
 ## Related
 
 - [../architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md) §11 — Application foundation

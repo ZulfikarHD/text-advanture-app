@@ -9,6 +9,7 @@ Mermaid diagrams, grouped by subject. Filenames use `Title_Case`.
 | `Agents/` | Context isolation between Narrator / NPC / Player; NPC context assembly pipeline |
 | `Engine/` | Session state machine, narrator turn loop, recorder pipeline, LLM client flow |
 | `Data/` | Persistence ERD (two-realm: authoring vs save) |
+| `Authoring/` | Authoring-realm flows (story CRUD, chapter management, etc.) |
 | `App/` | Application shell & auth (sign-in / sign-out / route protection) |
 
 ## Index
@@ -23,5 +24,6 @@ Mermaid diagrams, grouped by subject. Filenames use `Title_Case`.
 | Auth sign-in & route protection | [App/Auth_Signin_Flow.md](./App/Auth_Signin_Flow.md) |
 | Account ownership & isolation | [App/Account_Ownership_Isolation.md](./App/Account_Ownership_Isolation.md) |
 | App shell & navigation | [App/App_Shell_Navigation.md](./App/App_Shell_Navigation.md) |
+| Story CRUD flow | [Authoring/Story_Crud_Flow.md](./Authoring/Story_Crud_Flow.md) |
 
 > Keep diagrams free of explicit colors/styling so they render correctly in light and dark mode.

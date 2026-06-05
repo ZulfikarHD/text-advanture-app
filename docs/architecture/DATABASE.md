@@ -82,7 +82,7 @@ Full ERD: [Diagrams/Data/Persistence_Erd.md](./Diagrams/Data/Persistence_Erd.md)
 | Column | Type | Notes |
 |--------|------|-------|
 | `user_id` | FK → `users` | **owner** (ADR 0012); adopts `BelongsToOwner` + `StoryPolicy`. **Built in Sprint 3** (S-4.1.1) ahead of the original Phase-2 plan — children inherit isolation transitively (see PH-16) |
-| `slug` | `VARCHAR(120)` | unique |
+| `slug` | `VARCHAR(120)` | **unique per owner** (`unique (user_id, slug)` — Sprint 7, relaxed from global unique). Derived from `title` via `Str::slug()` when omitted; auto-suffixed on per-owner collision |
 | `title` | `VARCHAR(200)` | |
 | `description` | `TEXT NULL` | |
 | `settings` | `JSON NULL` | per-story config (default POV, model tiers, tunable rubric overrides) |
