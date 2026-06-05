@@ -1,0 +1,41 @@
+Make a comprehensive plan for implementing Sprint 5 From @scrum/phase-1-foundation-auth-shell.md Read the technical note first.
+
+## Phase 1 — Codebase understanding (via subagent, attach relevant skills)
+1. Gather understanding of Routes, Models, Services, Controllers, Middleware.
+2. Follow convention at /code-documentation.
+3. Read existing migrations and models to understand data structures.
+4. Read existing routing at @routes/ to understand route patterns.
+5. Cross-reference services, controllers, middleware, and pages to prevent redundancy, broken code, and race conditions.
+6. Check @package.json for available packages (e.g. @lucide/vue, chartjs).
+
+## Phase 2 — Implementation planning
+7. Read relevant skill(s) before writing any code.
+8. Search docs for multi-prop deferred syntax.
+9. Apply UX judgment on when defer is appropriate.
+10. If this is a backend or feature task, include a test at the end of the task list.
+
+## Phase 3 — Quality & validation
+11. Run `pnpm lint` then `pnpm build`.
+
+## Phase 4 — Documentation checklist (all docs under @docs)
+A. Check @docs/guides/PLACEHOLDER_TRACKING.md — create or update placeholders.
+B. Create or update Architecture & System Design docs, including @docs/architecture/Diagrams.
+C. Update docstrings to follow /code-documentation convention and clean-code principles.
+D. Create or update Runbooks & Operational docs.
+E. Create or update Onboarding docs.
+F. Create or update API docs.
+
+## Phase 5 — Manual QA
+12. Generate a manual QA document in @docs/manual-qa-check/ with step-by-step user actions.
+    CRITICAL: If any step requires the user to type a URL directly without a navigation path, that is a UX Critical Violation — fix the design first.
+
+## Final
+13. Run /commit-push-standard.
+14. At the end of the response, list all Skills and Rules used.
+
+---
+STANDING RULES (apply to every phase):
+- Never use native browser alerts.
+- Every UI page must be reachable via a button or navigation action — never require direct URL input.
+- If a feature already exists, verify it is 100% gap-free. Check that frontend design follows app standards and the Law of UX.
+- Docs: never skip @docs/architecture/Diagrams — it almost always needs updating.
