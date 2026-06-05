@@ -23,8 +23,8 @@ The whole design rests on **context isolation** between three agents, plus three
 | Beat document + `BEAT_DONE` (**O2**) | **Designed** → [ADR 0015](./adr/0015-beat-document-and-boundaries.md) |
 | Internal-state schema (**O3**) | **Designed** → [ADR 0014](./adr/0014-internal-state-schema.md) |
 | Authoring & compile pipeline | **Designed** → [ADR 0013](./adr/0013-authoring-and-compile-pipeline.md) |
-| Tech stack + persistence | **Designed + foundation/authoring built** → [ADR 0011](./adr/0011-tech-stack.md) / [0012](./adr/0012-persistence-schema.md); schema in [architecture/DATABASE.md](./architecture/DATABASE.md). Foundation tables (Sprint 1) + the **authoring realm** with owner-scoped `stories` (Sprint 3) are migrated |
-| LLM client (OpenRouter) | **Designed** → [ADR 0017](./adr/0017-llm-orchestration-openrouter.md) (model-role tiering, `model_profiles` / `llm_calls`) |
+| Tech stack + persistence | **Designed + both realms built** → [ADR 0011](./adr/0011-tech-stack.md) / [0012](./adr/0012-persistence-schema.md); schema in [architecture/DATABASE.md](./architecture/DATABASE.md). Foundation (Sprint 1) + the **authoring realm** with owner-scoped `stories` (Sprint 3) + the **save realm**, **global libraries**, and append-only audit invariants (Sprint 4, save root `play_sessions`) are migrated |
+| LLM client (OpenRouter) | **Designed; key store built** → [ADR 0017](./adr/0017-llm-orchestration-openrouter.md) (model-role tiering, `model_profiles` / `llm_calls`). Per-owner **encrypted** key storage + Settings → Provider UI shipped Sprint 4 (`provider_credentials`); the `LlmClient` itself is Sprint 5 |
 | Character creation + archetypes (**O5**) | **Designed** → [ADR 0018](./adr/0018-character-creation-pipeline.md) |
 | Outline compilation (**O6**) | **Designed** → [ADR 0019](./adr/0019-outline-compilation.md) |
 | Prompt block registry (**O7**) | **Designed** → [ADR 0020](./adr/0020-prompt-block-registry.md) |

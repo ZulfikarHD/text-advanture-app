@@ -14,7 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Unique per `(character_id, chapter_id)`: a character has exactly one card per
  * chapter, recompiled as chapters advance. `review_item_id` links to the
- * save-realm `card_compile` review record (FK added in Sprint 4).
+ * save-realm `card_compile` {@see ReviewItem} (FK enforced as of Sprint 4,
+ * PH-16 resolved).
  *
  * @property int $id
  * @property int $character_id
@@ -59,6 +60,16 @@ class CharacterCard extends Model
     public function chapter(): BelongsTo
     {
         return $this->belongsTo(Chapter::class);
+    }
+
+    /**
+     * The `card_compile` review record this card was committed from, if any.
+     *
+     * @return BelongsTo<ReviewItem, $this>
+     */
+    public function reviewItem(): BelongsTo
+    {
+        return $this->belongsTo(ReviewItem::class);
     }
 
     /**

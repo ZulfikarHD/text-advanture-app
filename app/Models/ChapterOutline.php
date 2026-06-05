@@ -15,7 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * `raw_text` is never injected at runtime. `chapter_id` is set once the outline
  * compiles into a chapter (an outline may span chapters). `review_item_id`
- * links to the save-realm `outline_compile` review record (FK added Sprint 4).
+ * links to the save-realm `outline_compile` {@see ReviewItem} (FK enforced as
+ * of Sprint 4, PH-16 resolved).
  *
  * @property int $id
  * @property int $story_id
@@ -52,6 +53,16 @@ class ChapterOutline extends Model
     public function chapter(): BelongsTo
     {
         return $this->belongsTo(Chapter::class);
+    }
+
+    /**
+     * The `outline_compile` review record this outline was committed from.
+     *
+     * @return BelongsTo<ReviewItem, $this>
+     */
+    public function reviewItem(): BelongsTo
+    {
+        return $this->belongsTo(ReviewItem::class);
     }
 
     /**

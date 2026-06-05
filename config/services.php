@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    // OpenRouter LLM gateway (ADR 0017). The base URL is app-wide config; the
+    // API key is stored per-owner (encrypted) in `provider_credentials`, not in
+    // the environment, so each account uses its own key (S-5.1.1, PH-18).
+    'openrouter' => [
+        'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+    ],
+
 ];

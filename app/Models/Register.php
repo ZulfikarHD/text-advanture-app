@@ -11,9 +11,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Register - a character's conversational register (ADR 0006).
  *
- * Either instantiated from a shared `register_archetypes` row or bespoke
- * (`archetype_id` null). Unique per `(character_id, slug)`. The `archetype_id`
- * FK is added in Sprint 4 once the global library exists.
+ * Either instantiated from a shared {@see RegisterArchetype} (`archetype_id`
+ * set) or bespoke (`archetype_id` null). Unique per `(character_id, slug)`. The
+ * `archetype_id` FK is enforced as of Sprint 4 (PH-16 resolved).
  *
  * @property int $id
  * @property int $character_id
@@ -44,6 +44,16 @@ class Register extends Model
     public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);
+    }
+
+    /**
+     * The shared archetype this register instantiates, or null if bespoke.
+     *
+     * @return BelongsTo<RegisterArchetype, $this>
+     */
+    public function archetype(): BelongsTo
+    {
+        return $this->belongsTo(RegisterArchetype::class, 'archetype_id');
     }
 
     /**

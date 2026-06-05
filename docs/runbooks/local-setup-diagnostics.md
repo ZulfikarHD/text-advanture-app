@@ -97,8 +97,23 @@ php artisan migrate          # re-apply
 
   This is also asserted automatically by `tests/Feature/Database/AuthoringRealmMigrationTest.php`.
 
-- **Deferred FKs (PH-16).** `character_cards.review_item_id`, `chapter_outlines.review_item_id`, and `registers.archetype_id` are nullable columns **without** an FK constraint yet — the referenced tables (`review_items`, `register_archetypes`) arrive in Sprint 4. Inserting any value (or null) is allowed; referential integrity is added with those tables.
+- **Deferred FKs (PH-16) — now resolved in Sprint 4 (see §10).** Through Sprint 3 these were nullable columns without an FK; Sprint 4 added the constraints once `review_items` / `register_archetypes` existed.
 - **`migrate:fresh` is blocked in production** (`DB::prohibitDestructiveCommands` in `AppServiceProvider`) — it only runs in local/testing.
+
+## 10. Save realm & provider key (Sprint 4)
+
+Sprint 4 (S-4.1.2 / S-4.2.x / S-5.1.x) migrated the 5 global libraries (`register_archetypes`, `universal_priors`, `character_archetypes`, `prompt_blocks`, `model_profiles`), the 16 save-realm tables, the PH-16 ALTER, and `provider_credentials`. All are part of the normal migration set — the clean-clone `php artisan migrate` (§1) creates them, no extra step.
+
+- **The save "session" table is `play_sessions`** (PH-17). The framework reserves `sessions` for the database session driver, so the save root is `play_sessions` while child FK columns keep the spec name `session_id`. If `config('session.driver')` is `database`, expect both `sessions` (framework) and `play_sessions` (save realm) — that is intentional, not a duplicate.
+- **PH-16 FKs are now enforced.** `registers.archetype_id → register_archetypes`, `character_cards.review_item_id → review_items`, `chapter_outlines.review_item_id → review_items`. Inserting a non-existent id now fails. Asserted by `tests/Feature/Database/DeferredForeignKeysTest.php`.
+- **Full-schema reversibility** (both realms) is asserted by `tests/Feature/Database/SaveRealmMigrationTest.php`; structural isolation + append-only invariants by `SaveRealmSchemaTest` / `AppendOnlyInvariantTest`.
+- **Provider key (no seeder, no `.env` key).** The LLM key is **not** an env var — each account stores its own at **Settings → Provider** (`provider_credentials`, encrypted at rest; PH-18 divergence from ADR 0017). Only the gateway URL is config:
+
+```bash
+php artisan config:show services.openrouter   # base_url default; .env: OPENROUTER_BASE_URL
+```
+
+  No key is needed to boot or run tests; the live `LlmClient` / connection test is Sprint 5.
 
 ## Related
 
