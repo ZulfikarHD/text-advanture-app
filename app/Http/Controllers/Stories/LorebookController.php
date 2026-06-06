@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Stories;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Stories\PreviewLorebookRequest;
 use App\Http\Requests\Stories\StoreLorebookEntryRequest;
 use App\Http\Requests\Stories\UpdateLorebookEntryRequest;
 use App\Models\Chapter;
 use App\Models\LorebookEntry;
 use App\Models\Story;
+use App\Services\LorebookKeywordMatcher;
 use App\Services\LorebookService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -27,7 +30,10 @@ use Inertia\Response;
  */
 class LorebookController extends Controller
 {
-    public function __construct(private readonly LorebookService $lorebook) {}
+    public function __construct(
+        private readonly LorebookService $lorebook,
+        private readonly LorebookKeywordMatcher $matcher,
+    ) {}
 
     /**
      * Render the story's lorebook with its entries and chapter options.
@@ -104,6 +110,41 @@ class LorebookController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Lorebook entry deleted.')]);
 
         return to_route('stories.lorebook.index', $story);
+    }
+
+    /**
+     * Preview which entries a sample text would trigger (S-3.2.1, ADR 0013 §5).
+     *
+     * Answers a standalone client request (Inertia `useHttp`) with the entries
+     * the sample text matches, split into `triggered` and (reveal-gate)
+     * `withheld`. Read-only and side-effect-free; it uses the same matching as
+     * runtime injection so the author can tune keywords before play.
+     *
+     * @return JsonResponse The `{ triggered, withheld }` match result (no secrets).
+     */
+    public function preview(PreviewLorebookRequest $request, Story $story): JsonResponse
+    {
+        Gate::authorize('view', $story);
+
+        $validated = $request->validated();
+
+        $previewChapterNumber = null;
+
+        if (! empty($validated['chapter_id'])) {
+            $previewChapterNumber = $story->chapters()
+                ->whereKey($validated['chapter_id'])
+                ->value('number');
+        }
+
+        $entries = $story->lorebookEntries()
+            ->with('minRevealChapter:id,number,title')
+            ->orderBy('title')
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json(
+            $this->matcher->preview($entries, $validated['sample_text'], $previewChapterNumber),
+        );
     }
 
     /**

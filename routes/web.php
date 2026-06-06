@@ -36,6 +36,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('stories/{story:slug}/lorebook', [LorebookController::class, 'store'])
         ->middleware('throttle:30,1')
         ->name('stories.lorebook.store');
+    // Keyword match preview (S-3.2.1): a read-only standalone request (useHttp)
+    // that mirrors runtime injection so the author can tune keywords before play.
+    Route::post('stories/{story:slug}/lorebook/preview', [LorebookController::class, 'preview'])
+        ->middleware('throttle:30,1')
+        ->name('stories.lorebook.preview');
     Route::put('stories/{story:slug}/lorebook/{lorebookEntry}', [LorebookController::class, 'update'])
         ->scopeBindings()
         ->middleware('throttle:30,1')

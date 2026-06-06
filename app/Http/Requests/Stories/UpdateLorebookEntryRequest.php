@@ -2,20 +2,26 @@
 
 namespace App\Http\Requests\Stories;
 
+use App\Http\Requests\Stories\Concerns\GuardsWorldFactDiscipline;
 use App\Models\Story;
+use App\Services\InteriorityHeuristic;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
- * Validates a lorebook entry update (S-3.1.1, ADR 0013 §5).
+ * Validates a lorebook entry update (S-3.1.1 / S-3.1.2, ADR 0013 §5).
  *
  * Same shape as creation: at least one keyword and content are required, and an
  * optional `min_reveal_chapter` must belong to this story. The entry itself is
  * resolved (and scoped to the story) by route-model binding before this runs.
+ * The same world-fact discipline soft gate as creation runs in {@see after()}.
  */
 class UpdateLorebookEntryRequest extends FormRequest
 {
+    use GuardsWorldFactDiscipline;
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -34,6 +40,19 @@ class UpdateLorebookEntryRequest extends FormRequest
                 'integer',
                 Rule::exists('chapters', 'id')->where('story_id', $story->getKey()),
             ],
+            'acknowledge_interiority' => ['nullable', 'boolean'],
+        ];
+    }
+
+    /**
+     * Soft-gate the world-fact discipline after the field rules pass.
+     *
+     * @return list<callable>
+     */
+    public function after(InteriorityHeuristic $heuristic): array
+    {
+        return [
+            fn (Validator $validator) => $this->guardWorldFactDiscipline($validator, $heuristic),
         ];
     }
 

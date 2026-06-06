@@ -168,7 +168,8 @@ const revealChapterValue = computed<string>({
         <InputError :message="props.errors.min_reveal_chapter_id" />
     </div>
 
-    <!-- World-fact discipline reminder (full validation is S-3.1.2) -->
+    <!-- World-fact discipline reminder (S-3.1.2): proactive guidance; the save -->
+    <!-- itself is soft-gated server-side if the content reads as interiority. -->
     <div
         class="flex items-start gap-2 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground"
     >

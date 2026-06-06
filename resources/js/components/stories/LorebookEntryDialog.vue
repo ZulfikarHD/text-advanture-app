@@ -20,12 +20,14 @@ export type LorebookEntry = {
  * dynamic array bound to the tag input. Submits to LorebookController via
  * Wayfinder and closes on success.
  */
-import { useForm } from '@inertiajs/vue3';
-import { watch } from 'vue';
+import { Link, useForm } from '@inertiajs/vue3';
+import { TriangleAlert } from '@lucide/vue';
+import { computed, watch } from 'vue';
 import LorebookController from '@/actions/App/Http/Controllers/Stories/LorebookController';
 import AlertError from '@/components/AlertError.vue';
 import LorebookEntryFormFields from '@/components/stories/LorebookEntryFormFields.vue';
 import type {ChapterOption, LorebookFormData} from '@/components/stories/LorebookEntryFormFields.vue';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -35,6 +37,10 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { index as charactersIndex } from '@/routes/stories/characters';
+
+/** The form data plus the dialog-only world-fact acknowledgement (S-3.1.2). */
+type LorebookDialogForm = LorebookFormData & { acknowledge_interiority: boolean };
 
 const props = defineProps<{
     /** Story slug used to build the Wayfinder URLs. */
@@ -47,15 +53,20 @@ const props = defineProps<{
 
 const open = defineModel<boolean>('open', { default: false });
 
-const form = useForm<LorebookFormData>({
+const form = useForm<LorebookDialogForm>({
     title: '',
     keywords: [],
     content: '',
     min_reveal_chapter_id: null,
+    acknowledge_interiority: false,
 });
 
 /**
  * Reset the form to the active entry (edit) or to blanks (create).
+ *
+ * `acknowledge_interiority` always resets to false so each fresh attempt
+ * re-runs the world-fact discipline check rather than inheriting a stale
+ * acknowledgement.
  */
 function syncForm(): void {
     form.defaults({
@@ -63,9 +74,30 @@ function syncForm(): void {
         keywords: props.entry ? [...props.entry.keywords] : [],
         content: props.entry?.content ?? '',
         min_reveal_chapter_id: props.entry?.minRevealChapter?.id ?? null,
+        acknowledge_interiority: false,
     });
     form.reset();
     form.clearErrors();
+}
+
+// The interiority signal is a synthetic error key (not a form field), so read it
+// loosely. Everything else flows through the generic error summary.
+const interiorityError = computed<string | undefined>(
+    () => (form.errors as Record<string, string | undefined>).interiority,
+);
+
+const otherErrors = computed<string[]>(() =>
+    Object.entries(form.errors)
+        .filter(([key]) => key !== 'interiority')
+        .map(([, message]) => message as string),
+);
+
+/**
+ * Override the world-fact discipline gate and save the entry as a world fact.
+ */
+function saveAnyway(): void {
+    form.acknowledge_interiority = true;
+    submit();
 }
 
 // Re-seed the form whenever the dialog opens so a stale draft never leaks
@@ -115,10 +147,40 @@ function submit(): void {
 
             <form class="space-y-4" @submit.prevent="submit">
                 <AlertError
-                    v-if="form.hasErrors"
-                    :errors="Object.values(form.errors)"
+                    v-if="otherErrors.length > 0"
+                    :errors="otherErrors"
                     title="We couldn't save this entry."
                 />
+
+                <!-- World-fact discipline (S-3.1.2): interiority detected. Soft -->
+                <!-- gated — the author may override or move it to a character card. -->
+                <Alert
+                    v-if="interiorityError"
+                    variant="warning"
+                    data-test="lorebook-interiority-warning"
+                >
+                    <TriangleAlert class="size-4" />
+                    <AlertTitle>This looks like character interiority</AlertTitle>
+                    <AlertDescription class="space-y-3">
+                        <p>{{ interiorityError }}</p>
+                        <div class="flex flex-col gap-2 sm:flex-row">
+                            <Button as-child variant="outline" class="h-10">
+                                <Link :href="charactersIndex(props.storySlug)">
+                                    Go to character cards
+                                </Link>
+                            </Button>
+                            <Button
+                                type="button"
+                                class="h-10"
+                                :disabled="form.processing"
+                                data-test="acknowledge-interiority"
+                                @click="saveAnyway"
+                            >
+                                Save as world fact anyway
+                            </Button>
+                        </div>
+                    </AlertDescription>
+                </Alert>
 
                 <LorebookEntryFormFields
                     v-model:title="form.title"

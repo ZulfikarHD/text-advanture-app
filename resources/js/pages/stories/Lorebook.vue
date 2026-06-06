@@ -8,13 +8,14 @@
  * Rendered inside the per-story workspace layout (tab nav + story header).
  */
 import { Head, router } from '@inertiajs/vue3';
-import { BookMarked, Lock, Pencil, Plus, Trash2 } from '@lucide/vue';
+import { BookMarked, FlaskConical, Lock, Pencil, Plus, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import LorebookController from '@/actions/App/Http/Controllers/Stories/LorebookController';
 import EmptyState from '@/components/EmptyState.vue';
 import LorebookEntryDialog from '@/components/stories/LorebookEntryDialog.vue';
 import type {LorebookEntry} from '@/components/stories/LorebookEntryDialog.vue';
 import type { ChapterOption } from '@/components/stories/LorebookEntryFormFields.vue';
+import LorebookPreviewDialog from '@/components/stories/LorebookPreviewDialog.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +43,7 @@ const props = defineProps<{
 const { confirm } = useConfirm();
 
 const dialogOpen = ref(false);
+const previewOpen = ref(false);
 const activeEntry = ref<LorebookEntry | null>(null);
 
 function openCreate(): void {
@@ -99,15 +101,25 @@ defineOptions({
                 objects, and mechanisms, never a character's private interiority.
             </p>
         </div>
-        <Button
-            v-if="props.entries.length > 0"
-            class="h-11 shrink-0"
-            data-test="new-lorebook-entry"
-            @click="openCreate"
-        >
-            <Plus class="size-4" />
-            New entry
-        </Button>
+        <div v-if="props.entries.length > 0" class="flex shrink-0 gap-2">
+            <Button
+                variant="outline"
+                class="h-11"
+                data-test="test-keywords"
+                @click="previewOpen = true"
+            >
+                <FlaskConical class="size-4" />
+                Test keywords
+            </Button>
+            <Button
+                class="h-11"
+                data-test="new-lorebook-entry"
+                @click="openCreate"
+            >
+                <Plus class="size-4" />
+                New entry
+            </Button>
+        </div>
     </header>
 
     <!-- Empty state: no entries yet -->
@@ -207,5 +219,12 @@ defineOptions({
         :story-slug="props.story.slug"
         :chapters="props.chapters"
         :entry="activeEntry"
+    />
+
+    <!-- Keyword match preview (S-3.2.1) -->
+    <LorebookPreviewDialog
+        v-model:open="previewOpen"
+        :story-slug="props.story.slug"
+        :chapters="props.chapters"
     />
 </template>
