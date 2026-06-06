@@ -4,23 +4,15 @@
  * (E2.1 / S-2.1.1).
  *
  * The workspace nav spans every authoring surface, but Characters / Structure /
- * Lorebook / Saves land in later phases. Each renders this teaching empty state
- * instead of a dead link, so the author can see the full workspace shape today.
- * One component serves all four surfaces; the `surface` prop drives the copy and
- * the `surface.key` selects the icon. Rendered inside the per-story workspace
- * layout, which supplies the story title + tab bar. Tracked as PH-30.
+ * Saves land in later phases. Each renders this teaching empty state instead of
+ * a dead link, so the author can see the full workspace shape today. One
+ * component serves the remaining surfaces; the `surface` prop drives the copy
+ * and the `surface.key` selects the icon. Rendered inside the per-story
+ * workspace layout, which supplies the story title + tab bar. Tracked as PH-30.
  */
 import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
-import {
-    ArrowLeft,
-    BookMarked,
-    Clock,
-    ListTree,
-    Save,
-    Users
-    
-} from '@lucide/vue';
-import type {LucideIcon} from '@lucide/vue';
+import { ArrowLeft, Clock, ListTree, Save, Users } from '@lucide/vue';
+import type { LucideIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +22,7 @@ import { show as storyShow } from '@/routes/stories';
 import type { BreadcrumbItem } from '@/types';
 
 type Surface = {
-    key: 'characters' | 'structure' | 'lorebook' | 'saves';
+    key: 'characters' | 'structure' | 'saves';
     title: string;
     description: string;
     phase: string;
@@ -51,7 +43,6 @@ const props = defineProps<{
 const surfaceIcons: Record<Surface['key'], LucideIcon> = {
     characters: Users,
     structure: ListTree,
-    lorebook: BookMarked,
     saves: Save,
 };
 

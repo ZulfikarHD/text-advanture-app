@@ -12,10 +12,10 @@ use Inertia\Response;
  * Placeholder surfaces for the per-story authoring workspace (E2.1 / S-2.1.1).
  *
  * The workspace shell promises navigation across every authoring surface
- * (characters, structure/outline, lorebook, settings, saves), but four of them
- * are not built yet — they land in later phases. Rather than leave dead nav
- * items, each unbuilt surface renders a reachable "coming soon" page so the
- * author can see the full workspace shape today.
+ * (characters, structure/outline, settings, saves), but several of them are not
+ * built yet — they land in later phases. Rather than leave dead nav items, each
+ * unbuilt surface renders a reachable "coming soon" page so the author can see
+ * the full workspace shape today.
  *
  * Every method is owner-scoped: `{story:slug}` binds under `OwnerScope`, so a
  * foreign story resolves to 404 without leaking its existence, and `view`
@@ -50,19 +50,6 @@ class StoryPlaceholderController extends Controller
             'title' => 'Structure',
             'description' => 'Author the outline and compile it into chapters, scenes, and the hidden beat documents that steer every turn toward its goal.',
             'phase' => 'Phase 4',
-        ]);
-    }
-
-    /**
-     * Lorebook surface — world facts injected on keyword match (E3.1, Sprint 9).
-     */
-    public function lorebook(Story $story): Response
-    {
-        return $this->placeholder($story, [
-            'key' => 'lorebook',
-            'title' => 'Lorebook',
-            'description' => 'Record world facts that are injected on keyword match at runtime — places, objects, and mechanisms, never a character\'s private interiority.',
-            'phase' => 'Sprint 9 · E3.1',
         ]);
     }
 

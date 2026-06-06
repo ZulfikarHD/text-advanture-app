@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Reviews\ReviewController;
+use App\Http\Controllers\Stories\LorebookController;
 use App\Http\Controllers\Stories\StoryController;
 use App\Http\Controllers\Stories\StoryOverviewController;
 use App\Http\Controllers\Stories\StoryPlaceholderController;
@@ -28,12 +29,27 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('throttle:12,1')
         ->name('stories.settings.update');
 
+    // Lorebook CRUD (E3.1 / S-3.1.1). Story-scoped world facts injected on
+    // keyword match. The child {lorebookEntry} binds via scoped bindings, so an
+    // entry from another story resolves to 404; writes are throttled.
+    Route::get('stories/{story:slug}/lorebook', [LorebookController::class, 'index'])->name('stories.lorebook.index');
+    Route::post('stories/{story:slug}/lorebook', [LorebookController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('stories.lorebook.store');
+    Route::put('stories/{story:slug}/lorebook/{lorebookEntry}', [LorebookController::class, 'update'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.lorebook.update');
+    Route::delete('stories/{story:slug}/lorebook/{lorebookEntry}', [LorebookController::class, 'destroy'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.lorebook.destroy');
+
     // Workspace placeholder surfaces (E2.1 / S-2.1.1). Reachable "coming soon"
     // pages so the workspace nav spans every authoring surface without dead
     // links. Repointed at their real controllers when each feature ships (PH-30).
     Route::get('stories/{story:slug}/characters', [StoryPlaceholderController::class, 'characters'])->name('stories.characters.index');
     Route::get('stories/{story:slug}/structure', [StoryPlaceholderController::class, 'structure'])->name('stories.structure.index');
-    Route::get('stories/{story:slug}/lorebook', [StoryPlaceholderController::class, 'lorebook'])->name('stories.lorebook.index');
     Route::get('stories/{story:slug}/saves', [StoryPlaceholderController::class, 'saves'])->name('stories.saves.index');
 
     // Shared review gate (S-6.2). Item routes bind under the owner scope, so a

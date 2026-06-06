@@ -29,7 +29,6 @@ class StoryWorkspaceTest extends TestCase
         return [
             'characters' => ['stories.characters.index', 'characters', 'Characters'],
             'structure' => ['stories.structure.index', 'structure', 'Structure'],
-            'lorebook' => ['stories.lorebook.index', 'lorebook', 'Lorebook'],
             'saves' => ['stories.saves.index', 'saves', 'Saves'],
         ];
     }

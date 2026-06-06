@@ -308,3 +308,13 @@ E2.1 grows the per-story workspace from the three live tabs (Overview · Details
 - **Scope is per-story.** Every surface resolves through `{story:slug}`, so switching stories re-scopes the whole shell; nothing leaks across stories.
 
 Routes: `stories.characters.index` / `stories.structure.index` / `stories.lorebook.index` / `stories.saves.index`. Endpoint/props contracts: [../api/stories.md](../api/stories.md). Diagram: [Diagrams/Authoring/Story_Workspace_Shell.md](./Diagrams/Authoring/Story_Workspace_Shell.md).
+
+### Sprint 9 — Lorebook CRUD (E3.1)
+
+E3.1 turns the **Lorebook** placeholder into a live authoring surface — per-story world facts the runtime injects on keyword match (ADR 0013 §5). It is the first **nested, scope-bound** owned resource.
+
+- **Lorebook CRUD (S-3.1.1).** `LorebookController` (index/store/update/destroy) over a thin `LorebookService` (atomic via `DB::transaction`; keyword normalisation — trim, drop empties, de-dupe — centralised). The parent `{story:slug}` binds under `OwnerScope` (foreign story → 404); the child `{lorebookEntry}` uses **`->scopeBindings()`** so an entry from another story → 404 without an entry-level policy — authorization stays on the parent `Story` (`view` to read, `update` to write). Validation via `StoreLorebookEntryRequest` / `UpdateLorebookEntryRequest`: ≥ 1 keyword, required content, and an optional `min_reveal_chapter_id` constrained to a chapter **of this story**. Writes are throttled (30/min).
+- **Workspace surface.** `resources/js/pages/stories/Lorebook.vue` (inside the per-story workspace layout) lists entries as cards (keyword `Badge`s, content preview, reveal-chapter badge) with a single primary **New entry** action; create/edit share one responsive `LorebookEntryDialog` driven by `useForm` (the keyword chip input is the shadcn-vue **`tags-input`** over reka-ui); delete goes through `useConfirm`. Reveal-chapter selection degrades to a disabled hint until chapters exist (Phase 4). **Resolves the lorebook half of PH-30.**
+- **Deferred.** Runtime keyword injection (narrator + knowledge-bounded NPC context), world-fact-discipline validation (S-3.1.2), and the keyword-match preview (S-3.2.1) are out of scope — tracked as new placeholders.
+
+Routes: `stories.lorebook.index` / `stories.lorebook.store` / `stories.lorebook.update` / `stories.lorebook.destroy`. Endpoint/props contracts: [../api/lorebook.md](../api/lorebook.md). Diagram: [Diagrams/Authoring/Lorebook_Crud_Flow.md](./Diagrams/Authoring/Lorebook_Crud_Flow.md).

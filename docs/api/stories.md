@@ -14,13 +14,12 @@
 
 ### Workspace placeholder surfaces (E2.1 / S-2.1.1)
 
-Reachable "coming soon" surfaces so the per-story workspace nav spans every authoring surface without dead links. Each repointed at its real controller when the feature ships (PH-30).
+Reachable "coming soon" surfaces so the per-story workspace nav spans every authoring surface without dead links. Each repointed at its real controller when the feature ships (PH-30). **Lorebook** has since shipped its real CRUD — see [lorebook.md](./lorebook.md).
 
 | Method | URI | Name | Controller |
 |--------|-----|------|------------|
 | `GET` | `/stories/{story:slug}/characters` | `stories.characters.index` | `StoryPlaceholderController@characters` |
 | `GET` | `/stories/{story:slug}/structure` | `stories.structure.index` | `StoryPlaceholderController@structure` |
-| `GET` | `/stories/{story:slug}/lorebook` | `stories.lorebook.index` | `StoryPlaceholderController@lorebook` |
 | `GET` | `/stories/{story:slug}/saves` | `stories.saves.index` | `StoryPlaceholderController@saves` |
 
 ## Inertia props
@@ -72,7 +71,7 @@ type Surface = {
     key: 'characters' | 'structure' | 'lorebook' | 'saves';
     title: string;
     description: string;
-    phase: string; // e.g. "Phase 3", "Sprint 9 · E3.1"
+    phase: string; // e.g. "Phase 3", "Phase 4"
 };
 ```
 

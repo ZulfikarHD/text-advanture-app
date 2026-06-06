@@ -22,6 +22,7 @@ api/{domain}/{domain}-{resource}.md   # subsystem-scoped (e.g. session/session-r
 | [stories.md](./stories.md) | Story CRUD: workspace list, create/edit/delete (`stories.store/edit/update/destroy`, Sprint 7) |
 | [story-overview.md](./story-overview.md) | Per-story overview: derived counts + play-readiness (`stories.show`, E1.2) |
 | [story-settings.md](./story-settings.md) | Per-story settings: default POV + model-role overrides (`stories.settings.edit/update`, E1.2) |
+| [lorebook.md](./lorebook.md) | Per-story lorebook CRUD: keyword-injected world facts (`stories.lorebook.index/store/update/destroy`, E3.1) |
 
 > **Sprint 3 added no HTTP endpoints.** S-4.1.1 is a data-layer change only — the authoring-realm schema, models, and `StoryPolicy` exist, but **story/authoring CRUD endpoints arrive in Phase 2** (story & world management). Theming stays cookie-based on the static `appearance.edit` surface (see [account.md](./account.md)); the new shell theme toggle calls no backend route.
 >
@@ -30,6 +31,8 @@ api/{domain}/{domain}-{resource}.md   # subsystem-scoped (e.g. session/session-r
 > **Sprint 5** added the LLM-client surfaces: the provider **connection test** ([provider.md](./provider.md) §6), the **model-role** editor ([model-roles.md](./model-roles.md)), and the **usage log** ([usage.md](./usage.md)). The `LlmClient` itself is a backend service with no direct HTTP surface (it has no engine caller until Phase 2+).
 >
 > **Sprint 6** seeded the five global libraries (so the **Model roles** editor now ships with defaults) and added the first **review-gate** surface ([reviews.md](./reviews.md)) — a top-level `/reviews` queue with accept/edit/reject; the per-producer commit handlers are deferred to Phase 7.
+>
+> **Sprint 9** added the per-story **lorebook** CRUD ([lorebook.md](./lorebook.md)) — the first scoped-binding nested resource; runtime keyword injection, world-fact-discipline validation (S-3.1.2), and the keyword-match preview (S-3.2.1) are deferred.
 
 ## Expected first contracts (when O1/O4 begin)
 
