@@ -35,7 +35,7 @@ class ProviderController extends Controller
     {
         $credential = $this->credentials->for($request->user());
 
-        return Inertia::render('settings/Provider', [
+        return Inertia::render('engine/Provider', [
             'provider' => Provider::OpenRouter->value,
             'defaultBaseUrl' => config('services.openrouter.base_url'),
             'credential' => $credential === null ? null : [

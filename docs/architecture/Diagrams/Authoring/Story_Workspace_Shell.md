@@ -2,8 +2,10 @@
 
 > The per-story authoring workspace: a single tab shell that spans every
 > authoring surface, scoped to one story. Live surfaces render their feature;
-> the four not-yet-built surfaces render a reachable "coming soon" placeholder
-> so the shell shows its full shape without dead nav items. Source of truth:
+> the not-yet-built surfaces render a reachable "coming soon" placeholder
+> so the shell shows its full shape without dead nav items. (Lorebook shipped its
+> real CRUD in E3.1 — see [Lorebook_Crud_Flow.md](./Lorebook_Crud_Flow.md).)
+> Source of truth:
 > `resources/js/layouts/stories/Layout.vue`, `app/Http/Controllers/Stories/StoryPlaceholderController.php`,
 > `resources/js/pages/stories/ComingSoon.vue`, `routes/web.php`.
 
@@ -21,14 +23,13 @@ flowchart TD
     Tabs --> Overview["Overview (live) - readiness + counts"]
     Tabs --> Characters["Characters (placeholder)"]
     Tabs --> Structure["Structure (placeholder)"]
-    Tabs --> Lorebook["Lorebook (placeholder)"]
+    Tabs --> Lorebook["Lorebook (live) - keyword world facts"]
     Tabs --> Settings["Settings (live) - POV + model roles"]
     Tabs --> Saves["Saves (placeholder)"]
     Tabs --> Details["Details (live) - edit form"]
 
     Characters --> CS["stories/ComingSoon - teaching empty state + phase badge"]
     Structure --> CS
-    Lorebook --> CS
     Saves --> CS
 ```
 
@@ -60,7 +61,7 @@ sequenceDiagram
 | Overview | live | `stories.show` | E1.2 (shipped) |
 | Characters | placeholder | `stories.characters.index` | Phase 3 (O5 character creation) |
 | Structure | placeholder | `stories.structure.index` | Phase 4 (O6 outline compiler) |
-| Lorebook | placeholder | `stories.lorebook.index` | Sprint 9 (E3.1 lorebook CRUD) |
+| Lorebook | live | `stories.lorebook.index` | E3.1 (shipped) — [Lorebook_Crud_Flow.md](./Lorebook_Crud_Flow.md) |
 | Settings | live | `stories.settings.edit` | E1.2 (shipped) |
 | Saves | placeholder | `stories.saves.index` | Phase 5 (session) |
 | Details | live | `stories.edit` | E1.1 (shipped) |

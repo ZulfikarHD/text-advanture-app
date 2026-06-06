@@ -34,7 +34,7 @@ class ModelRoleController extends Controller
             ->get()
             ->keyBy(fn (ModelProfile $profile): string => $profile->role->value);
 
-        return Inertia::render('settings/ModelRoles', [
+        return Inertia::render('engine/ModelRoles', [
             'roles' => $this->presentRoles($profiles),
         ]);
     }

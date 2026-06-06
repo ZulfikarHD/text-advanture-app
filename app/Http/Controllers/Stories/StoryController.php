@@ -9,6 +9,7 @@ use App\Models\Story;
 use App\Services\StoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -50,7 +51,7 @@ class StoryController extends Controller
      */
     public function store(StoreStoryRequest $request): RedirectResponse
     {
-        $this->authorize('create', Story::class);
+        Gate::authorize('create', Story::class);
 
         $this->stories->create($request->user(), $request->validated());
 
@@ -64,7 +65,7 @@ class StoryController extends Controller
      */
     public function edit(Story $story): Response
     {
-        $this->authorize('view', $story);
+        Gate::authorize('view', $story);
 
         return Inertia::render('stories/Edit', [
             'story' => [
@@ -81,7 +82,7 @@ class StoryController extends Controller
      */
     public function update(UpdateStoryRequest $request, Story $story): RedirectResponse
     {
-        $this->authorize('update', $story);
+        Gate::authorize('update', $story);
 
         $this->stories->update($story, $request->validated());
 
@@ -95,7 +96,7 @@ class StoryController extends Controller
      */
     public function destroy(Request $request, Story $story): RedirectResponse
     {
-        $this->authorize('delete', $story);
+        Gate::authorize('delete', $story);
 
         $this->stories->delete($story);
 

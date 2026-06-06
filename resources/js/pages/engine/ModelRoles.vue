@@ -57,7 +57,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Model roles',
+                title: 'Model Roles',
                 href: edit(),
             },
         ],
@@ -66,14 +66,11 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="Model roles" />
+    <Head title="Model Roles" />
 
-    <h1 class="sr-only">Model roles</h1>
-
-    <div class="space-y-6">
+    <div class="flex h-full flex-1 flex-col gap-6 p-4">
         <Heading
-            variant="small"
-            title="Model roles"
+            title="Model Roles"
             description="Map each engine role to an OpenRouter model and its parameters. Calls are routed by role, so you can tier strong and cheap models without code changes."
         />
 

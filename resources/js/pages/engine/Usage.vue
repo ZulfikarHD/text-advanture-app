@@ -60,11 +60,8 @@ defineOptions({
 <template>
     <Head title="Usage" />
 
-    <h1 class="sr-only">Usage</h1>
-
-    <div class="space-y-6">
+    <div class="flex h-full flex-1 flex-col gap-6 p-4">
         <Heading
-            variant="small"
             title="Usage"
             description="Every model call made on your account, with token use, cost (USD), and latency. The log is append-only and visible only to you."
         />

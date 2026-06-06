@@ -24,7 +24,7 @@ class UsageController extends Controller
      */
     public function index(Request $request): Response
     {
-        return Inertia::render('settings/Usage', [
+        return Inertia::render('engine/Usage', [
             'calls' => Inertia::defer(fn (): array => $this->ownerCalls()),
         ]);
     }

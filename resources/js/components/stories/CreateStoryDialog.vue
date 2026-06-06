@@ -7,6 +7,7 @@
  */
 import { Form } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
+import StoryController from '@/actions/App/Http/Controllers/Stories/StoryController';
 import AlertError from '@/components/AlertError.vue';
 import StoryFormFields from '@/components/stories/StoryFormFields.vue';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import StoryController from '@/actions/App/Http/Controllers/Stories/StoryController';
 
 const open = defineModel<boolean>('open', { default: false });
 const formRef = ref<InstanceType<typeof Form> | null>(null);

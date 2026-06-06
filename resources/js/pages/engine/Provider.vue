@@ -84,7 +84,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Provider settings',
+                title: 'Provider',
                 href: edit(),
             },
         ],
@@ -93,14 +93,11 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="Provider settings" />
+    <Head title="Provider" />
 
-    <h1 class="sr-only">Provider settings</h1>
-
-    <div class="space-y-6">
+    <div class="flex h-full flex-1 flex-col gap-6 p-4">
         <Heading
-            variant="small"
-            title="OpenRouter API key"
+            title="Provider"
             description="Connect your own OpenRouter key to power AI generation. Your key is encrypted at rest and only ever shown masked."
         />
 

@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@inertiajs/vite':
-        specifier: ^3.0.0
-        version: 3.3.0(vite@8.0.16(@types/node@22.19.19)(jiti@2.7.0))
+        specifier: ^3.3.1
+        version: 3.3.1(vite@8.0.16(@types/node@22.19.19)(jiti@2.7.0))
       '@inertiajs/vue3':
-        specifier: ^3.0.0
-        version: 3.3.0(vue@3.5.35(typescript@5.9.3))
+        specifier: ^3.3.1
+        version: 3.3.1(vue@3.5.35(typescript@5.9.3))
       '@laravel/passkeys':
         specifier: ^0.2.0
         version: 0.2.0(vue@3.5.35(typescript@5.9.3))
@@ -33,92 +33,92 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       laravel-vite-plugin:
-        specifier: ^3.0.0
+        specifier: ^3.1.0
         version: 3.1.0(vite@8.0.16(@types/node@22.19.19)(jiti@2.7.0))
       lucide:
-        specifier: ^1.3.0
-        version: 1.3.0
+        specifier: ^1.17.0
+        version: 1.17.0
       motion-v:
         specifier: ^2.2.1
         version: 2.2.1(@vueuse/core@12.8.2(typescript@5.9.3))(vue@3.5.35(typescript@5.9.3))
       reka-ui:
-        specifier: ^2.9.8
+        specifier: ^2.9.9
         version: 2.9.9(vue@3.5.35(typescript@5.9.3))
       tailwind-merge:
-        specifier: ^3.2.0
+        specifier: ^3.6.0
         version: 3.6.0
       tailwindcss:
-        specifier: ^4.1.1
+        specifier: ^4.3.0
         version: 4.3.0
       tw-animate-css:
-        specifier: ^1.2.5
+        specifier: ^1.4.0
         version: 1.4.0
       vue:
-        specifier: ^3.5.13
+        specifier: ^3.5.35
         version: 3.5.35(typescript@5.9.3)
       vue-input-otp:
         specifier: ^0.3.2
         version: 0.3.2(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3))
       vue-sonner:
-        specifier: ^2.0.0
+        specifier: ^2.0.9
         version: 2.0.9
     devDependencies:
       '@eslint/js':
-        specifier: ^9.19.0
+        specifier: ^9.39.4
         version: 9.39.4
       '@laravel/vite-plugin-wayfinder':
-        specifier: ^0.1.3
+        specifier: ^0.1.7
         version: 0.1.7
       '@stylistic/eslint-plugin':
         specifier: ^5.10.0
         version: 5.10.0(eslint@9.39.4(jiti@2.7.0))
       '@tailwindcss/vite':
-        specifier: ^4.1.11
+        specifier: ^4.3.0
         version: 4.3.0(vite@8.0.16(@types/node@22.19.19)(jiti@2.7.0))
       '@types/node':
-        specifier: ^22.13.5
+        specifier: ^22.19.19
         version: 22.19.19
       '@vitejs/plugin-vue':
-        specifier: ^6.0.0
+        specifier: ^6.0.7
         version: 6.0.7(vite@8.0.16(@types/node@22.19.19)(jiti@2.7.0))(vue@3.5.35(typescript@5.9.3))
       '@vue/eslint-config-typescript':
-        specifier: ^14.3.0
-        version: 14.7.0(eslint-plugin-vue@9.33.0(eslint@9.39.4(jiti@2.7.0)))(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)
+        specifier: ^14.8.0
+        version: 14.8.0(eslint-plugin-vue@9.33.0(eslint@9.39.4(jiti@2.7.0)))(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)
       concurrently:
-        specifier: ^9.0.1
+        specifier: ^9.2.1
         version: 9.2.1
       eslint:
-        specifier: ^9.17.0
+        specifier: ^9.39.4
         version: 9.39.4(jiti@2.7.0)
       eslint-config-prettier:
-        specifier: ^10.0.1
+        specifier: ^10.1.8
         version: 10.1.8(eslint@9.39.4(jiti@2.7.0))
       eslint-import-resolver-typescript:
-        specifier: ^4.4.4
+        specifier: ^4.4.5
         version: 4.4.5(eslint-plugin-import@2.32.0)(eslint@9.39.4(jiti@2.7.0))
       eslint-plugin-import:
         specifier: ^2.32.0
         version: 2.32.0(@typescript-eslint/parser@8.60.1(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-typescript@4.4.5)(eslint@9.39.4(jiti@2.7.0))
       eslint-plugin-vue:
-        specifier: ^9.32.0
+        specifier: ^9.33.0
         version: 9.33.0(eslint@9.39.4(jiti@2.7.0))
       prettier:
-        specifier: ^3.4.2
+        specifier: ^3.8.3
         version: 3.8.3
       prettier-plugin-tailwindcss:
-        specifier: ^0.6.11
+        specifier: ^0.6.14
         version: 0.6.14(prettier@3.8.3)
       typescript:
-        specifier: ^5.2.2
+        specifier: ^5.9.3
         version: 5.9.3
       typescript-eslint:
-        specifier: ^8.23.0
+        specifier: ^8.60.1
         version: 8.60.1(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)
       vite:
-        specifier: ^8.0.0
+        specifier: ^8.0.16
         version: 8.0.16(@types/node@22.19.19)(jiti@2.7.0)
       vue-tsc:
-        specifier: ^2.2.4
+        specifier: ^2.2.12
         version: 2.2.12(typescript@5.9.3)
     optionalDependencies:
       '@rollup/rollup-linux-x64-gnu':
@@ -128,16 +128,16 @@ importers:
         specifier: 4.9.5
         version: 4.9.5
       '@tailwindcss/oxide-linux-x64-gnu':
-        specifier: ^4.0.1
+        specifier: ^4.3.0
         version: 4.3.0
       '@tailwindcss/oxide-win32-x64-msvc':
-        specifier: ^4.0.1
+        specifier: ^4.3.0
         version: 4.3.0
       lightningcss-linux-x64-gnu:
-        specifier: ^1.29.1
+        specifier: ^1.32.0
         version: 1.32.0
       lightningcss-win32-x64-msvc:
-        specifier: ^1.29.1
+        specifier: ^1.32.0
         version: 1.32.0
 
 packages:
@@ -238,21 +238,21 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@inertiajs/core@3.3.0':
-    resolution: {integrity: sha512-6tEe5vtjwXJj68h0nkz84WkeZ8XA0phJ8ep1l/V+im62KTzlZTw9sxlmf8uNKu4seleXVw+idw48svxUCWla/Q==}
+  '@inertiajs/core@3.3.1':
+    resolution: {integrity: sha512-iyO5jPYm5GS8d3sGpzA2FK5hMUWq9AmW6wHad1P+jC+mkZIrAYqKZjVKBM+emOc01+4csbdPRXdtf0s44rALOA==}
     peerDependencies:
       axios: ^1.15.2
     peerDependenciesMeta:
       axios:
         optional: true
 
-  '@inertiajs/vite@3.3.0':
-    resolution: {integrity: sha512-UWm+I5OpxGnm1LBjgaPOI6/M8gurloxXRnzeNMd2UC6f6ObQo6RZvyLMMWInwS0fBief7lfkpj5sPZy+680CRA==}
+  '@inertiajs/vite@3.3.1':
+    resolution: {integrity: sha512-t+KRx4Bu3PT87Tmk2ubs1TaDKEsYP42o7yw0z8rX3MkXeQ2+gu3DcRfULfgslnnnt4IrU5b0gGuJ9o5fk04D1Q==}
     peerDependencies:
       vite: ^7.0.0 || ^8.0.0
 
-  '@inertiajs/vue3@3.3.0':
-    resolution: {integrity: sha512-eZHCGGFnvu7A6AOnXroXfJaMoTlcWPhZqAsS1KisuhRuDJGh5GDnU1kesQjbxYbDi3pL23euyb9iFkx7TqQy8w==}
+  '@inertiajs/vue3@3.3.1':
+    resolution: {integrity: sha512-flP4uDHcQKL8VtwT4onxZ3vrBL2D7Mwr4r2U9wEsRwnTiAWoi4i96AzJiFInETDw895Oxlk+JcwD1BFIT4ghEA==}
     peerDependencies:
       vue: ^3.0.0
 
@@ -782,8 +782,8 @@ packages:
   '@vue/compiler-vue2@2.7.16':
     resolution: {integrity: sha512-qYC3Psj9S/mfu9uVi5WvNZIzq+xnXMhOwbTFKKDD7b1lhpnn71jXSFdTQ+WsIEk0ONCd7VV2IMm7ONl6tbQ86A==}
 
-  '@vue/eslint-config-typescript@14.7.0':
-    resolution: {integrity: sha512-iegbMINVc+seZ/QxtzWiOBozctrHiF2WvGedruu2EbLujg9VuU0FQiNcN2z1ycuaoKKpF4m2qzB5HDEMKbxtIg==}
+  '@vue/eslint-config-typescript@14.8.0':
+    resolution: {integrity: sha512-yIquzhXH7ZsrwSSm+rYvoGCRY6wcuF4qBi76e0l7hHLq7YU0f9aC+RcR5fL+XJNfmBZxgX5cVl4sppt4x7ZCBg==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       eslint: ^9.10.0 || ^10.0.0
@@ -1655,8 +1655,8 @@ packages:
   lodash@4.18.1:
     resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
 
-  lucide@1.3.0:
-    resolution: {integrity: sha512-8/98ZCQjNDdfOjSycUujwqxKNrq97WPzdlNBR6tG7BqZgiOFQqzJuFapIpjPceW57sJv3zGIBg0L3SWR7c4fqA==}
+  lucide@1.17.0:
+    resolution: {integrity: sha512-icbHK+hG15rWoacjNi3aw+UXHRmZ9Ee1fJ6ZSu7lbC4GOig7evVEXYCfK77FvjQHusPgi0D/QN7zTO+5wZ8PwQ==}
 
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
@@ -1950,8 +1950,8 @@ packages:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
     hasBin: true
 
-  semver@7.8.1:
-    resolution: {integrity: sha512-rkVq3IXh+4FDGch+KwzX3aV9W3kO54GyEgpvBzSyctDA6Xtd7RJQV1xmXbeQp5v7+VzLOfVqiutSE6GICgPFvg==}
+  semver@7.8.2:
+    resolution: {integrity: sha512-c8jsqUZm3omBOI66G90z1Dyw5z622G8oLG+omfsHBJf3CWQTlOcwOjvOG6wtiNfW6anKm/eA39LMwMtMez2TiQ==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -2403,23 +2403,23 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@inertiajs/core@3.3.0':
+  '@inertiajs/core@3.3.1':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       es-toolkit: 1.47.0
       laravel-precognition: 2.0.0
 
-  '@inertiajs/vite@3.3.0(vite@8.0.16(@types/node@22.19.19)(jiti@2.7.0))':
+  '@inertiajs/vite@3.3.1(vite@8.0.16(@types/node@22.19.19)(jiti@2.7.0))':
     dependencies:
-      '@inertiajs/core': 3.3.0
+      '@inertiajs/core': 3.3.1
       tinyglobby: 0.2.17
       vite: 8.0.16(@types/node@22.19.19)(jiti@2.7.0)
     transitivePeerDependencies:
       - axios
 
-  '@inertiajs/vue3@3.3.0(vue@3.5.35(typescript@5.9.3))':
+  '@inertiajs/vue3@3.3.1(vue@3.5.35(typescript@5.9.3))':
     dependencies:
-      '@inertiajs/core': 3.3.0
+      '@inertiajs/core': 3.3.1
       es-toolkit: 1.47.0
       laravel-precognition: 2.0.0
       vue: 3.5.35(typescript@5.9.3)
@@ -2725,7 +2725,7 @@ snapshots:
       '@typescript-eslint/visitor-keys': 8.60.1
       debug: 4.4.3
       minimatch: 10.2.5
-      semver: 7.8.1
+      semver: 7.8.2
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@5.9.3)
       typescript: 5.9.3
@@ -2871,7 +2871,7 @@ snapshots:
       de-indent: 1.0.2
       he: 1.2.0
 
-  '@vue/eslint-config-typescript@14.7.0(eslint-plugin-vue@9.33.0(eslint@9.39.4(jiti@2.7.0)))(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)':
+  '@vue/eslint-config-typescript@14.8.0(eslint-plugin-vue@9.33.0(eslint@9.39.4(jiti@2.7.0)))(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)':
     dependencies:
       '@typescript-eslint/utils': 8.60.1(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)
       eslint: 9.39.4(jiti@2.7.0)
@@ -3359,7 +3359,7 @@ snapshots:
       natural-compare: 1.4.0
       nth-check: 2.1.1
       postcss-selector-parser: 6.1.2
-      semver: 7.8.1
+      semver: 7.8.2
       vue-eslint-parser: 9.4.3(eslint@9.39.4(jiti@2.7.0))
       xml-name-validator: 4.0.0
     transitivePeerDependencies:
@@ -3652,7 +3652,7 @@ snapshots:
 
   is-bun-module@2.0.0:
     dependencies:
-      semver: 7.8.1
+      semver: 7.8.2
 
   is-callable@1.2.7: {}
 
@@ -3838,7 +3838,7 @@ snapshots:
 
   lodash@4.18.1: {}
 
-  lucide@1.3.0: {}
+  lucide@1.17.0: {}
 
   magic-string@0.30.21:
     dependencies:
@@ -4118,7 +4118,7 @@ snapshots:
 
   semver@6.3.1: {}
 
-  semver@7.8.1: {}
+  semver@7.8.2: {}
 
   set-function-length@1.2.2:
     dependencies:
@@ -4391,7 +4391,7 @@ snapshots:
       eslint-visitor-keys: 5.0.1
       espree: 11.2.0
       esquery: 1.7.0
-      semver: 7.8.1
+      semver: 7.8.2
     transitivePeerDependencies:
       - supports-color
 
@@ -4404,7 +4404,7 @@ snapshots:
       espree: 9.6.1
       esquery: 1.7.0
       lodash: 4.18.1
-      semver: 7.8.1
+      semver: 7.8.2
     transitivePeerDependencies:
       - supports-color
 

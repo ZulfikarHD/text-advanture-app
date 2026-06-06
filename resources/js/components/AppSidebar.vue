@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, ClipboardCheck, Settings } from '@lucide/vue';
+import {
+    BarChart3,
+    BookOpen,
+    ClipboardCheck,
+    KeyRound,
+    Settings,
+    SlidersHorizontal,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -15,16 +22,16 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import type { NavItem } from '@/types';
 import { dashboard } from '@/routes';
+import { edit as editModelRoles } from '@/routes/model-roles';
 import { edit as editProfile } from '@/routes/profile';
+import { edit as editProvider } from '@/routes/provider';
 import { index as reviewsIndex } from '@/routes/reviews';
+import { index as usageIndex } from '@/routes/usage';
+import type { NavItem } from '@/types';
 
 const { isCurrentOrParentUrl } = useCurrentUrl();
 
-// Computed so the active-area indicator re-evaluates on navigation. Settings
-// matches the whole /settings/* area (profile, security, appearance), not just
-// the profile landing it links to. Play is intentionally deferred to Phase 5.
 const mainNavItems = computed<NavItem[]>(() => [
     {
         title: 'Workspace',
@@ -39,6 +46,24 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: reviewsIndex(),
         icon: ClipboardCheck,
         isActive: isCurrentOrParentUrl('/reviews'),
+    },
+    {
+        title: 'Provider',
+        href: editProvider(),
+        icon: KeyRound,
+        isActive: isCurrentOrParentUrl('/provider'),
+    },
+    {
+        title: 'Model Roles',
+        href: editModelRoles(),
+        icon: SlidersHorizontal,
+        isActive: isCurrentOrParentUrl('/model-roles'),
+    },
+    {
+        title: 'Usage',
+        href: usageIndex(),
+        icon: BarChart3,
+        isActive: isCurrentOrParentUrl('/usage'),
     },
     {
         title: 'Settings',

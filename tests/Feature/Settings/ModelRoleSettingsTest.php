@@ -27,7 +27,7 @@ class ModelRoleSettingsTest extends TestCase
             ->get(route('model-roles.edit'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('settings/ModelRoles')
+                ->component('engine/ModelRoles')
                 ->has('roles', count(LlmRole::cases()))
             );
     }

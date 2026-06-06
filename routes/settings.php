@@ -25,19 +25,21 @@ Route::middleware(['auth'])->group(function () {
 
     Route::inertia('settings/appearance', 'settings/Appearance')->name('appearance.edit');
 
-    Route::get('settings/provider', [ProviderController::class, 'edit'])->name('provider.edit');
-    Route::put('settings/provider', [ProviderController::class, 'update'])
+    // Provider, Model Roles, and Usage are top-level sidebar items, not settings
+    // sub-pages. They stay in the Settings controllers but route outside /settings/*.
+    Route::get('provider', [ProviderController::class, 'edit'])->name('provider.edit');
+    Route::put('provider', [ProviderController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('provider.update');
-    Route::delete('settings/provider', [ProviderController::class, 'destroy'])->name('provider.destroy');
-    Route::post('settings/provider/test', [ProviderController::class, 'test'])
+    Route::delete('provider', [ProviderController::class, 'destroy'])->name('provider.destroy');
+    Route::post('provider/test', [ProviderController::class, 'test'])
         ->middleware('throttle:6,1')
         ->name('provider.test');
 
-    Route::get('settings/model-roles', [ModelRoleController::class, 'edit'])->name('model-roles.edit');
-    Route::put('settings/model-roles', [ModelRoleController::class, 'update'])
+    Route::get('model-roles', [ModelRoleController::class, 'edit'])->name('model-roles.edit');
+    Route::put('model-roles', [ModelRoleController::class, 'update'])
         ->middleware('throttle:12,1')
         ->name('model-roles.update');
 
-    Route::get('settings/usage', [UsageController::class, 'index'])->name('usage.index');
+    Route::get('usage', [UsageController::class, 'index'])->name('usage.index');
 });

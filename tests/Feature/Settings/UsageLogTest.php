@@ -28,7 +28,7 @@ class UsageLogTest extends TestCase
             ->get(route('usage.index'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('settings/Usage')
+                ->component('engine/Usage')
                 ->missing('calls')
                 ->loadDeferredProps(fn (Assert $reload) => $reload
                     ->has('calls.data', 2)

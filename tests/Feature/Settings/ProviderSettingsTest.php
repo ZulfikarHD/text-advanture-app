@@ -27,7 +27,7 @@ class ProviderSettingsTest extends TestCase
             ->get(route('provider.edit'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('settings/Provider')
+                ->component('engine/Provider')
                 ->where('credential', null)
                 ->where('provider', 'openrouter')
             );
@@ -43,7 +43,7 @@ class ProviderSettingsTest extends TestCase
         $this->get(route('provider.edit'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('settings/Provider')
+                ->component('engine/Provider')
                 ->where('credential.maskedKey', fn (?string $masked) => $masked !== null && str_contains($masked, '7788'))
                 ->missing('credential.api_key')
             );
