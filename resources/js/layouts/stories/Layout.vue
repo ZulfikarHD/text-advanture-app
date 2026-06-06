@@ -1,19 +1,35 @@
 <script setup lang="ts">
 /**
- * Story workspace layout - the per-story sub-navigation shell (E1.2 / S-1.2.x).
+ * Story workspace layout - the per-story authoring shell (E2.1 / S-2.1.1).
  *
- * Wraps every per-story surface (Overview / Details / Settings) so each one is
- * scoped to a single story and reachable by tab navigation rather than a typed
- * URL. Reads the shared `story` page prop that all three story pages expose.
+ * Wraps every per-story surface so each is scoped to a single story and
+ * reachable by tab navigation rather than a typed URL. The nav spans the full
+ * authoring surface set: Overview, Characters, Structure, Lorebook, Settings,
+ * Saves, and Details. Characters / Structure / Lorebook / Saves are reachable
+ * "coming soon" placeholders until their features ship (PH-30); the rest are
+ * live. Reads the shared `story` page prop every story page exposes.
  */
 import { Link, usePage } from '@inertiajs/vue3';
-import { ArrowLeft } from '@lucide/vue';
+import {
+    ArrowLeft,
+    BookMarked,
+    FileText,
+    LayoutDashboard,
+    ListTree,
+    Save,
+    Settings,
+    Users,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { dashboard } from '@/routes';
 import { edit as storyEdit, show as storyShow } from '@/routes/stories';
+import { index as charactersIndex } from '@/routes/stories/characters';
+import { index as lorebookIndex } from '@/routes/stories/lorebook';
+import { index as savesIndex } from '@/routes/stories/saves';
 import { edit as storySettingsEdit } from '@/routes/stories/settings';
+import { index as structureIndex } from '@/routes/stories/structure';
 import type { NavItem } from '@/types';
 
 type StoryRef = { id: number; slug: string; title: string };
@@ -24,9 +40,13 @@ const story = computed(() => page.props.story);
 const { isCurrentUrl } = useCurrentUrl();
 
 const tabs = computed<NavItem[]>(() => [
-    { title: 'Overview', href: storyShow(story.value.slug) },
-    { title: 'Details', href: storyEdit(story.value.slug) },
-    { title: 'Settings', href: storySettingsEdit(story.value.slug) },
+    { title: 'Overview', href: storyShow(story.value.slug), icon: LayoutDashboard },
+    { title: 'Characters', href: charactersIndex(story.value.slug), icon: Users },
+    { title: 'Structure', href: structureIndex(story.value.slug), icon: ListTree },
+    { title: 'Lorebook', href: lorebookIndex(story.value.slug), icon: BookMarked },
+    { title: 'Settings', href: storySettingsEdit(story.value.slug), icon: Settings },
+    { title: 'Saves', href: savesIndex(story.value.slug), icon: Save },
+    { title: 'Details', href: storyEdit(story.value.slug), icon: FileText },
 ]);
 </script>
 
@@ -73,7 +93,10 @@ const tabs = computed<NavItem[]>(() => [
                 "
                 :data-test="`story-tab-${tab.title.toLowerCase()}`"
             >
-                <Link :href="tab.href">{{ tab.title }}</Link>
+                <Link :href="tab.href">
+                    <component :is="tab.icon" class="size-4" />
+                    {{ tab.title }}
+                </Link>
             </Button>
         </nav>
 

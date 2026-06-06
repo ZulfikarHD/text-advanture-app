@@ -3,6 +3,7 @@
 use App\Http\Controllers\Reviews\ReviewController;
 use App\Http\Controllers\Stories\StoryController;
 use App\Http\Controllers\Stories\StoryOverviewController;
+use App\Http\Controllers\Stories\StoryPlaceholderController;
 use App\Http\Controllers\Stories\StorySettingsController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +27,14 @@ Route::middleware(['auth'])->group(function () {
     Route::put('stories/{story:slug}/settings', [StorySettingsController::class, 'update'])
         ->middleware('throttle:12,1')
         ->name('stories.settings.update');
+
+    // Workspace placeholder surfaces (E2.1 / S-2.1.1). Reachable "coming soon"
+    // pages so the workspace nav spans every authoring surface without dead
+    // links. Repointed at their real controllers when each feature ships (PH-30).
+    Route::get('stories/{story:slug}/characters', [StoryPlaceholderController::class, 'characters'])->name('stories.characters.index');
+    Route::get('stories/{story:slug}/structure', [StoryPlaceholderController::class, 'structure'])->name('stories.structure.index');
+    Route::get('stories/{story:slug}/lorebook', [StoryPlaceholderController::class, 'lorebook'])->name('stories.lorebook.index');
+    Route::get('stories/{story:slug}/saves', [StoryPlaceholderController::class, 'saves'])->name('stories.saves.index');
 
     // Shared review gate (S-6.2). Item routes bind under the owner scope, so a
     // foreign proposal resolves to 404; writes are throttled.

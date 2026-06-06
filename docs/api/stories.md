@@ -12,6 +12,17 @@
 | `PUT` | `/stories/{story:slug}` | `stories.update` | `StoryController@update` |
 | `DELETE` | `/stories/{story:slug}` | `stories.destroy` | `StoryController@destroy` |
 
+### Workspace placeholder surfaces (E2.1 / S-2.1.1)
+
+Reachable "coming soon" surfaces so the per-story workspace nav spans every authoring surface without dead links. Each repointed at its real controller when the feature ships (PH-30).
+
+| Method | URI | Name | Controller |
+|--------|-----|------|------------|
+| `GET` | `/stories/{story:slug}/characters` | `stories.characters.index` | `StoryPlaceholderController@characters` |
+| `GET` | `/stories/{story:slug}/structure` | `stories.structure.index` | `StoryPlaceholderController@structure` |
+| `GET` | `/stories/{story:slug}/lorebook` | `stories.lorebook.index` | `StoryPlaceholderController@lorebook` |
+| `GET` | `/stories/{story:slug}/saves` | `stories.saves.index` | `StoryPlaceholderController@saves` |
+
 ## Inertia props
 
 ### `Dashboard` (index)
@@ -42,6 +53,26 @@ type StoryData = {
     slug: string;
     title: string;
     description: string | null;
+};
+```
+
+### `stories/ComingSoon` (placeholder surfaces)
+
+Shared by all four placeholder workspace surfaces; `surface` drives the copy and icon.
+
+| Prop | Type | Notes |
+|------|------|-------|
+| `story` | `StoryRef` | The story whose workspace is open (required by the workspace layout) |
+| `surface` | `Surface` | Descriptor for the unbuilt surface |
+
+```typescript
+type StoryRef = { id: number; slug: string; title: string };
+
+type Surface = {
+    key: 'characters' | 'structure' | 'lorebook' | 'saves';
+    title: string;
+    description: string;
+    phase: string; // e.g. "Phase 3", "Sprint 9 · E3.1"
 };
 ```
 

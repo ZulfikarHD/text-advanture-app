@@ -92,6 +92,28 @@ class StoryOverviewTest extends TestCase
         );
     }
 
+    public function test_a_story_with_a_scene_but_no_beat_is_not_play_ready(): void
+    {
+        $user = User::factory()->create();
+        $story = Story::factory()->create(['user_id' => $user->id]);
+
+        // Everything but the structure requirement is satisfied, so the unmet
+        // "chapter with a scene and a beat" gate is isolated: a chapter and a
+        // scene exist, but no beat means there is nothing for the engine to direct.
+        $this->seedGlobalModelRoles();
+        Character::factory()->create(['story_id' => $story->id]);
+        $chapter = Chapter::factory()->create(['story_id' => $story->id, 'number' => 1]);
+        Scene::factory()->create(['chapter_id' => $chapter->id, 'number' => 1]);
+
+        $response = $this->actingAs($user)->get(route('stories.show', $story));
+
+        $response->assertInertia(fn ($page) => $page
+            ->where('readiness.ready', false)
+            ->where('readiness.requirements.1.key', 'structure')
+            ->where('readiness.requirements.1.met', false)
+        );
+    }
+
     public function test_a_story_with_no_resolvable_model_is_not_play_ready(): void
     {
         $user = User::factory()->create();
