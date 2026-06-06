@@ -28,5 +28,6 @@ Mermaid diagrams, grouped by subject. Filenames use `Title_Case`.
 | Story settings & overview flow | [Authoring/Story_Settings_Overview_Flow.md](./Authoring/Story_Settings_Overview_Flow.md) |
 | Story workspace shell (tabs + placeholders) | [Authoring/Story_Workspace_Shell.md](./Authoring/Story_Workspace_Shell.md) |
 | Lorebook CRUD flow | [Authoring/Lorebook_Crud_Flow.md](./Authoring/Lorebook_Crud_Flow.md) |
+| Reveal ledger CRUD flow | [Authoring/Reveal_Ledger_Crud_Flow.md](./Authoring/Reveal_Ledger_Crud_Flow.md) |
 
 > Keep diagrams free of explicit colors/styling so they render correctly in light and dark mode.

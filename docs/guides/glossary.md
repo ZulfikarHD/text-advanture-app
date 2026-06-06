@@ -20,6 +20,7 @@ The engine's vocabulary, with the ADR/brief that defines each term. Read this be
 | **Source bible** | Full authored character doc, all arcs. Human-facing, **never injected**. | ADR 0001 |
 | **Character card** | Compiled, spoiler-free, current-state slice of the bible; immutable at runtime. | ADR 0001 |
 | **knowledge_boundary** | What a character currently knows / does NOT know (clamped per chapter). | ADR 0001 |
+| **Reveal ledger** | Per-character (or world) list of load-bearing secrets `{ fact, reveal_chapter, who_knows }`; drives the per-chapter `knowledge_boundary` clamp so spoiler-safety is explicit, not inferred. | ADR 0013 §3 |
 | **Relationship edge** | Directed, owner-perspective record of how `from` sees `to` (`A→B ≠ B→A`). | ADR 0002 |
 | **Internal state** | Per-character transient layer: mood, active emotions, motivation, masks. Decays on its own clock. | ADR 0001, O3 |
 | **base_opacity** | Character-level disposition (poker-face ↔ expressive) that seeds register composure; stored on `characters` (DATABASE.md §3.2), not per-chapter. | ADR 0010 |

@@ -21,6 +21,7 @@ manual-qa-check/{domain}/{CODE}-{slug}.md   # e.g. narrator/O1-narrator-loop.md
 | [ui/S-1.2-story-settings-overview.md](./ui/S-1.2-story-settings-overview.md) | S-1.2.1/2 — per-story workspace: overview counts + play-readiness, default POV + model-role overrides |
 | [ui/S-2.1-workspace-shell.md](./ui/S-2.1-workspace-shell.md) | S-2.1.1/2 — authoring workspace shell: full tab set, placeholder surfaces, play-readiness |
 | [ui/S-9-lorebook.md](./ui/S-9-lorebook.md) | S-3.1.1 — per-story lorebook CRUD: empty state, create/edit/delete, validation, reveal-gate degradation |
+| [ui/S-10-reveal-ledger.md](./ui/S-10-reveal-ledger.md) | S-4.1.1 — per-story reveal-ledger CRUD: chapter-gated empty state, create/edit/delete, who-knows slug chips, world-secret default |
 
 (`{domain}` = `npc-behaviour` | `directing` | `narrator` | `session` | `review-gate` | `ui` — this engine has no role-based `*-side/` split.)
 

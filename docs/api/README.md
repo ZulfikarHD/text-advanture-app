@@ -23,6 +23,7 @@ api/{domain}/{domain}-{resource}.md   # subsystem-scoped (e.g. session/session-r
 | [story-overview.md](./story-overview.md) | Per-story overview: derived counts + play-readiness (`stories.show`, E1.2) |
 | [story-settings.md](./story-settings.md) | Per-story settings: default POV + model-role overrides (`stories.settings.edit/update`, E1.2) |
 | [lorebook.md](./lorebook.md) | Per-story lorebook CRUD: keyword-injected world facts (`stories.lorebook.index/store/update/destroy`, E3.1) |
+| [reveal-ledger.md](./reveal-ledger.md) | Per-story reveal-ledger CRUD: load-bearing secrets → reveal point (`stories.reveal-ledger.index/store/update/destroy`, E4.1) |
 
 > **Sprint 3 added no HTTP endpoints.** S-4.1.1 is a data-layer change only — the authoring-realm schema, models, and `StoryPolicy` exist, but **story/authoring CRUD endpoints arrive in Phase 2** (story & world management). Theming stays cookie-based on the static `appearance.edit` surface (see [account.md](./account.md)); the new shell theme toggle calls no backend route.
 >
@@ -33,6 +34,8 @@ api/{domain}/{domain}-{resource}.md   # subsystem-scoped (e.g. session/session-r
 > **Sprint 6** seeded the five global libraries (so the **Model roles** editor now ships with defaults) and added the first **review-gate** surface ([reviews.md](./reviews.md)) — a top-level `/reviews` queue with accept/edit/reject; the per-producer commit handlers are deferred to Phase 7.
 >
 > **Sprint 9** added the per-story **lorebook** CRUD ([lorebook.md](./lorebook.md)) — the first scoped-binding nested resource; runtime keyword injection, world-fact-discipline validation (S-3.1.2), and the keyword-match preview (S-3.2.1) are deferred.
+>
+> **Sprint 10** added the per-story **reveal-ledger** CRUD ([reveal-ledger.md](./reveal-ledger.md)) — load-bearing secrets `{ fact, reveal_chapter, who_knows }` that make spoiler-safety explicit; the compile clamp that consumes them (Phase 3) and the reveal-clamp preview (S-4.1.2) are deferred (PH-34).
 
 ## Expected first contracts (when O1/O4 begin)
 

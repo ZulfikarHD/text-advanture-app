@@ -17,13 +17,14 @@ flowchart TD
 
     subgraph Shell ["StoryWorkspaceLayout (reads shared story prop)"]
         direction TB
-        Tabs["Tab bar: Overview · Characters · Structure · Lorebook · Settings · Saves · Details"]
+        Tabs["Tab bar: Overview · Characters · Structure · Lorebook · Reveal ledger · Settings · Saves · Details"]
     end
 
     Tabs --> Overview["Overview (live) - readiness + counts"]
     Tabs --> Characters["Characters (placeholder)"]
     Tabs --> Structure["Structure (placeholder)"]
     Tabs --> Lorebook["Lorebook (live) - keyword world facts"]
+    Tabs --> RevealLedger["Reveal ledger (live) - load-bearing secrets"]
     Tabs --> Settings["Settings (live) - POV + model roles"]
     Tabs --> Saves["Saves (placeholder)"]
     Tabs --> Details["Details (live) - edit form"]
@@ -62,6 +63,7 @@ sequenceDiagram
 | Characters | placeholder | `stories.characters.index` | Phase 3 (O5 character creation) |
 | Structure | placeholder | `stories.structure.index` | Phase 4 (O6 outline compiler) |
 | Lorebook | live | `stories.lorebook.index` | E3.1 (shipped) — [Lorebook_Crud_Flow.md](./Lorebook_Crud_Flow.md) |
+| Reveal ledger | live | `stories.reveal-ledger.index` | E4.1 (shipped) — [Reveal_Ledger_Crud_Flow.md](./Reveal_Ledger_Crud_Flow.md) |
 | Settings | live | `stories.settings.edit` | E1.2 (shipped) |
 | Saves | placeholder | `stories.saves.index` | Phase 5 (session) |
 | Details | live | `stories.edit` | E1.1 (shipped) |

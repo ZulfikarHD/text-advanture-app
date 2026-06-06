@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Reviews\ReviewController;
 use App\Http\Controllers\Stories\LorebookController;
+use App\Http\Controllers\Stories\RevealLedgerController;
 use App\Http\Controllers\Stories\StoryController;
 use App\Http\Controllers\Stories\StoryOverviewController;
 use App\Http\Controllers\Stories\StoryPlaceholderController;
@@ -49,6 +50,23 @@ Route::middleware(['auth'])->group(function () {
         ->scopeBindings()
         ->middleware('throttle:30,1')
         ->name('stories.lorebook.destroy');
+
+    // Reveal-ledger CRUD (E4.1 / S-4.1.1). Story-scoped load-bearing secrets
+    // that make spoiler-safety explicit. The child {revealLedgerEntry} binds via
+    // scoped bindings (through Story::revealLedgerEntries()), so an entry from
+    // another story resolves to 404; writes are throttled.
+    Route::get('stories/{story:slug}/reveal-ledger', [RevealLedgerController::class, 'index'])->name('stories.reveal-ledger.index');
+    Route::post('stories/{story:slug}/reveal-ledger', [RevealLedgerController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('stories.reveal-ledger.store');
+    Route::put('stories/{story:slug}/reveal-ledger/{revealLedgerEntry}', [RevealLedgerController::class, 'update'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.reveal-ledger.update');
+    Route::delete('stories/{story:slug}/reveal-ledger/{revealLedgerEntry}', [RevealLedgerController::class, 'destroy'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.reveal-ledger.destroy');
 
     // Workspace placeholder surfaces (E2.1 / S-2.1.1). Reachable "coming soon"
     // pages so the workspace nav spans every authoring surface without dead

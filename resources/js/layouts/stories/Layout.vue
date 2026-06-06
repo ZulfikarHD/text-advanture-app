@@ -4,16 +4,17 @@
  *
  * Wraps every per-story surface so each is scoped to a single story and
  * reachable by tab navigation rather than a typed URL. The nav spans the full
- * authoring surface set: Overview, Characters, Structure, Lorebook, Settings,
- * Saves, and Details. Characters / Structure / Lorebook / Saves are reachable
- * "coming soon" placeholders until their features ship (PH-30); the rest are
- * live. Reads the shared `story` page prop every story page exposes.
+ * authoring surface set: Overview, Characters, Structure, Lorebook, Reveal
+ * ledger, Settings, Saves, and Details. Characters / Structure / Saves are
+ * reachable "coming soon" placeholders until their features ship (PH-30); the
+ * rest are live. Reads the shared `story` page prop every story page exposes.
  */
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     ArrowLeft,
     BookMarked,
     FileText,
+    KeyRound,
     LayoutDashboard,
     ListTree,
     Save,
@@ -27,6 +28,7 @@ import { dashboard } from '@/routes';
 import { edit as storyEdit, show as storyShow } from '@/routes/stories';
 import { index as charactersIndex } from '@/routes/stories/characters';
 import { index as lorebookIndex } from '@/routes/stories/lorebook';
+import { index as revealLedgerIndex } from '@/routes/stories/reveal-ledger';
 import { index as savesIndex } from '@/routes/stories/saves';
 import { edit as storySettingsEdit } from '@/routes/stories/settings';
 import { index as structureIndex } from '@/routes/stories/structure';
@@ -44,6 +46,7 @@ const tabs = computed<NavItem[]>(() => [
     { title: 'Characters', href: charactersIndex(story.value.slug), icon: Users },
     { title: 'Structure', href: structureIndex(story.value.slug), icon: ListTree },
     { title: 'Lorebook', href: lorebookIndex(story.value.slug), icon: BookMarked },
+    { title: 'Reveal ledger', href: revealLedgerIndex(story.value.slug), icon: KeyRound },
     { title: 'Settings', href: storySettingsEdit(story.value.slug), icon: Settings },
     { title: 'Saves', href: savesIndex(story.value.slug), icon: Save },
     { title: 'Details', href: storyEdit(story.value.slug), icon: FileText },
