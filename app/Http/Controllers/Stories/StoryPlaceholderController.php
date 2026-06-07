@@ -12,10 +12,10 @@ use Inertia\Response;
  * Placeholder surfaces for the per-story authoring workspace (E2.1 / S-2.1.1).
  *
  * The workspace shell promises navigation across every authoring surface
- * (characters, structure/outline, settings, saves), but several of them are not
- * built yet — they land in later phases. Rather than leave dead nav items, each
- * unbuilt surface renders a reachable "coming soon" page so the author can see
- * the full workspace shape today.
+ * (structure/outline, saves), but several of them are not built yet — they land
+ * in later phases. Rather than leave dead nav items, each unbuilt surface renders
+ * a reachable "coming soon" page so the author can see the full workspace shape
+ * today. (Characters shipped in E1.1; Lorebook + Reveal ledger ship live too.)
  *
  * Every method is owner-scoped: `{story:slug}` binds under `OwnerScope`, so a
  * foreign story resolves to 404 without leaking its existence, and `view`
@@ -27,19 +27,6 @@ use Inertia\Response;
  */
 class StoryPlaceholderController extends Controller
 {
-    /**
-     * Characters surface — compiled character cards (lands in Phase 3, O5).
-     */
-    public function characters(Story $story): Response
-    {
-        return $this->placeholder($story, [
-            'key' => 'characters',
-            'title' => 'Characters',
-            'description' => 'Compile spoiler-free character cards, relationship edges, and sensitivities from each source bible. The cast that the engine plays lives here.',
-            'phase' => 'Phase 3',
-        ]);
-    }
-
     /**
      * Structure surface — chapters, scenes, and beats (lands in Phase 4, O6).
      */

@@ -22,6 +22,7 @@ api/{domain}/{domain}-{resource}.md   # subsystem-scoped (e.g. session/session-r
 | [stories.md](./stories.md) | Story CRUD: workspace list, create/edit/delete (`stories.store/edit/update/destroy`, Sprint 7) |
 | [story-overview.md](./story-overview.md) | Per-story overview: derived counts + play-readiness (`stories.show`, E1.2) |
 | [story-settings.md](./story-settings.md) | Per-story settings: default POV + model-role overrides (`stories.settings.edit/update`, E1.2) |
+| [characters.md](./characters.md) | Per-story minimal manual character CRUD: name/appearance/`is_player` + NPC `folded_identity`/`knowledge_boundary` (`stories.characters.index/store/update/destroy`, E1.1) |
 | [lorebook.md](./lorebook.md) | Per-story lorebook CRUD: keyword-injected world facts (`stories.lorebook.index/store/update/destroy`, E3.1) |
 | [reveal-ledger.md](./reveal-ledger.md) | Per-story reveal-ledger CRUD: load-bearing secrets → reveal point (`stories.reveal-ledger.index/store/update/destroy`, E4.1) |
 
@@ -36,6 +37,8 @@ api/{domain}/{domain}-{resource}.md   # subsystem-scoped (e.g. session/session-r
 > **Sprint 9** added the per-story **lorebook** CRUD ([lorebook.md](./lorebook.md)) — the first scoped-binding nested resource; runtime keyword injection, world-fact-discipline validation (S-3.1.2), and the keyword-match preview (S-3.2.1) are deferred.
 >
 > **Sprint 10** added the per-story **reveal-ledger** CRUD ([reveal-ledger.md](./reveal-ledger.md)) — load-bearing secrets `{ fact, reveal_chapter, who_knows }` that make spoiler-safety explicit; the compile clamp that consumes them (Phase 3) and the reveal-clamp preview (S-4.1.2) are deferred (PH-34).
+>
+> **Sprint 11** added the per-story **characters** CRUD ([characters.md](./characters.md), E1.1) — the first **minimal manual** authoring surface (no LLM call): name/appearance/`base_opacity` + exactly-one `is_player`, with NPC `folded_identity` and mandatory `knowledge_boundary`. Each character commits a chapter-1 `character_card`, so the surface auto-ensures a default **Chapter 1** to anchor it (characters are tied to chapters). The AI/hybrid creation + bible→card compile pipeline and `live_axes` edges stay deferred to Phase 5. **Resolves the characters portion of PH-30.**
 
 ## Expected first contracts (when O1/O4 begin)
 

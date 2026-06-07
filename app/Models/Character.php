@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Character - a member of a story's cast (ADR 0001/0002/0007).
@@ -55,6 +56,21 @@ class Character extends Model
     public function cards(): HasMany
     {
         return $this->hasMany(CharacterCard::class);
+    }
+
+    /**
+     * The chapter-1 card — the minimal manual slice authored in E1.1.
+     *
+     * A character's `appearance`, `folded_identity`, and `knowledge_boundary`
+     * live on this per-`(character, chapter)` card; this phase authors only the
+     * `Chapter 1` snapshot (later chapters recompile per ADR 0013 §4).
+     *
+     * @return HasOne<CharacterCard, $this>
+     */
+    public function chapterOneCard(): HasOne
+    {
+        return $this->hasOne(CharacterCard::class)
+            ->whereHas('chapter', fn ($query) => $query->where('number', 1));
     }
 
     /**

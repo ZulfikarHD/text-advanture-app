@@ -75,10 +75,11 @@ Scenario: Exactly one player per story
 ```
 
 > **Technical Notes E1.1:**
-> - **Preconditions:** Phase 0 `characters` + `character_cards` tables and the per-story workspace nav.
-> - **Integrates-into:** the existing per-story workspace `characters` surface (replace its `ComingSoon` placeholder with a list + minimal create/edit form); reuse `StoryService` patterns for owner-scoping.
+> - **Preconditions:** Phase 0 `characters` + `character_cards` **+ `chapters`** tables and the per-story workspace nav. A character's minimal fields (`appearance`, `folded_identity`, `knowledge_boundary`) live only on the per-`(character, chapter)` `character_card`, whose `chapter_id` is `NOT NULL` — so a character **cannot** exist without a chapter. Characters are parts of the novel and tied to its chapters (Novel-Crafter model); the chapter is the backbone.
+> - **Chapter-1 anchor:** to keep E1.1 functional standalone, the `characters` surface **ensures a default `Chapter 1`** (number `1`, title `"Chapter 1"`, `pov_default` = the story's resolved default POV) when the first character is committed, and commits the character's `chapter-1` `character_card` under it. E1.2 (Structure) later refines that same chapter — it is not re-created.
+> - **Integrates-into:** the existing per-story workspace `characters` surface (replace its `ComingSoon` placeholder with a list + minimal create/edit form); reuse `StoryService` patterns for owner-scoping and slug derivation, and the close sibling `LorebookController`/`RevealLedgerController` CRUD shape.
 > - **Leak-guards:** `knowledge_boundary` is captured now because Phase 2's NPC `IDENTITY`/`SCENE_EXCERPT` blocks and Phase 4's `NUDGE` leak-check depend on it. No guard runs at authoring time.
-> - This is the **minimal manual slice** of ADR 0018 — the full AI/hybrid creation pipeline + bible→card compile lands in Phase 5. Edges/registers/sensitivities are **not** authored here.
+> - This is the **minimal manual slice** of ADR 0018 — the full AI/hybrid creation pipeline + bible→card compile lands in Phase 5. Edges/registers/sensitivities (`live_axes` content) are **not** authored here.
 
 ---
 

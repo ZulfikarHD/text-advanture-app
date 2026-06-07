@@ -27,7 +27,8 @@ class StoryWorkspaceTest extends TestCase
     public static function surfaceProvider(): array
     {
         return [
-            'characters' => ['stories.characters.index', 'characters', 'Characters'],
+            // Characters shipped in E1.1 — it is no longer a placeholder surface
+            // (see CharacterCrudTest). Structure and Saves remain placeholders.
             'structure' => ['stories.structure.index', 'structure', 'Structure'],
             'saves' => ['stories.saves.index', 'saves', 'Saves'],
         ];

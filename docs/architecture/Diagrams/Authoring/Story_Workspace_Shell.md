@@ -3,8 +3,9 @@
 > The per-story authoring workspace: a single tab shell that spans every
 > authoring surface, scoped to one story. Live surfaces render their feature;
 > the not-yet-built surfaces render a reachable "coming soon" placeholder
-> so the shell shows its full shape without dead nav items. (Lorebook shipped its
-> real CRUD in E3.1 — see [Lorebook_Crud_Flow.md](./Lorebook_Crud_Flow.md).)
+> so the shell shows its full shape without dead nav items. (Characters shipped
+> its real CRUD in E1.1 — see [Character_Crud_Flow.md](./Character_Crud_Flow.md);
+> Lorebook in E3.1 — see [Lorebook_Crud_Flow.md](./Lorebook_Crud_Flow.md).)
 > Source of truth:
 > `resources/js/layouts/stories/Layout.vue`, `app/Http/Controllers/Stories/StoryPlaceholderController.php`,
 > `resources/js/pages/stories/ComingSoon.vue`, `routes/web.php`.
@@ -21,7 +22,7 @@ flowchart TD
     end
 
     Tabs --> Overview["Overview (live) - readiness + counts"]
-    Tabs --> Characters["Characters (placeholder)"]
+    Tabs --> Characters["Characters (live) - hand-authored cast"]
     Tabs --> Structure["Structure (placeholder)"]
     Tabs --> Lorebook["Lorebook (live) - keyword world facts"]
     Tabs --> RevealLedger["Reveal ledger (live) - load-bearing secrets"]
@@ -29,8 +30,7 @@ flowchart TD
     Tabs --> Saves["Saves (placeholder)"]
     Tabs --> Details["Details (live) - edit form"]
 
-    Characters --> CS["stories/ComingSoon - teaching empty state + phase badge"]
-    Structure --> CS
+    Structure --> CS["stories/ComingSoon - teaching empty state + phase badge"]
     Saves --> CS
 ```
 
@@ -43,8 +43,8 @@ sequenceDiagram
     participant C as StoryPlaceholderController
     participant DB as MariaDB
 
-    U->>I: Click a placeholder tab (e.g. Characters)
-    I->>C: GET /stories/{slug}/characters
+    U->>I: Click a placeholder tab (e.g. Structure)
+    I->>C: GET /stories/{slug}/structure
     Note over C,DB: {story:slug} binds under OwnerScope
     alt story not owned (or missing)
         C-->>I: 404 (existence never leaked)
@@ -60,7 +60,7 @@ sequenceDiagram
 | Surface | Status | Route name | Resolves in |
 |---------|--------|------------|-------------|
 | Overview | live | `stories.show` | E1.2 (shipped) |
-| Characters | placeholder | `stories.characters.index` | Phase 3 (O5 character creation) |
+| Characters | live | `stories.characters.index` | E1.1 (shipped) — [Character_Crud_Flow.md](./Character_Crud_Flow.md) |
 | Structure | placeholder | `stories.structure.index` | Phase 4 (O6 outline compiler) |
 | Lorebook | live | `stories.lorebook.index` | E3.1 (shipped) — [Lorebook_Crud_Flow.md](./Lorebook_Crud_Flow.md) |
 | Reveal ledger | live | `stories.reveal-ledger.index` | E4.1 (shipped) — [Reveal_Ledger_Crud_Flow.md](./Reveal_Ledger_Crud_Flow.md) |

@@ -27,6 +27,7 @@ Mermaid diagrams, grouped by subject. Filenames use `Title_Case`.
 | Story CRUD flow | [Authoring/Story_Crud_Flow.md](./Authoring/Story_Crud_Flow.md) |
 | Story settings & overview flow | [Authoring/Story_Settings_Overview_Flow.md](./Authoring/Story_Settings_Overview_Flow.md) |
 | Story workspace shell (tabs + placeholders) | [Authoring/Story_Workspace_Shell.md](./Authoring/Story_Workspace_Shell.md) |
+| Character CRUD flow (minimal manual) | [Authoring/Character_Crud_Flow.md](./Authoring/Character_Crud_Flow.md) |
 | Lorebook CRUD flow | [Authoring/Lorebook_Crud_Flow.md](./Authoring/Lorebook_Crud_Flow.md) |
 | Reveal ledger CRUD flow | [Authoring/Reveal_Ledger_Crud_Flow.md](./Authoring/Reveal_Ledger_Crud_Flow.md) |
 

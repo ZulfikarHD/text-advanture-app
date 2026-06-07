@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Reviews\ReviewController;
+use App\Http\Controllers\Stories\CharacterController;
 use App\Http\Controllers\Stories\LorebookController;
 use App\Http\Controllers\Stories\RevealLedgerController;
 use App\Http\Controllers\Stories\StoryController;
@@ -29,6 +30,23 @@ Route::middleware(['auth'])->group(function () {
     Route::put('stories/{story:slug}/settings', [StorySettingsController::class, 'update'])
         ->middleware('throttle:12,1')
         ->name('stories.settings.update');
+
+    // Character CRUD (E1.1 / S-1.1.1 / S-1.1.2). Minimal manual cast — name,
+    // appearance, folded identity, mandatory knowledge_boundary, exactly one
+    // is_player; no LLM call. The child {character} binds via scoped bindings, so
+    // a character from another story resolves to 404; writes are throttled.
+    Route::get('stories/{story:slug}/characters', [CharacterController::class, 'index'])->name('stories.characters.index');
+    Route::post('stories/{story:slug}/characters', [CharacterController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('stories.characters.store');
+    Route::put('stories/{story:slug}/characters/{character}', [CharacterController::class, 'update'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.characters.update');
+    Route::delete('stories/{story:slug}/characters/{character}', [CharacterController::class, 'destroy'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.characters.destroy');
 
     // Lorebook CRUD (E3.1 / S-3.1.1). Story-scoped world facts injected on
     // keyword match. The child {lorebookEntry} binds via scoped bindings, so an
@@ -71,7 +89,7 @@ Route::middleware(['auth'])->group(function () {
     // Workspace placeholder surfaces (E2.1 / S-2.1.1). Reachable "coming soon"
     // pages so the workspace nav spans every authoring surface without dead
     // links. Repointed at their real controllers when each feature ships (PH-30).
-    Route::get('stories/{story:slug}/characters', [StoryPlaceholderController::class, 'characters'])->name('stories.characters.index');
+    // Characters shipped in E1.1 (see the Character CRUD block above).
     Route::get('stories/{story:slug}/structure', [StoryPlaceholderController::class, 'structure'])->name('stories.structure.index');
     Route::get('stories/{story:slug}/saves', [StoryPlaceholderController::class, 'saves'])->name('stories.saves.index');
 
