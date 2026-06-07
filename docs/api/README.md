@@ -23,6 +23,7 @@ api/{domain}/{domain}-{resource}.md   # subsystem-scoped (e.g. session/session-r
 | [story-overview.md](./story-overview.md) | Per-story overview: derived counts + play-readiness (`stories.show`, E1.2) |
 | [story-settings.md](./story-settings.md) | Per-story settings: default POV + model-role overrides (`stories.settings.edit/update`, E1.2) |
 | [characters.md](./characters.md) | Per-story minimal manual character CRUD: name/appearance/`is_player` + NPC `folded_identity`/`knowledge_boundary` (`stories.characters.index/store/update/destroy`, E1.1) |
+| [structure.md](./structure.md) | Per-story minimal manual structure CRUD: hand-authored chapter → scene → beat, scene POV contract + present cast, beat goal (`stories.structure.index` + `chapters/scenes/beats.store/update/destroy`, E1.2) |
 | [lorebook.md](./lorebook.md) | Per-story lorebook CRUD: keyword-injected world facts (`stories.lorebook.index/store/update/destroy`, E3.1) |
 | [reveal-ledger.md](./reveal-ledger.md) | Per-story reveal-ledger CRUD: load-bearing secrets → reveal point (`stories.reveal-ledger.index/store/update/destroy`, E4.1) |
 
@@ -39,6 +40,8 @@ api/{domain}/{domain}-{resource}.md   # subsystem-scoped (e.g. session/session-r
 > **Sprint 10** added the per-story **reveal-ledger** CRUD ([reveal-ledger.md](./reveal-ledger.md)) — load-bearing secrets `{ fact, reveal_chapter, who_knows }` that make spoiler-safety explicit; the compile clamp that consumes them (Phase 3) and the reveal-clamp preview (S-4.1.2) are deferred (PH-34).
 >
 > **Sprint 11** added the per-story **characters** CRUD ([characters.md](./characters.md), E1.1) — the first **minimal manual** authoring surface (no LLM call): name/appearance/`base_opacity` + exactly-one `is_player`, with NPC `folded_identity` and mandatory `knowledge_boundary`. Each character commits a chapter-1 `character_card`, so the surface auto-ensures a default **Chapter 1** to anchor it (characters are tied to chapters). The AI/hybrid creation + bible→card compile pipeline and `live_axes` edges stay deferred to Phase 5. **Resolves the characters portion of PH-30.**
+>
+> **Sprint 12** added the per-story **structure** CRUD ([structure.md](./structure.md), E1.2) — the second **minimal manual** authoring surface (no LLM call): a hand-authored chapter → scene → beat tree under a single `StructureController`, with scoped bindings down the `{story}→{chapter}→{scene}→{beat}` chain. A scene carries its POV contract (`pov_mode`/`pov_anchor`/`tone`) + present cast (character slugs); a beat carries its `goal`. The beat document (`intent`/`word_budget`/`nudge_target`) and outline compilation stay deferred to Phase 4 (PH-35). **Resolves the Structure portion of PH-30** — only Saves remains a placeholder.
 
 ## Expected first contracts (when O1/O4 begin)
 

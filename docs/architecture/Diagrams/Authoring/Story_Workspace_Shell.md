@@ -5,7 +5,9 @@
 > the not-yet-built surfaces render a reachable "coming soon" placeholder
 > so the shell shows its full shape without dead nav items. (Characters shipped
 > its real CRUD in E1.1 — see [Character_Crud_Flow.md](./Character_Crud_Flow.md);
-> Lorebook in E3.1 — see [Lorebook_Crud_Flow.md](./Lorebook_Crud_Flow.md).)
+> Structure in E1.2 — see [Structure_Crud_Flow.md](./Structure_Crud_Flow.md);
+> Lorebook in E3.1 — see [Lorebook_Crud_Flow.md](./Lorebook_Crud_Flow.md).
+> Only **Saves** remains a placeholder.)
 > Source of truth:
 > `resources/js/layouts/stories/Layout.vue`, `app/Http/Controllers/Stories/StoryPlaceholderController.php`,
 > `resources/js/pages/stories/ComingSoon.vue`, `routes/web.php`.
@@ -23,15 +25,14 @@ flowchart TD
 
     Tabs --> Overview["Overview (live) - readiness + counts"]
     Tabs --> Characters["Characters (live) - hand-authored cast"]
-    Tabs --> Structure["Structure (placeholder)"]
+    Tabs --> Structure["Structure (live) - chapter/scene/beat tree"]
     Tabs --> Lorebook["Lorebook (live) - keyword world facts"]
     Tabs --> RevealLedger["Reveal ledger (live) - load-bearing secrets"]
     Tabs --> Settings["Settings (live) - POV + model roles"]
     Tabs --> Saves["Saves (placeholder)"]
     Tabs --> Details["Details (live) - edit form"]
 
-    Structure --> CS["stories/ComingSoon - teaching empty state + phase badge"]
-    Saves --> CS
+    Saves --> CS["stories/ComingSoon - teaching empty state + phase badge"]
 ```
 
 ## Placeholder surface request (owner-scoped)
@@ -43,8 +44,8 @@ sequenceDiagram
     participant C as StoryPlaceholderController
     participant DB as MariaDB
 
-    U->>I: Click a placeholder tab (e.g. Structure)
-    I->>C: GET /stories/{slug}/structure
+    U->>I: Click a placeholder tab (e.g. Saves)
+    I->>C: GET /stories/{slug}/saves
     Note over C,DB: {story:slug} binds under OwnerScope
     alt story not owned (or missing)
         C-->>I: 404 (existence never leaked)
@@ -61,7 +62,7 @@ sequenceDiagram
 |---------|--------|------------|-------------|
 | Overview | live | `stories.show` | E1.2 (shipped) |
 | Characters | live | `stories.characters.index` | E1.1 (shipped) — [Character_Crud_Flow.md](./Character_Crud_Flow.md) |
-| Structure | placeholder | `stories.structure.index` | Phase 4 (O6 outline compiler) |
+| Structure | live | `stories.structure.index` | E1.2 (shipped) — [Structure_Crud_Flow.md](./Structure_Crud_Flow.md) |
 | Lorebook | live | `stories.lorebook.index` | E3.1 (shipped) — [Lorebook_Crud_Flow.md](./Lorebook_Crud_Flow.md) |
 | Reveal ledger | live | `stories.reveal-ledger.index` | E4.1 (shipped) — [Reveal_Ledger_Crud_Flow.md](./Reveal_Ledger_Crud_Flow.md) |
 | Settings | live | `stories.settings.edit` | E1.2 (shipped) |

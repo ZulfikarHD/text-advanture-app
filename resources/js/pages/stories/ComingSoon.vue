@@ -11,7 +11,7 @@
  * workspace layout, which supplies the story title + tab bar. Tracked as PH-30.
  */
 import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
-import { ArrowLeft, Clock, ListTree, Save, Users } from '@lucide/vue';
+import { ArrowLeft, Clock, Save, Users } from '@lucide/vue';
 import type { LucideIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
@@ -22,7 +22,7 @@ import { show as storyShow } from '@/routes/stories';
 import type { BreadcrumbItem } from '@/types';
 
 type Surface = {
-    key: 'characters' | 'structure' | 'saves';
+    key: 'characters' | 'saves';
     title: string;
     description: string;
     phase: string;
@@ -42,7 +42,6 @@ const props = defineProps<{
 // Backend can't ship Vue components, so map the surface key to its icon here.
 const surfaceIcons: Record<Surface['key'], LucideIcon> = {
     characters: Users,
-    structure: ListTree,
     saves: Save,
 };
 

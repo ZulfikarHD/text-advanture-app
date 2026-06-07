@@ -8,6 +8,7 @@ use App\Http\Controllers\Stories\StoryController;
 use App\Http\Controllers\Stories\StoryOverviewController;
 use App\Http\Controllers\Stories\StoryPlaceholderController;
 use App\Http\Controllers\Stories\StorySettingsController;
+use App\Http\Controllers\Stories\StructureController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -47,6 +48,48 @@ Route::middleware(['auth'])->group(function () {
         ->scopeBindings()
         ->middleware('throttle:30,1')
         ->name('stories.characters.destroy');
+
+    // Structure CRUD (E1.2 / S-1.2.1). Minimal manual chapter → scene → beat —
+    // scene POV contract (pov_mode/pov_anchor/tone) + present cast, beat goal;
+    // no LLM call. Nested children bind via scoped bindings down the
+    // {story}→{chapter}→{scene}→{beat} chain, so a row from another story (or a
+    // mismatched parent) resolves to 404; writes are throttled.
+    Route::get('stories/{story:slug}/structure', [StructureController::class, 'index'])->name('stories.structure.index');
+    Route::post('stories/{story:slug}/structure/chapters', [StructureController::class, 'storeChapter'])
+        ->middleware('throttle:30,1')
+        ->name('stories.structure.chapters.store');
+    Route::put('stories/{story:slug}/structure/chapters/{chapter}', [StructureController::class, 'updateChapter'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.structure.chapters.update');
+    Route::delete('stories/{story:slug}/structure/chapters/{chapter}', [StructureController::class, 'destroyChapter'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.structure.chapters.destroy');
+    Route::post('stories/{story:slug}/structure/chapters/{chapter}/scenes', [StructureController::class, 'storeScene'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.structure.scenes.store');
+    Route::put('stories/{story:slug}/structure/chapters/{chapter}/scenes/{scene}', [StructureController::class, 'updateScene'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.structure.scenes.update');
+    Route::delete('stories/{story:slug}/structure/chapters/{chapter}/scenes/{scene}', [StructureController::class, 'destroyScene'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.structure.scenes.destroy');
+    Route::post('stories/{story:slug}/structure/chapters/{chapter}/scenes/{scene}/beats', [StructureController::class, 'storeBeat'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.structure.beats.store');
+    Route::put('stories/{story:slug}/structure/chapters/{chapter}/scenes/{scene}/beats/{beat}', [StructureController::class, 'updateBeat'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.structure.beats.update');
+    Route::delete('stories/{story:slug}/structure/chapters/{chapter}/scenes/{scene}/beats/{beat}', [StructureController::class, 'destroyBeat'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.structure.beats.destroy');
 
     // Lorebook CRUD (E3.1 / S-3.1.1). Story-scoped world facts injected on
     // keyword match. The child {lorebookEntry} binds via scoped bindings, so an
@@ -89,8 +132,8 @@ Route::middleware(['auth'])->group(function () {
     // Workspace placeholder surfaces (E2.1 / S-2.1.1). Reachable "coming soon"
     // pages so the workspace nav spans every authoring surface without dead
     // links. Repointed at their real controllers when each feature ships (PH-30).
-    // Characters shipped in E1.1 (see the Character CRUD block above).
-    Route::get('stories/{story:slug}/structure', [StoryPlaceholderController::class, 'structure'])->name('stories.structure.index');
+    // Characters shipped in E1.1; Structure shipped in E1.2 (see the CRUD blocks
+    // above). Saves lands in Phase 5.
     Route::get('stories/{story:slug}/saves', [StoryPlaceholderController::class, 'saves'])->name('stories.saves.index');
 
     // Shared review gate (S-6.2). Item routes bind under the owner scope, so a
