@@ -17,6 +17,7 @@ import {
     Construction,
     Footprints,
 } from '@lucide/vue';
+import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,6 +38,7 @@ type SaveItem = {
     stateNode: string;
     stateLabel: string;
     lastPlayedAt: string | null;
+    resumeAnchor: Record<string, unknown> | null;
     position: {
         chapterNumber: number | null;
         chapterTitle: string | null;
@@ -49,6 +51,10 @@ const props = defineProps<{
     story: StoryRef;
     save: SaveItem;
 }>();
+
+// A resume anchor is written once a narrator turn pauses mid-beat (S-5.3.1);
+// until then a save opens at the top of its beat. The copy reflects which.
+const isResuming = computed(() => props.save.resumeAnchor !== null);
 
 // Breadcrumbs depend on props (story + save), so they're set dynamically here
 // and link back through Saves so the player can always navigate out.
@@ -80,6 +86,13 @@ setLayoutProps<{ breadcrumbs: BreadcrumbItem[] }>({
                 Your playthrough of
                 <span class="text-foreground">{{ props.story.title }}</span> is
                 ready, forked from the authoring template.
+            </p>
+            <p class="text-sm text-muted-foreground" data-test="save-resume-line">
+                {{
+                    isResuming
+                        ? 'Resuming from where you left off.'
+                        : 'Starting fresh at the beginning of the beat.'
+                }}
             </p>
         </header>
 

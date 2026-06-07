@@ -31,7 +31,7 @@ The persistence layer encodes the isolation boundary (`beat_true_states` split o
 
 - Database driver: pinned in [ADR 0011](../../adr/0011-tech-stack.md) to MariaDB 11.7 (dev) / MySQL-8-compatible schema.
 - ~~Is the Laravel AI SDK the orchestration layer for compile→act, or a thin custom client?~~ **Resolved by [ADR 0017](../../adr/0017-llm-orchestration-openrouter.md):** thin provider-agnostic `LlmClient` over the OpenRouter gateway; Prism / AI SDK remain a drop-in behind it.
-- Multi-save UX: forking, naming, reset.
+- ~~Multi-save UX: forking, naming, reset.~~ **Resolved (S-2.1.1/S-2.1.2/S-2.1.3):** the **Saves** tab forks a play-ready story, names/renames/resets/deletes independent saves, and resumes a save at its persisted loop position (`SessionService` + `SessionController` + `Saves.vue`; see [../../api/saves.md](../../api/saves.md)). Loop-state *producers* (state machine, resume anchor, word/nudge clocks) remain later — PH-37.
 
 ## Related Documentation
 

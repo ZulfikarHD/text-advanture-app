@@ -1,6 +1,6 @@
-# Session Fork Flow (S-2.1.1)
+# Session Fork & Save Lifecycle Flow (S-2.1.1 / S-2.1.2 / S-2.1.3)
 
-> Request flow for **starting a playthrough** — the first save-realm surface. From a story's **Saves** tab the author starts a session, which forks a **play-ready** story into the save realm: one `play_sessions` row at `session_start`, positioned at the story's first beat. The fork **references** the immutable authoring rows by FK rather than copying structure (ADR 0012), seeds **no** `relationship_edges` (Phase 5, ADR 0002), and is wrapped in a single transaction so a mid-fork failure leaves no loadable save. The fresh save lands on a reachable **Play** placeholder (the full reader is S-5.4.1). Multi-save management (S-2.1.2) and resume (S-2.1.3) are later.
+> Request flow for **starting and managing playthroughs** — the save-realm surface. From a story's **Saves** tab the author starts a session, which forks a **play-ready** story into the save realm: one `play_sessions` row at `session_start`, positioned at the story's first beat. The fork **references** the immutable authoring rows by FK rather than copying structure (ADR 0012), seeds **no** `relationship_edges` (Phase 5, ADR 0002), and is wrapped in a single transaction so a mid-fork failure leaves no loadable save. The author can then name, rename, **reset** (back to the freshly-forked state), and delete saves independently (S-2.1.2), and **load** a save to resume it at its persisted loop position (S-2.1.3). The full prose reader is S-5.4.1.
 
 ```mermaid
 sequenceDiagram
@@ -32,7 +32,7 @@ sequenceDiagram
     else play-ready
         S->>DB: BEGIN
         S->>DB: SELECT first beat (ORDER BY chapter.number, scene.number, beat.number)
-        S->>DB: INSERT play_sessions { state_node=session_start, current_*_id, name="Playthrough N", last_played_at=now }
+        S->>DB: INSERT play_sessions { state_node=session_start, current_*_id, name=author or "Playthrough N", last_played_at=now }
         Note right of S: Phase 5 seam — disposition-prior edges seed here, same tx. No edges this phase.
         S->>DB: COMMIT
         S-->>C: PlaySession
@@ -42,6 +42,48 @@ sequenceDiagram
         C-->>I: Inertia::render('sessions/Play', { story, save })
     end
 ```
+
+## Manage & resume saves (S-2.1.2 / S-2.1.3)
+
+Once a save exists the Saves tab manages it; each action authorizes `update` on the parent story and resolves `{playSession}` through the scoped binding, then redirects back to the index. Destructive actions (reset/delete) are confirmed in the UI first (`useConfirm`, never a native dialog).
+
+```mermaid
+sequenceDiagram
+    participant U as Player (Browser)
+    participant C as SessionController
+    participant S as SessionService
+    participant DB as MariaDB
+
+    Note over U,DB: RENAME (S-2.1.2)
+    U->>C: PUT /saves/{playSession} { name }
+    C->>S: rename(save, name)
+    S->>DB: UPDATE play_sessions SET name
+    C-->>U: redirect index + "Save renamed."
+
+    Note over U,DB: RESET (S-2.1.2) — confirmed in UI
+    U->>C: POST /saves/{playSession}/reset
+    C->>S: reset(save)
+    S->>DB: BEGIN
+    S->>DB: SELECT first beat (document order)
+    S->>DB: UPDATE play_sessions SET state_node=session_start, current_*_id, counters=0, resume_anchor/narrative_clock/nudge=null, last_played_at=now
+    Note right of S: Phase 5 seam — clear + reseed edges / delete save-realm children here, same tx
+    S->>DB: COMMIT
+    C-->>U: redirect index + "Save reset to its starting position."
+
+    Note over U,DB: DELETE (S-2.1.2) — confirmed in UI
+    U->>C: DELETE /saves/{playSession}
+    C->>S: delete(save)
+    S->>DB: DELETE play_sessions (FK cascade → future children)
+    C-->>U: redirect index + "Save deleted."
+
+    Note over U,DB: LOAD → RESUME (S-2.1.3)
+    U->>C: GET /saves/{playSession}/play
+    C->>S: resume(save)
+    S->>DB: UPDATE play_sessions SET last_played_at=now
+    C-->>U: render Play at the PERSISTED state_node + position (never reset to beat start)
+```
+
+Each save is independent: rename/reset/delete touch only the addressed row, never a sibling or the authoring template. Reset re-uses the same first-beat resolution as the fork, so a reset save lands exactly where a fresh fork would.
 
 ## Ownership & scoping
 

@@ -28,3 +28,7 @@ flowchart TD
 - **Nudge escalation** (ADR 0008) is clocked by per-beat word budget + goal-not-met.
 
 > The state machine is the conductor; O1 defines the loop internals, not a new orchestrator.
+
+## Entry & reset (S-2.1.2 / S-2.1.3)
+
+A save is **persisted at** `state_node = session_start` when forked, and a **reset** ([Session_Fork_Flow.md](./Session_Fork_Flow.md)) returns an existing save to that same entry node (re-positioned at the first beat, loop counters cleared). **Loading** a save re-enters the machine at its *persisted* `state_node` — never forced back to `session_start` — so play continues exactly where it paused (the `resume_anchor` feeds `NARRATOR_RESUMES`). The producers that move a save off `session_start` (the spine in S-3.1.1, the resume anchor in S-5.3.1) are later — see PH-37.

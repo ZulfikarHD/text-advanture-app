@@ -129,16 +129,30 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('throttle:30,1')
         ->name('stories.reveal-ledger.destroy');
 
-    // Sessions / saves (E2.1 / S-2.1.1). Start a playthrough by forking a
-    // play-ready story into the save realm and list the saves forked from it;
-    // the fork never mutates the authoring template (ADR 0012). The nested
-    // {playSession} binds through Story::playSessions() via scoped bindings, so
-    // a save from another story (or owner) resolves to 404; writes are throttled.
-    // Play is the reachable next step a fresh fork lands on (full reader: S-5.4.1).
+    // Sessions / saves (E2.1 / S-2.1.1 / S-2.1.2 / S-2.1.3). Start a playthrough
+    // by forking a play-ready story into the save realm, then manage the saves
+    // forked from it: rename, reset to the freshly-forked state, and delete —
+    // each fork independent, the authoring template never mutated (ADR 0012). The
+    // nested {playSession} binds through Story::playSessions() via scoped
+    // bindings, so a save from another story (or owner) resolves to 404; writes
+    // are throttled. Opening Play resumes the save at its persisted loop position
+    // (S-2.1.3); the full prose reader is S-5.4.1.
     Route::get('stories/{story:slug}/saves', [SessionController::class, 'index'])->name('stories.saves.index');
     Route::post('stories/{story:slug}/saves', [SessionController::class, 'store'])
         ->middleware('throttle:30,1')
         ->name('stories.saves.store');
+    Route::put('stories/{story:slug}/saves/{playSession}', [SessionController::class, 'update'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.saves.update');
+    Route::post('stories/{story:slug}/saves/{playSession}/reset', [SessionController::class, 'reset'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.saves.reset');
+    Route::delete('stories/{story:slug}/saves/{playSession}', [SessionController::class, 'destroy'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.saves.destroy');
     Route::get('stories/{story:slug}/saves/{playSession}/play', [SessionController::class, 'play'])
         ->scopeBindings()
         ->name('stories.saves.play');

@@ -1,27 +1,39 @@
 <script setup lang="ts">
 /**
- * Stories/Saves - the story's save-realm surface (S-2.1.1).
+ * Stories/Saves - the story's save-realm surface (S-2.1.1 / S-2.1.2 / S-2.1.3).
  *
  * Starts a playthrough by forking the play-ready story into the save realm and
- * lists the saves forked from it. Forking never mutates the authoring template
- * (ADR 0012): each save references the immutable structure and evolves on its
- * own. The "Start session" action is gated on play-readiness (re-checked
- * server-side); a not-yet-ready story routes the author back to the Overview to
- * finish the requirements. Each save opens its Play surface (the reachable next
- * step). Multi-save management (rename/load/reset/delete) and resume land in
- * later stories. Rendered inside the per-story workspace layout (tab nav).
+ * manages the independent saves forked from it: name on create, rename, reset to
+ * the freshly-forked state, and delete (each confirmed). Forking and play never
+ * mutate the authoring template (ADR 0012): each save references the immutable
+ * structure and evolves on its own, and changes to one never affect another. The
+ * "Start session" action is gated on play-readiness (re-checked server-side); a
+ * not-yet-ready story routes the author back to the Overview to finish the
+ * requirements. Each save opens its Play surface, which resumes at the save's
+ * persisted loop position. Rendered inside the per-story workspace layout.
  */
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowRight, CircleAlert, Play, Save } from '@lucide/vue';
-import { computed } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import {
+    ArrowRight,
+    CircleAlert,
+    Pencil,
+    Play,
+    RotateCcw,
+    Save,
+    Trash2,
+} from '@lucide/vue';
+import { computed, ref } from 'vue';
+import SessionController from '@/actions/App/Http/Controllers/Stories/SessionController';
 import EmptyState from '@/components/EmptyState.vue';
+import SaveDialog from '@/components/stories/SaveDialog.vue';
+import type { RenameableSave } from '@/components/stories/SaveDialog.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useConfirm } from '@/composables/useConfirm';
 import { useFormat } from '@/composables/useFormat';
 import { dashboard } from '@/routes';
 import { show as storyShow } from '@/routes/stories';
-import { play as playRoute, store as startSessionRoute } from '@/routes/stories/saves';
 
 type StoryRef = {
     id: number;
@@ -47,6 +59,7 @@ type SaveItem = {
     stateNode: string;
     stateLabel: string;
     lastPlayedAt: string | null;
+    resumeAnchor: Record<string, unknown> | null;
     position: {
         chapterNumber: number | null;
         chapterTitle: string | null;
@@ -62,19 +75,70 @@ const props = defineProps<{
 }>();
 
 const { formatDateTime } = useFormat();
+const { confirm } = useConfirm();
 
 const unmetRequirements = computed(() =>
     props.readiness.requirements.filter((req) => !req.met),
 );
 
-// No payload: the fork is derived entirely from the (server-authorized) story.
-// useForm tracks `processing` so the button can show its in-flight state.
-const startForm = useForm({});
+// Suggested name for the next fork; the dialog prefills it and the server falls
+// back to the same default when the field is left blank.
+const suggestedName = computed(() => `Playthrough ${props.saves.length + 1}`);
 
-function startSession(): void {
-    startForm.post(startSessionRoute.url({ story: props.story.slug }), {
-        preserveScroll: true,
+const dialogOpen = ref(false);
+const renameTarget = ref<RenameableSave | null>(null);
+
+function openCreate(): void {
+    renameTarget.value = null;
+    dialogOpen.value = true;
+}
+
+function openRename(save: SaveItem): void {
+    renameTarget.value = { id: save.id, name: save.name };
+    dialogOpen.value = true;
+}
+
+async function resetSave(save: SaveItem): Promise<void> {
+    const confirmed = await confirm({
+        title: `Reset “${save.name}”?`,
+        description:
+            'This returns the save to its freshly-forked starting position and clears all progress. Other saves and the story template are untouched. This cannot be undone.',
+        confirmLabel: 'Reset save',
     });
+
+    if (!confirmed) {
+        return;
+    }
+
+    router.post(
+        SessionController.reset.url({
+            story: props.story.slug,
+            playSession: save.id,
+        }),
+        {},
+        { preserveScroll: true },
+    );
+}
+
+async function deleteSave(save: SaveItem): Promise<void> {
+    const confirmed = await confirm({
+        title: `Delete “${save.name}”?`,
+        description:
+            'This permanently deletes this playthrough. Other saves and the story template are untouched. This cannot be undone.',
+        confirmLabel: 'Delete save',
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
+    router.delete(
+        SessionController.destroy.url({
+            story: props.story.slug,
+            playSession: save.id,
+        }),
+        { preserveScroll: true },
+    );
 }
 
 defineOptions({
@@ -105,14 +169,9 @@ defineOptions({
             v-if="props.readiness.ready && props.saves.length > 0"
             class="shrink-0"
         >
-            <Button
-                class="h-11"
-                data-test="start-session"
-                :disabled="startForm.processing"
-                @click="startSession"
-            >
+            <Button class="h-11" data-test="start-session" @click="openCreate">
                 <Play class="size-4" />
-                {{ startForm.processing ? 'Starting…' : 'Start session' }}
+                Start session
             </Button>
         </div>
     </header>
@@ -172,14 +231,9 @@ defineOptions({
         data-test="saves-empty"
     >
         <template #action>
-            <Button
-                class="h-11"
-                data-test="start-session"
-                :disabled="startForm.processing"
-                @click="startSession"
-            >
+            <Button class="h-11" data-test="start-session" @click="openCreate">
                 <Play class="size-4" />
-                {{ startForm.processing ? 'Starting…' : 'Start session' }}
+                Start session
             </Button>
         </template>
     </EmptyState>
@@ -190,58 +244,107 @@ defineOptions({
         class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
         data-test="saves-grid"
     >
-        <Link
+        <Card
             v-for="save in props.saves"
             :key="save.id"
-            :href="playRoute({ story: props.story.slug, playSession: save.id })"
-            class="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            class="flex flex-col"
             :data-test="`save-${save.id}`"
         >
-            <Card class="h-full transition-colors hover:border-primary/40">
-                <CardContent class="flex h-full flex-col gap-4">
-                    <div class="flex items-start justify-between gap-2">
-                        <h3
-                            class="line-clamp-1 text-base font-semibold text-foreground"
-                        >
-                            {{ save.name }}
-                        </h3>
-                        <Badge variant="secondary">{{ save.stateLabel }}</Badge>
-                    </div>
-                    <div class="flex-1 space-y-1 text-sm">
-                        <p class="font-medium text-foreground">
-                            Chapter {{ save.position.chapterNumber }}
-                            <span v-if="save.position.sceneNumber">
-                                · Scene {{ save.position.sceneNumber }}</span
-                            >
-                        </p>
-                        <p
-                            v-if="save.position.beatGoal"
-                            class="line-clamp-2 text-muted-foreground"
-                        >
-                            {{ save.position.beatGoal }}
-                        </p>
-                    </div>
-                    <div
-                        class="flex items-center justify-between gap-2 border-t border-border pt-4"
+            <CardContent class="flex h-full flex-col gap-4">
+                <div class="flex items-start justify-between gap-2">
+                    <h3
+                        class="line-clamp-1 text-base font-semibold text-foreground"
                     >
-                        <span class="text-xs text-muted-foreground">
-                            {{
-                                save.lastPlayedAt
-                                    ? formatDateTime(save.lastPlayedAt)
-                                    : 'Not played yet'
-                            }}
-                        </span>
-                        <span
-                            class="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors group-hover:text-foreground"
+                        {{ save.name }}
+                    </h3>
+                    <Badge variant="secondary">{{ save.stateLabel }}</Badge>
+                </div>
+                <div class="flex-1 space-y-1 text-sm">
+                    <p class="font-medium text-foreground">
+                        Chapter {{ save.position.chapterNumber }}
+                        <span v-if="save.position.sceneNumber">
+                            · Scene {{ save.position.sceneNumber }}</span
+                        >
+                    </p>
+                    <p
+                        v-if="save.position.beatGoal"
+                        class="line-clamp-2 text-muted-foreground"
+                    >
+                        {{ save.position.beatGoal }}
+                    </p>
+                    <p class="pt-1 text-xs text-muted-foreground">
+                        {{
+                            save.lastPlayedAt
+                                ? `Last played ${formatDateTime(save.lastPlayedAt)}`
+                                : 'Not played yet'
+                        }}
+                    </p>
+                </div>
+
+                <!-- Actions: open (load → resume) + manage (rename/reset/delete) -->
+                <div
+                    class="flex items-center justify-between gap-2 border-t border-border pt-4"
+                >
+                    <Button
+                        as-child
+                        variant="outline"
+                        class="h-10"
+                        :data-test="`open-save-${save.id}`"
+                    >
+                        <Link
+                            :href="
+                                SessionController.play.url({
+                                    story: props.story.slug,
+                                    playSession: save.id,
+                                })
+                            "
                         >
                             Open
-                            <ArrowRight
-                                class="size-4 transition-transform group-hover:translate-x-0.5"
-                            />
-                        </span>
+                            <ArrowRight class="size-4" />
+                        </Link>
+                    </Button>
+                    <div class="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            class="size-9"
+                            :data-test="`rename-save-${save.id}`"
+                            @click="openRename(save)"
+                        >
+                            <Pencil class="size-4" />
+                            <span class="sr-only">Rename save</span>
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            class="size-9"
+                            :data-test="`reset-save-${save.id}`"
+                            @click="resetSave(save)"
+                        >
+                            <RotateCcw class="size-4" />
+                            <span class="sr-only">Reset save</span>
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            class="size-9 text-destructive hover:text-destructive"
+                            :data-test="`delete-save-${save.id}`"
+                            @click="deleteSave(save)"
+                        >
+                            <Trash2 class="size-4" />
+                            <span class="sr-only">Delete save</span>
+                        </Button>
                     </div>
-                </CardContent>
-            </Card>
-        </Link>
+                </div>
+            </CardContent>
+        </Card>
     </div>
+
+    <!-- Create / rename dialog (single instance serves both modes) -->
+    <SaveDialog
+        v-model:open="dialogOpen"
+        :story-slug="props.story.slug"
+        :save="renameTarget"
+        :suggested-name="suggestedName"
+    />
 </template>
