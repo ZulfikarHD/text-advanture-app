@@ -1,6 +1,6 @@
-# Session Save Diagnostics (S-2.1.1 / S-2.1.2 / S-2.1.3)
+# Session Save Diagnostics (S-2.1.1 / S-2.1.2 / S-2.1.3 / S-3.1.1)
 
-Operational playbook for the **save realm** — forking a story into a save, then naming, renaming, resetting, deleting, and resuming saves. Use this when "Start session" does nothing, a save lands at the wrong position, a manage action fails, or a Play link 404s. Backed by `SessionService` + `SessionController` (see [../api/saves.md](../api/saves.md) and [../architecture/Diagrams/Engine/Session_Fork_Flow.md](../architecture/Diagrams/Engine/Session_Fork_Flow.md)).
+Operational playbook for the **save realm** — forking a story into a save, then naming, renaming, resetting, deleting, and resuming saves, plus the **state-machine spine** that advances a save through the narrator loop. Use this when "Start session" does nothing, a save lands at the wrong position, a manage action fails, a Play link 404s, or a loop transition throws. Backed by `SessionService` + `SessionController` + `SessionStateMachine` (see [../api/saves.md](../api/saves.md), [../architecture/Diagrams/Engine/Session_Fork_Flow.md](../architecture/Diagrams/Engine/Session_Fork_Flow.md), and [../architecture/Diagrams/Engine/Session_State_Machine.md](../architecture/Diagrams/Engine/Session_State_Machine.md)).
 
 ## What "start a session" does
 
@@ -43,11 +43,33 @@ php artisan tinker --execute '
 '
 ```
 
+## Loop transitions (S-3.1.1)
+
+`SessionStateMachine` is the only conductor of the narrator-loop spine. It is backend-only this phase: there is **no route** yet (the Play advance UI is S-5.4.1) and the `Handoff` is **injected** by the caller (the prose-call producer is S-4.2.1), so today the transitions are exercised by tests, not by play. The spine touches only `state_node` + the `current_*` position.
+
+| Symptom | Likely cause | Triage |
+|---------|--------------|--------|
+| An `IllegalLoopTransitionException` ("Cannot run loop transition [X] from state node [Y]") | A transition was called from the wrong node — `begin` off `session_start`, `applyHandoff` off `narrator_turn`, `resumeFromPlayerMoment` off `player_moment`, or `completeBeat` off `beat_complete` | Correct fail-closed behavior: the spine never advances from an unexpected node. Check the save's `state_node` and call the matching transition. |
+| An `IllegalLoopTransitionException` naming `npc_moment` | `applyHandoff()` received `Handoff::NpcMoment` — its branch is **not reachable until Phase 2** | Expected this phase. The narrator must hand off only `player_moment` or `beat_complete`; `npc_moment` lights up when live NPCs arrive (Phase 2). The save is left unmoved. |
+| `completeBeat` doesn't advance the position | The save is on the **last** beat in document order, so there is no next beat — it holds on `beat_complete` (terminal, PH-38) | Expected end-of-story behavior this phase. The boundary/loop-exit subsystem is Phase 4. Confirm the Structure ordering if you expected a later beat. |
+| `completeBeat` lands on an unexpected beat | "Next" is resolved by `BeatSequence` ordered `chapter.number → scene.number → beat.number`, **not** by row id | Check the Structure tab's numbering — the next beat is the next ordinal tuple across scene/chapter, the same order the fork uses. |
+
+### Verify the spine from tinker (read-only)
+
+```bash
+php artisan tinker --execute '
+  $p = App\Models\PlaySession::firstWhere("id", 1);
+  dump($p?->only(["id","state_node","current_chapter_id","current_scene_id","current_beat_id"]));
+  dump(app(App\Services\BeatSequence::class)->next($p->currentBeat)?->only(["id","number"]));
+'
+```
+
 ## Atomicity note
 
 The fork **and reset** are wrapped in `DB::transaction`. Today each is a single write, but the wrapper is the seam where Phase 5 adds disposition-prior edge seeding (fork) and clear/reseed + child cleanup (reset) **inside the same transaction** — a mid-operation failure must roll back to leave **no** half-seeded, loadable state. `tests/Feature/Sessions/SessionForkTest.php::test_fork_is_atomic_when_a_step_fails` proves the rollback.
 
 ## Out of scope (later stories)
 
-- Loop-state **producers** that advance a save off `session_start` — the state machine spine (**S-3.1.1**), the resume anchor (**S-5.3.1**), and the word/nudge clocks (Phase 4). Persistence + restore exist now; nothing advances them mid-play yet (**PH-37**).
-- The actual Play reader (prose, scrollback, advance/pause) — **S-5.4.1** (the current Play surface is a placeholder, PH-36).
+- The remaining loop-state **producers** that feed the spine — the handoff producer (the prose call, **S-4.2.1**), the resume anchor (**S-5.3.1**), and the word/nudge clocks (Phase 4). The spine (S-3.1.1) advances `state_node`/position now, but consumes an injected handoff; nothing produces it in normal play yet (**PH-37**).
+- The actual Play reader + advance/pause controls that *call* the spine — **S-5.4.1** (the current Play surface is a placeholder, PH-36).
+- The boundary/loop-exit subsystem when the last beat closes — Phase 4 (**PH-38**).

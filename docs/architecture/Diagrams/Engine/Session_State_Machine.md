@@ -20,6 +20,27 @@ flowchart TD
   boundary --> narrate
 ```
 
+## This-phase spine (S-3.1.1 / S-3.1.2)
+
+`SessionStateMachine` ([`app/Services/SessionStateMachine.php`](../../../../app/Services/SessionStateMachine.php)) is the implemented subset of the flow above — the **only conductor**, with the narrator turn's structured `Handoff` as its sole branch input. Only `player_moment` and `beat_complete` are reachable; `npc_moment` is a valid registry handoff but is **rejected** until Phase 2. Each edge is one guarded, persisted transition method:
+
+```mermaid
+flowchart LR
+  start([session_start]) -->|begin| narrate[narrator_turn]
+  narrate -->|"applyHandoff(player_moment)"| player[player_moment]
+  narrate -->|"applyHandoff(beat_complete)"| done[beat_complete]
+  player -->|resumeFromPlayerMoment| narrate
+  done -->|"completeBeat (next beat)"| narrate
+  narrate -.->|"applyHandoff(npc_moment): rejected"| phase2["Phase 2"]
+```
+
+- `begin` — `session_start → narrator_turn` (loop entry).
+- `applyHandoff(Handoff)` — `narrator_turn →` `player_moment` (`player_moment`) | `beat_complete` (`beat_complete`); `npc_moment` throws `IllegalLoopTransitionException`.
+- `resumeFromPlayerMoment` — `player_moment → narrator_turn` on the **same** beat (`narrator_resumes` after the player acts).
+- `completeBeat` — `beat_complete →` reposition to the next beat in document order ([`BeatSequence`](../../../../app/Services/BeatSequence.php)) `→ narrator_turn`; no next beat holds the save on `beat_complete` (terminal, PH-38).
+
+Scope this phase: only `state_node` + the `current_*` position move. The handoff *producer* (the prose call, S-4.2.1), `resume_anchor` content (S-5.3.1), word/nudge clocks (Phase 4), the immediate-context `events` (S-5.2.1), and the `npc_moment` branch (Phase 2) plug into this spine without reshaping it. Tested in [`tests/Feature/Sessions/SessionStateMachineTest.php`](../../../../tests/Feature/Sessions/SessionStateMachineTest.php).
+
 ## Where the subsystems fire (O1 must pin this down)
 
 - **Appraisal** (ADR 0003/0005) runs after a beat's events → emits delta proposals → review gate.
@@ -31,4 +52,4 @@ flowchart TD
 
 ## Entry & reset (S-2.1.2 / S-2.1.3)
 
-A save is **persisted at** `state_node = session_start` when forked, and a **reset** ([Session_Fork_Flow.md](./Session_Fork_Flow.md)) returns an existing save to that same entry node (re-positioned at the first beat, loop counters cleared). **Loading** a save re-enters the machine at its *persisted* `state_node` — never forced back to `session_start` — so play continues exactly where it paused (the `resume_anchor` feeds `NARRATOR_RESUMES`). The producers that move a save off `session_start` (the spine in S-3.1.1, the resume anchor in S-5.3.1) are later — see PH-37.
+A save is **persisted at** `state_node = session_start` when forked, and a **reset** ([Session_Fork_Flow.md](./Session_Fork_Flow.md)) returns an existing save to that same entry node (re-positioned at the first beat, loop counters cleared). **Loading** a save re-enters the machine at its *persisted* `state_node` — never forced back to `session_start` — so play continues exactly where it paused (the `resume_anchor` feeds `NARRATOR_RESUMES`). The spine that moves a save off `session_start` is now built (`SessionStateMachine`, S-3.1.1, above); the remaining producers that feed it — the handoff (the prose call, S-4.2.1), the `resume_anchor` content (S-5.3.1), and the word/nudge clocks (Phase 4) — are later (see PH-37).

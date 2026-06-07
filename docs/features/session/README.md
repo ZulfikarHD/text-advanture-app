@@ -7,6 +7,7 @@ State machine, persistence, context-memory layers, the per-character internal-st
 | Concern | ADR / item | Status |
 |---------|-----------|--------|
 | Session state machine (the conductor) | brief — *session state machine* | Decided (spine) |
+| State machine spine (the loop conductor, skeleton subset) | **S-3.1.1 / S-3.1.2** ([ADR 0016](../../adr/0016-narrator-agent-and-turn-loop.md)) | **Built** → [S-3.1.1-state-machine-spine.md](./S-3.1.1-state-machine-spine.md) |
 | Context-memory layers (immediate / scene-summary / chapter-log / lorebook) | brief — *context memory layers* | Decided (model) |
 | Internal-state schema (active emotion, motivation, masks, own-clock decay) | **O3** ([GAPS](../../adr/GAPS.md)) | **Open** → [O3-internal-state-schema.md](./O3-internal-state-schema.md) |
 | Persistence + tech stack + UI + shared review-gate surface | **O4** ([GAPS](../../adr/GAPS.md)) | Tech stack + LLM client locked ([0011](../../adr/0011-tech-stack.md)/[0017](../../adr/0017-llm-orchestration-openrouter.md)); schema drafted → [O4-persistence-and-ui.md](./O4-persistence-and-ui.md) |

@@ -41,6 +41,8 @@ Full diagram: [Diagrams/Agents/Context_Isolation.md](./Diagrams/Agents/Context_I
 
 The state machine **is** the conductor — there is no separate orchestrator (see [GAPS](../adr/GAPS.md), "removed from the earlier audit"). The narrator loop's *internals* — prose generation under the POV contract, handoff detection, the mesh-awareness rule, witness tagging, the resume anchor, and **in-loop sequencing** (recorder → appraisal → drift/rupture; boundaries fire the batched subsystems) — are specified in **[ADR 0016](../adr/0016-narrator-agent-and-turn-loop.md)** (mirrored in §6.5 below). Full diagram: [Diagrams/Engine/Session_State_Machine.md](./Diagrams/Engine/Session_State_Machine.md).
 
+The **skeleton subset** of this spine is implemented as `SessionStateMachine` (S-3.1.1, §6 below): one conductor class that drives `session_start → narrator_turn → { player_moment | beat_complete } → narrator_resumes`, with the narrator turn's structured `Handoff` as its only branch input. `npc_moment` is rejected until Phase 2, and the full in-loop sequencing (recorder/appraisal/boundaries) is added — not rebuilt — in later phases.
+
 ### Narrator resume anchor (micro-continuity)
 
 ```
@@ -378,3 +380,15 @@ S-2.1.1 turns the **Saves** placeholder into the first **save-realm** surface: s
 - **Deferred.** The Play reader (S-5.4.1); loop-state producers (PH-37); edge seeding on fork (Phase 5).
 
 Routes: `stories.saves.index` + `stories.saves.store` + `stories.saves.update` + `stories.saves.reset` + `stories.saves.destroy` + `stories.saves.play`. Endpoint/props contracts: [../api/saves.md](../api/saves.md). Diagram: [Diagrams/Engine/Session_Fork_Flow.md](./Diagrams/Engine/Session_Fork_Flow.md).
+
+### Sprint 14 — Session state machine spine (E3.1 / S-3.1.1 / S-3.1.2)
+
+S-3.1.1 builds the loop's deterministic **spine** — the producer PH-37 reserved that moves a save off `session_start`. It is backend-only this sprint: the handoff *producer* (the prose call, S-4.2.1) and the Play **advance** controls (S-5.4.1) arrive later, so the spine consumes an **injected** `Handoff` and is exercised by tests rather than a route. S-3.1.2 is satisfied structurally — one class owns the whole transition table, so there is no separate orchestrator.
+
+- **The conductor (S-3.1.1 / S-3.1.2).** `SessionStateMachine` ([`app/Services/SessionStateMachine.php`](../../app/Services/SessionStateMachine.php)) owns every spine edge as one guarded, persisted transition: `begin` (`session_start → narrator_turn`), `applyHandoff(Handoff)` (`narrator_turn →` `player_moment` | `beat_complete`), `resumeFromPlayerMoment` (`player_moment → narrator_turn`, same beat), and `completeBeat` (`beat_complete →` next beat `→ narrator_turn`). Each guard fails closed with `IllegalLoopTransitionException` when called from the wrong node. The next node is determined **only** by the narrator turn's structured `Handoff` — no separate classifier.
+- **`npc_moment` deferred (Phase 2).** `applyHandoff(npc_moment)` is rejected with `IllegalLoopTransitionException::npcMomentNotReachable()` and does not move the save — its branch is wired (not rebuilt) in Phase 2.
+- **Shared document order (`BeatSequence`).** `completeBeat` advances to the next beat via a new `BeatSequence` ([`app/Services/BeatSequence.php`](../../app/Services/BeatSequence.php)) — `first(Story)` / `next(Beat)` ordered `chapter.number → scene.number → beat.number`. `SessionService::firstPlayableBeat()` was refactored to delegate to it, so the fork and the spine share **one** ordering (no divergence/race). When there is no next beat the save holds on `beat_complete` (terminal end-of-story this phase, **PH-38**).
+- **Scope discipline.** Only `state_node` + the `current_*` position move; the spine writes no `events`, `resume_anchor` content, or word/nudge clocks. Those producers (S-5.2.1 / S-5.3.1 / Phase 4) plug into this spine without reshaping it.
+- **Deferred.** The handoff producer (S-4.2.1); player input commit (S-5.1.1); the resume anchor (S-5.3.1); the Play advance UI (S-5.4.1); the `npc_moment` branch + recorder-first sequencing (Phase 2); boundary subsystems (Phase 4).
+
+No new routes/props (backend-only). Tests: [`tests/Feature/Sessions/SessionStateMachineTest.php`](../../tests/Feature/Sessions/SessionStateMachineTest.php). Diagram: [Diagrams/Engine/Session_State_Machine.md](./Diagrams/Engine/Session_State_Machine.md#this-phase-spine-s-311--s-312).

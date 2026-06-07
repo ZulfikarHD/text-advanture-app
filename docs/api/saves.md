@@ -89,5 +89,5 @@ type SaveItem = {
 ## Out of scope
 
 - **The Play reader** — narrated prose, scrollback, advance/pause controls (S-5.4.1). `sessions/Play` is a reachable placeholder this phase.
-- **Loop-state *producers*** — the persisted columns are written by play later: `state_node` transitions by the state machine (S-3.1.1), `resume_anchor` content by the narrator turn (S-5.3.1), word/nudge/clock counters in Phase 4 (PH-37). This story persists, resets, and restores them; nothing advances them mid-play yet.
+- **Loop advancement has no HTTP surface yet.** The `state_node` transitions are built (`SessionStateMachine`, S-3.1.1) but are **service-level only** this phase — there is **no route** to advance the loop. The advance/pause endpoint lands with the Play reader (S-5.4.1), and the handoff that drives the transition comes from the prose call (S-4.2.1). The remaining persisted columns are written by play later: `resume_anchor` content by the narrator turn (S-5.3.1), word/nudge/clock counters in Phase 4 (PH-37).
 - **Edge seeding** — disposition-prior relationship edges on fork (Phase 5, ADR 0002).

@@ -104,7 +104,9 @@ The engine's vocabulary, with the ADR/brief that defines each term. Read this be
 
 | Term | Meaning | Source |
 |------|---------|--------|
-| **Session state machine** | The runtime spine: NARRATOR_TURN → PLAYER/NPC/BEAT_COMPLETE. | brief |
+| **Session state machine** | The runtime spine and **only conductor**: `session_start → narrator_turn → { player_moment \| beat_complete } → narrator_resumes` (`npc_moment` lights up in Phase 2). Implemented as `SessionStateMachine`. | brief, ADR 0016, S-3.1.1 |
+| **Handoff** | The narrator turn's structured signal that determines the next node (`player_moment` \| `npc_moment` \| `beat_complete`); the state machine's sole branch input. This phase routes only `player_moment` \| `beat_complete`. | ADR 0016, S-3.1.1 |
+| **narrator_resumes** | The spine edge back to `narrator_turn` after a pause (a player moment, or a closed beat) — the narrator continues from where it paused rather than restarting the beat. Not a persisted node. | ADR 0016, S-3.1.1 |
 | **Interaction queue** | Per-character relevance → priority (RESPOND_NOW/WAIT/SILENT/INTERRUPT) → interrupt check. | brief |
 | **Context-memory layers** | immediate (~2000 tok) · scene summary · chapter log · lorebook. | brief |
 | **Resume anchor** | Micro-continuity block the narrator uses to resume after a pause. | brief |
@@ -118,7 +120,7 @@ The engine's vocabulary, with the ADR/brief that defines each term. Read this be
 | **Save realm** | The per-`play_session` mutable state a playthrough evolves (position, edges, internal state, records, …). | ADR 0012 |
 | **Session / save / play session** | One playthrough — a `play_sessions` row that references the authoring template and carries the runtime position + state. Stored as `play_sessions` (the framework owns `sessions`, PH-17). | ADR 0012 |
 | **Fork** | Starting a session: deep-copy the play-ready story into a new save so the playthrough evolves without touching the template. The "copy" is structural **referencing** (FKs to the immutable rows) + a new save row positioned at the first beat, not duplication. No relationship edges are seeded until Phase 5. | S-2.1.1, ADR 0012 |
-| **State node** | The save's position in the session state machine (`session_start` / `narrator_turn` / `player_moment` / `npc_moment` / `beat_complete`); a fresh fork begins at `session_start`. | brief, ADR 0016 |
+| **State node** | The save's position in the session state machine (`session_start` / `narrator_turn` / `player_moment` / `npc_moment` / `beat_complete`); a fresh fork begins at `session_start` and `SessionStateMachine` advances it (S-3.1.1). | brief, ADR 0016 |
 | **Play-readiness gate** | The check a story must pass before it can be forked: ≥ 1 character, ≥ 1 beat, and a resolvable model for every engine role. Surfaced on the Overview and re-checked server-side on fork. | S-1.2.2 / S-2.1.1 |
 
 ## Authoring & LLM (ADR 0017–0020)

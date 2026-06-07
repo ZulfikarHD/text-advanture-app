@@ -30,8 +30,13 @@ Runs as the **Narrator** agent (omniscient truth, bound by mesh-awareness + POV 
 - Is handoff detection a structured tool-call from the narrator, or a separate classifier pass?
 - Exact ordering: appraisal before or after the recorder commit?
 
+## Implementation status
+
+The loop's deterministic **spine** is built (skeleton subset): `SessionStateMachine` drives `session_start → narrator_turn → { player_moment | beat_complete } → narrator_resumes`, routed by the narrator turn's structured handoff — see [session/S-3.1.1-state-machine-spine.md](../session/S-3.1.1-state-machine-spine.md). The turn *internals* this loop sequences (prose generation, the recorder sub-call, in-loop appraisal/decay, the `npc_moment` branch) plug into that spine in later sprints/phases without rebuilding it.
+
 ## Related Documentation
 
+- Feature: [session/S-3.1.1-state-machine-spine.md](../session/S-3.1.1-state-machine-spine.md) (the built spine this loop runs on)
 - ADRs: [0007](../../adr/0007-npc-context-assembly.md), [0009](../../adr/0009-pov-projection.md), [0010](../../adr/0010-recorder-mechanics.md), [0008](../../adr/0008-psychological-nudge.md)
 - Architecture: [ARCHITECTURE.md §3,§5,§6](../../architecture/ARCHITECTURE.md) · [State machine diagram](../../architecture/Diagrams/Engine/Session_State_Machine.md)
 - Open items: [GAPS O1](../../adr/GAPS.md)

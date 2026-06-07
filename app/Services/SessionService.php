@@ -29,7 +29,10 @@ use Illuminate\Support\Facades\DB;
  */
 class SessionService
 {
-    public function __construct(private readonly StoryOverviewService $overview) {}
+    public function __construct(
+        private readonly StoryOverviewService $overview,
+        private readonly BeatSequence $beats,
+    ) {}
 
     /**
      * Fork a play-ready story into a new save, positioned at its first beat.
@@ -160,9 +163,9 @@ class SessionService
     /**
      * Resolve the earliest beat in document order for a play-ready story.
      *
-     * Ordered by chapter → scene → beat `number`, so the position is the true
-     * narrative start even when chapter 1 holds no beats. A play-ready story is
-     * guaranteed at least one beat; the null guard fails closed defensively.
+     * Delegates the document-order walk to {@see BeatSequence} so the fork and
+     * the loop spine share one ordering. A play-ready story is guaranteed at
+     * least one beat; the null guard fails closed defensively.
      *
      * @param  Story  $story  The story whose first beat anchors the save.
      *
@@ -170,16 +173,7 @@ class SessionService
      */
     private function firstPlayableBeat(Story $story): Beat
     {
-        $beat = Beat::query()
-            ->join('scenes', 'beats.scene_id', '=', 'scenes.id')
-            ->join('chapters', 'scenes.chapter_id', '=', 'chapters.id')
-            ->where('chapters.story_id', $story->getKey())
-            ->orderBy('chapters.number')
-            ->orderBy('scenes.number')
-            ->orderBy('beats.number')
-            ->select('beats.*')
-            ->with('scene')
-            ->first();
+        $beat = $this->beats->first($story);
 
         if ($beat === null) {
             throw StoryNotPlayableException::for($story);
