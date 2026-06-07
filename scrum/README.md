@@ -1,40 +1,86 @@
-# Directed Interactive Novel Engine — Scrum Program Backlog
+# Directed Interactive Novel Engine — Scrum Program Backlog (v2, play-first)
 
 **Document type:** Scrum requirement program (Phase → Epic → Sub-epic → User Story + Gherkin)
 **App:** Directed Interactive Novel Engine (DINE)
 **Language:** English (international project)
 **Author:** Zulfikar Hidayatullah
-**Created:** June 2026
-**Status:** Planning — design complete (ADR 0001–0020, all `Proposed`); application not yet built.
+**Created:** June 2026 · **Revision:** v2 — re-sliced from subsystem-first to **play-first vertical slices**
+**Status:** Planning — design complete (ADR 0001–0020, all `Proposed`). Phase 0 (foundation + most authoring surfaces) is **already built**; the playable engine is what remains.
 
 ---
 
-## 1. What this program covers
+## 1. Why this is a v2 (read this first)
 
-This is the **end-to-end build backlog**, from an empty repository to a finished, playable, authorable product. It deliberately covers **both**:
+The first version of this program was sliced **horizontally by subsystem**: build *all* authoring surfaces to full depth, then *all* runtime. Two problems made that the wrong shape for **this** project:
 
-1. **The application shell** the engine needs to be a real product — authentication, users, API-key & provider management, story/character/lorebook management, settings, prompting configuration, navigation, theming, and the full player/author UI/UX.
-2. **The narrative engine** specified in [`docs/adr/`](../docs/adr/README.md) (ADR 0001–0020) — character psychology, the delta engine, the narrator loop, POV projection, the recorder, the nudge, context assembly, and the review gate.
+1. **Play arrived far too late.** "Dive into a chapter and play" first appeared ~Sprint 26 — so the single most uncertain, highest-value question (*does the narrator → me → NPC loop actually feel good?*) was answered dead last, after months of building psychology machinery for a loop nobody had felt.
+2. **It breaks the build model.** DINE is built **agentically**: one fresh, **stateless** agent per story, whose only memory is this backlog. A subsystem-first order specs cross-cutting in-play surfaces *before the context that hosts them exists*, so the amnesiac agent can only build **detached artifacts**. The proof is in the codebase: the original Phase 1 told an agent to "build the review-gate foundation" before any play loop or producer existed, so it built a standalone `/reviews` page that nothing feeds — `ReviewGateService::propose()` is never called and the page renders an empty teaching state.
 
-> **Source-of-truth rule.** User stories and acceptance criteria describe **observable behavior** (what an author/player/system can do and perceive). The **ADRs** hold the *why* and the *how* (data shapes, leak guards, algorithms). Each sub-epic's **Technical Notes** points back to the governing ADR(s). Where this backlog and an ADR disagree on behavior, raise it — the ADR is currently the design of record.
+**v2 re-slices the exact same design (ADR 0001–0020, every old story) into play-first vertical slices.** Nothing in the design is discarded — only the **order and the integration points** change, so that (a) you can play early and deepen, and (b) each stateless agent always wires new work into a host that already exists.
 
-> **UI/UX note.** UX is in scope and has first-class stories (theming, responsiveness, loading/empty/error states, accessibility). Acceptance criteria still describe *intent and outcome* rather than specific widgets/colors, so the chosen UI kit (shadcn-vue) can evolve without rewriting the spec.
+> **Source-of-truth rule.** This backlog describes **observable behavior** (what an author/player/system can do and perceive). The **[ADRs](../docs/adr/README.md)** hold the *why/how* (data shapes, leak guards, algorithms). The **[architecture brief](../docs/directed_interactive_novel_engine_v2.html)** holds the *what* (the app and its play loop). Priority for understanding: **brief first (what), ADRs second (how)**. Where this backlog and an ADR disagree on behavior, raise it — the ADR is the design of record.
 
 ---
 
-## 2. Locked technical context (from ADR 0011 / 0012 / 0017)
+## 2. The context-management spine (the core of the app)
 
-- **Backend:** Laravel 13.x (PHP 8.3+), pragmatic Service pattern.
+**Context management is the heart of DINE, not a phase of it.** The entire engine exists to assemble the right **final prompt** for each of three agents while holding a hard **isolation boundary**. Everything else (axes, masks, registers, nudges, the delta engine) exists to *feed those prompts*.
+
+```
+THREE AGENTS — layered context isolation
+  NARRATOR → sees beat doc (full) + full relationship mesh + scene history + player input + NPC responses.
+             Uses the mesh for atmosphere / body-language / room-dynamics ONLY.
+  PLAYER   → sees rendered prose ONLY.
+  NPC      → sees ONLY: own card (+ knowledge_boundary), own internal state, own edges (own-perspective),
+             the leak-checked nudge addressed to it, and its witnessed, POV-projected scene excerpt.
+             NEVER: the beat doc, another character's card or edges, another character's true_state,
+             or narrator instructions.
+
+THE FINAL PROMPT (assembled by the ADR 0007 assembler, driven by the ADR 0020 prompt_blocks registry)
+  NARRATOR system: [POV_CONTRACT][MESH_AWARENESS][BEAT][DIRECTOR_STATE][LOREBOOK][SCENE_STATE]
+           user:   [RESUME_ANCHOR]
+  NPC      system: [IDENTITY][SELF][SNAPSHOT][MASKS][DIRECTIVES][NUDGE][SCENE_RULES]
+           user:   [SCENE_EXCERPT]
+```
+
+The **assembler ([ADR 0007](../docs/adr/0007-npc-context-assembly.md)) is both a compiler** (structured data → folded prose blocks) **and the isolation boundary** (the one place that guarantees an NPC sees only its own data + what it witnessed). The **`prompt_blocks` registry ([ADR 0020](../docs/adr/0020-prompt-block-registry.md))** is the single source of truth that *drives* assembly: each block declares its `agent`, `section`, `order_index`, `compile_instruction`, and **`leak_rules`**. The registry is already seeded (Phase 0) with the ~15 engine blocks.
+
+**The three leak guards** (each a context-management mechanism, each a `leak_rule` the assembler enforces):
+
+- `awareness_fold` — a capped feeling is never stated plainly (own capped feelings). [ADR 0007]
+- `omniscient_authoring` — author-side omniscient input (beat intent) must be compiled into a bounded nudge before it can cross to a character. [ADR 0008]
+- `hedged_attribution` + POV projection — others' hidden truth and narrator omniscience never reach an agent; `true_state` never crosses, only the hedged `surface` does. [ADR 0009 / 0010]
+- (plus `knowledge_boundary` and `own_perspective_only` as structural clamps.)
+
+**How v2 uses this as the spine:** the assembler + registry is the **contract built once** (Phase 2). Every later phase **lights up more blocks** of the same final prompt and **activates that block's leak guard exactly when the data behind it first exists** — never before. The phase map (§6) is literally "which blocks light up, and which guard turns on, this phase."
+
+---
+
+## 3. The stateless-agent story convention (the structural fix)
+
+Because each story is implemented by a **fresh agent whose only memory is the story text**, every story in this program (Phases 1–6) carries three machine-checkable fields in its Technical Notes, in addition to its Gherkin:
+
+- **Preconditions** — what must already exist in the codebase for this story to be buildable (e.g. "the assembler from S-2.1.1", "the `play_sessions` fork from S-1.1.1"). If a precondition is not yet built, the story is mis-ordered.
+- **Integrates-into** — the **existing** surface/route/service this story extends. A story must **never** stand up a new detached page when it belongs inside an existing host. (This is the rule the orphaned `/reviews` page violated.)
+- **Leak-guards** — which of the existing guards (`awareness_fold`, `knowledge_boundary`, `hedged_attribution`, `own_perspective_only`, `omniscient_authoring`, `none`) this story must apply, named from the `prompt_blocks` registry — never inventing a new guard.
+
+> **Ordering invariant:** a story may only be scheduled in a sprint after all its `Preconditions` are met by an earlier (already-built) story. This is what lets an amnesiac agent "catch the track."
+
+---
+
+## 4. Locked technical context (from ADR 0011 / 0012 / 0017)
+
+- **Backend:** Laravel 13.x (PHP 8.4), pragmatic Service pattern (logic in `app/Services/`, not fat controllers).
 - **Frontend:** Vue 3 + Inertia.js v3, **Wayfinder** (typed routes, *not* Ziggy), Tailwind 4, shadcn-vue.
-- **Tooling:** pnpm, Vite 7. Lint via `pnpm lint`.
-- **Database:** MariaDB 11.7 (MySQL-8-compatible), two realms (authoring immutable / save mutable).
+- **Tooling:** pnpm, Vite. Lint via `pnpm lint`.
+- **Database:** MariaDB (MySQL-8-compatible, JSON columns), two realms (authoring immutable / save mutable) — **both already migrated** (see Phase 0).
 - **LLM:** Claude models via the **OpenRouter** gateway behind a thin `LlmClient`; routed by **role**.
 - **Auth:** Laravel Fortify (passkeys available) via the official Vue starter kit.
 - **Standards:** Timezone Asia/Jakarta (WIB); currency Rupiah (Rp) for display of provider cost.
 
 ---
 
-## 3. Actors / roles
+## 5. Actors / roles
 
 | Role | Who | Sees / does |
 |------|-----|-------------|
@@ -43,84 +89,88 @@ This is the **end-to-end build backlog**, from an empty repository to a finished
 | **Player** | The same human in their *playing* capacity | Reads prose, gives input + delivery, regenerates ("spin"), reviews proposals |
 | **System / Engine** | The runtime (narrator, NPC assembler, appraisal, recorder, clocks) | Generates prose, assembles context, proposes deltas/records, enforces isolation & leak guards |
 
-> The engine has **no operator/admin role hierarchy** by design (it is single-author-centric). "Multi-user" here means *account isolation* (each owner sees only their stories/saves), not RBAC.
+> No operator/admin RBAC by design — "multi-user" means **account isolation** (each owner sees only their own stories/saves), not roles.
 
 ---
 
-## 4. Phase map
+## 6. Phase map — play-first vertical slices
 
-| Phase | Theme | Goal | Key Epics | Est. SP | Est. Sprints |
-|-------|-------|------|-----------|---------|--------------|
-| **1** | Foundation, Auth & App Shell | A running, themed, authenticated app with the full DB schema, the LLM client, and API-key/provider management | Scaffold · Auth & Users · App Shell/UX · Persistence Schema · LLM Provider & API-key Mgmt · Global Libraries & Review-gate foundation | ~115 | 1–6 |
-| **2** | Story & World Management | Author can create/manage stories, lorebook, reveal ledger, and engine config | Story Mgmt · Authoring Workspace · Lorebook Mgmt · Reveal Ledger · Tunable Engine Config | ~63 | 7–11 |
-| **3** | Character Authoring & Compile | Create characters (AI/manual/hybrid), compile spoiler-safe cards, author edges/registers/sensitivities | Creation Pipeline · Archetype Library · Bible→Card Compile · Edges & Priors · Registers · Sensitivities · Character Mgmt UI | ~100 | 12–19 |
-| **4** | Story Structure & Prompting | Turn outlines into chapters/scenes/beats (or author manually), derive nudges, manage prompt blocks | Outline Compilation · Manual Authoring · Beat Document · Nudge Derivation · Prompt Block Registry & Prompting Settings | ~62 | 20–25 |
-| **5** | Runtime: Narrator Loop & Session | The narrator → player → narrator spine running with recorder, POV projection, memory, boundaries, save/resume | Session & Save Mgmt · State Machine · Narrator Turn (prose+recorder) · POV Projection · Memory & Boundaries · Player Input & Delivery | ~111 | 26–34 |
-| **6** | Runtime: NPC Behaviour & Delta Engine | Full NPC psychology and the relationship simulation, with orchestration | NPC Assembly · Edges/Axes/Awareness · Delta Engine · Decay & Scars · Internal State · Register Resolution · Nudge (runtime) · Interaction Queue · Orchestration | ~144 | 35–45 |
-| **7** | Player Experience, Spin & Review UI | The player UI, regenerate/"spin" mode, the shared review-gate surface, relationship viewer, observability | Play UI · Input UX & Delivery · Spin/Regenerate · Review-Gate Surface · Relationship Viewer · Cost/Latency & Break-glass | ~87 | 46–53 |
+Each phase ends in a **felt, playable increment** and lights up more of the per-agent final prompt. "Folds" shows which old-version content is re-sliced in (nothing is lost).
 
-**Program total:** ~682 story points · ~53 one-week sprints (solo-dev estimate; parallelizes with more contributors). Phases are dependency-ordered but Phases 2–4 (authoring) and the latter half of 5–7 (runtime) can overlap once Phase 1 lands.
+| Phase | Theme | Felt outcome | Blocks lit / guards activated | Folds (old v1) | Est. SP |
+|-------|-------|--------------|-------------------------------|----------------|---------|
+| **0** | Foundation & authoring shell — **DONE** | A themed, authed app with both DB realms, the LLM client, seeded libraries, and story/lorebook/reveal-ledger surfaces | `prompt_blocks` seeded; no agent runs yet | old P1 + P2 (E1–E4) | — (built) |
+| **1** | Walking Skeleton — narrator → me loop | I create a chapter and **play a solo narrated scene**; the narrator writes, I respond, it continues | Narrator: `POV_CONTRACT, BEAT, SCENE_STATE, LOREBOOK, RESUME_ANCHOR`. Player = prose only | old P5 E1/E2/E3.1/E5/E6 + minimal P3/P4 | ~60 |
+| **2** | One Live Character — SillyTavern parity | I play a scene with **one in-character NPC** who only knows what it witnessed | NPC: `IDENTITY, SCENE_RULES`, user `SCENE_EXCERPT`. Guards on: `knowledge_boundary, hedged_attribution, own_perspective_only`. Recorder two-layer + POV projection. First inline review-gate producer | old P5 E3.2/E4/E6 + P6 E1 (thinned) + P7 E2 | ~60 |
+| **3** | Multi-Character Play | Multiple NPCs **take turns naturally** in one scene | Orchestration of the same blocks across NPCs; no new guard | old P6 E8/E9 | ~27 |
+| **4** | Directed Structure — NovelCrafter spine | Beats have **goals**; the narrator steers; the **nudge** pressures a character — directed play | Narrator: `BEAT` (enriched), `DIRECTOR_STATE`. NPC: `NUDGE` (guard: `omniscient_authoring` + `knowledge_boundary`) | old P4 (all) + P5 E5.2 + P6 E7 | ~68 |
+| **5** | Psychology Depth — more than SillyTavern | Characters **evolve** (relationships, scars, moods) for explainable reasons; spoiler-safe per chapter | Narrator: `MESH_AWARENESS` (turns on once the mesh exists). NPC: `SELF, SNAPSHOT, MASKS, DIRECTIVES` (guards: `awareness_fold, own_perspective_only`); nudge becomes register/mask/awareness-gated | old P3 (all) + P6 E2–E7 | ~165 |
+| **6** | Control & Observability | Full authorial control: review everything mid-play, spin, inspect relationships, watch spend | Unified review surface, relationship viewer, cost dashboard, registry/tunable management | old P7 + P2 E5 + P4 E5 | ~90 |
+
+**Remaining program total:** ~487 story points across Phases 1–6 (Phase 0 already delivered). Sprint numbering restarts at **Phase 1, Sprint 1** (Phase 0 is the prior build).
 
 ---
 
-## 5. Dependency graph (high level)
+## 7. Dependency graph
 
 ```
-Phase 1 (Foundation/Auth/Shell/DB/LLM) ─┬─► Phase 2 (Story & World Mgmt)
-                                         │
-                                         ├─► Phase 3 (Character Authoring) ──► needs Phase 2 (a story)
-                                         │
-                                         └─► Phase 4 (Story Structure)    ──► needs Phase 3 (chars for nudge_target/pov_anchor)
-                                                                                │
-Phase 5 (Narrator Loop & Session) ◄──────────── needs Phases 2–4 (committed authoring content)
-        │
-        └─► Phase 6 (NPC Behaviour & Delta) ◄── needs Phase 5 (recorder surface to appraise)
-                    │
-                    └─► Phase 7 (Player UX, Spin, Review UI) ◄── surfaces Phases 5–6 to the human
+Phase 0 (DONE: app, auth, both DB realms, LlmClient, seeded libraries incl. prompt_blocks,
+         story / lorebook / reveal-ledger surfaces)
+   │
+   └─► Phase 1  Walking Skeleton (narrator → me loop)            ── builds the loop spine + narrator final prompt
+          │
+          └─► Phase 2  One Live Character                        ── builds the assembler + isolation boundary + recorder/projection
+                 │                                                  (the contract every later phase enriches)
+                 └─► Phase 3  Multi-Character Play                ── orchestrates many NPC turns over the same assembler
+                        │
+                        └─► Phase 4  Directed Structure           ── lights up BEAT/NUDGE/DIRECTOR_STATE + the word-budget clock
+                               │
+                               └─► Phase 5  Psychology Depth       ── lights up MESH_AWARENESS + SELF/SNAPSHOT/MASKS/DIRECTIVES + the delta engine
+                                      │
+                                      └─► Phase 6  Control & Observability ── surfaces all of the above to the human
 ```
 
-The **shared review gate** (foundation in Phase 1 E6, full UI in Phase 7 E4) is cross-cutting — every compile/proposal producer in Phases 2–6 enqueues to it.
+The **assembler + `prompt_blocks` registry** (built in Phase 2) is the cross-cutting backbone; Phases 4–5 add producers and turn on each block's `leak_rule`. The **review gate** is *not* a foundation page — it first becomes real inline in Phase 2 (reviewing beat records), gains producers through Phases 4–5, and is unified into one surface in Phase 6 (where the orphaned `/reviews` page is repurposed).
 
 ---
 
-## 6. ID & estimation conventions
+## 8. ID & estimation conventions
 
 | Level | Pattern | Example |
 |-------|---------|---------|
-| Phase | Phase N | Phase 3 |
+| Phase | Phase N | Phase 2 |
 | Epic | E[N] | E1, E2 (numbering restarts per phase) |
 | Sub-epic | E[N].[M] | E1.1, E1.2 |
 | User Story | S-[N].[M].[X] | S-1.1.1 |
 
 - **Story points (Fibonacci):** 1 trivial · 2 simple · 3 moderate · 5 complex · 8 very complex · 13 epic-level.
-- **Priority:** Critical (MVP, app can't function without it) · High (core UX) · Medium (improves UX, deferrable) · Low (polish).
-- **Sprint length:** 1 week. Sprint numbers in each phase doc are program-global (continuing from the previous phase).
+- **Priority:** Critical (MVP) · High (core UX) · Medium (deferrable) · Low (polish).
+- **Sprint length:** 1 week; sprint numbers are program-global, restarting at Phase 1.
 
 ---
 
-## 7. Global Definition of Done (DoD)
+## 9. Global Definition of Done (DoD)
 
 A user story is **DONE** when:
 
 - [ ] Acceptance criteria all met and demoed.
-- [ ] Code reviewed (or self-reviewed with checklist for solo work).
+- [ ] Its `Preconditions` were genuinely already built; it wired into the declared `Integrates-into` host (no orphan page); its `Leak-guards` are applied and named only from the existing guard set.
 - [ ] Automated tests written and passing — unit + feature; **isolation/leak-guard stories require explicit negative tests** (assert forbidden data never reaches a prompt).
 - [ ] `pnpm lint` clean; type-check passes; Wayfinder types regenerate without errors.
 - [ ] No Critical/High defects open.
 - [ ] UX states covered: loading, empty, error, success, and unauthorized.
 - [ ] Responsive (desktop + tablet) and keyboard-accessible for interactive controls.
 - [ ] LLM-touching stories: failure/timeout/malformed-output paths handled and logged to the call log.
-- [ ] Append-only invariants respected (no UPDATE/DELETE on audit tables); migrations reversible.
-- [ ] Docs updated where behavior diverges from an ADR (note it in `docs/guides/PLACEHOLDER_TRACKING.md`).
+- [ ] Append-only invariants respected (no UPDATE/DELETE on audit tables); migrations reversible (most phases reuse the Phase-0 schema — no new migration unless noted).
 
 ---
 
-## 8. Cross-cutting non-functional requirements (NFRs)
+## 10. Cross-cutting non-functional requirements (NFRs)
 
 | Area | Requirement |
 |------|-------------|
-| **Security** | All authoring/save data is account-scoped; an owner can never read another owner's stories/saves. API keys are encrypted at rest, never returned in plaintext after save, never logged. `llm_calls.messages` (may embed `true_state`) is debug-gated and never agent-readable. |
-| **Isolation (engine)** | The three leak guards (awareness-fold, nudge-compile, POV projection) and the assembler boundary are testable invariants, not best-effort. Safety holds at any model tier. |
+| **Security** | All authoring/save data is account-scoped; an owner can never read another owner's stories/saves. API keys encrypted at rest, never returned in plaintext, never logged. `llm_calls.messages` (may embed `true_state`) is debug-gated and never agent-readable. |
+| **Isolation (engine)** | The three leak guards + the assembler boundary are testable invariants, not best-effort. Safety holds at any model tier. |
 | **Performance** | Authoring pages interactive < 2s. A runtime beat (~10+ LLM calls for a 3-NPC scene) streams progressively; the player is never blocked on a frozen screen — partial prose + progress indication. |
 | **Observability** | Every LLM call logged (role, model, tokens, cost, latency, status). Per-beat call count and cost visible. |
 | **Accessibility** | Semantic structure, keyboard nav, sufficient contrast in both themes, prose readable (line length, font scaling). |
@@ -129,60 +179,60 @@ A user story is **DONE** when:
 
 ---
 
-## 9. ADR → Phase traceability
+## 11. ADR → Phase traceability (v2 ordering)
 
-| ADR | Subsystem | Primarily in |
-|-----|-----------|--------------|
-| 0011 Tech stack | scaffold/stack | Phase 1 |
-| 0012 Persistence (two realms) | schema | Phase 1 (schema) + every data story |
-| 0017 LLM/OpenRouter client | provider, key mgmt, call log | Phase 1 |
-| 0020 Prompt block registry | block specs drive assembly | Phase 1 (seed) + Phase 4 (mgmt) |
-| 0013 Authoring/compile pipeline | bible→card, lorebook, reveal ledger | Phase 2 (lorebook/ledger) + Phase 3 (compile) |
-| 0018 Character creation | AI/manual/hybrid + archetypes | Phase 3 |
-| 0001 Three-layer character data | cards/edges/internal split | Phase 3 |
-| 0002 Relationship edge schema | edges, axes, priors, register binding | Phase 3 (author) + Phase 6 (runtime) |
-| 0005 Trigger taxonomy | sensitivities, universal priors | Phase 3 (author) + Phase 6 (appraisal) |
-| 0006 Register system | behavioral grammar | Phase 3 (author) + Phase 6 (resolution) |
+| ADR | Subsystem | Primarily in (v2) |
+|-----|-----------|-------------------|
+| 0011 Tech stack | scaffold/stack | Phase 0 |
+| 0012 Persistence (two realms) | schema | Phase 0 (schema) + every data story |
+| 0017 LLM/OpenRouter client | provider, key mgmt, call log | Phase 0 (client) + Phase 3/6 (orchestration, cost UI) |
+| 0020 Prompt block registry | block specs drive assembly | Phase 0 (seed) + Phase 2 (assembler consumes) + Phase 6 (mgmt UI) |
+| 0016 Narrator loop | two-call turn, spine, sequencing | Phase 1 (loop + prose) + Phase 2 (recorder sub-call) + Phase 4 (clock/boundaries) + Phase 5 (mesh-awareness) |
+| 0009 POV projection | per-NPC excerpt projection | Phase 2 |
+| 0010 Recorder mechanics | surface/true_state/witness, legibility | Phase 2 |
+| 0007 NPC context assembly | compile→act, isolation boundary | Phase 2 (thin) + Phase 5 (full blocks) |
 | 0019 Outline compilation | outline → chapters/scenes/beats | Phase 4 |
-| 0015 Beat document + boundaries | beats, BEAT_DONE, elapsed buckets | Phase 4 (author) + Phase 5 (runtime) |
-| 0008 Psychological nudge | directed pressure, ladder, ceiling | Phase 4 (derivation) + Phase 6 (runtime) |
-| 0016 Narrator loop | two-call turn, sequencing | Phase 5 |
-| 0009 POV projection | per-NPC excerpt projection | Phase 5 |
-| 0010 Recorder mechanics | surface/true_state/witness, legibility | Phase 5 |
-| 0014 Internal-state schema | `[SELF]`, emotions, masks | Phase 6 |
-| 0007 NPC context assembly | compile→act, isolation boundary | Phase 6 |
-| 0003 Delta engine | drift/rupture, propose→review→commit | Phase 6 |
-| 0004 Decay + latched scars | narrative-time decay, commitment/trauma | Phase 6 |
+| 0015 Beat document + boundaries | beats, BEAT_DONE, elapsed buckets | Phase 1 (minimal beat) + Phase 4 (full) |
+| 0008 Psychological nudge | directed pressure, ladder, ceiling | Phase 4 (derive + runtime) + Phase 5 (register-gated) |
+| 0018 Character creation | AI/manual/hybrid + archetypes | Phase 1 (minimal manual) + Phase 5 (full pipeline) |
+| 0001 Three-layer character data | cards/edges/internal split | Phase 1 (card) + Phase 5 (edges/internal) |
+| 0013 Authoring/compile pipeline | bible→card, lorebook, reveal ledger | Phase 0 (lorebook/ledger) + Phase 5 (compile/clamp) |
+| 0002 Relationship edge schema | edges, axes, priors, register binding | Phase 5 |
+| 0005 Trigger taxonomy | sensitivities, universal priors | Phase 0 (priors seed) + Phase 5 (appraisal) |
+| 0006 Register system | behavioral grammar | Phase 5 |
+| 0003 Delta engine | drift/rupture, propose→review→commit | Phase 5 |
+| 0004 Decay + latched scars | narrative-time decay, commitment/trauma | Phase 5 |
+| 0014 Internal-state schema | `[SELF]`, emotions, masks | Phase 5 |
 
 ---
 
-## 10. Program-level Risk Register
+## 12. Program-level risk register
 
 | Risk | Impact | Probability | Mitigation |
 |------|--------|-------------|------------|
-| Context-isolation leak (an agent receives data it must not have) | Critical | Medium | Structural guards (separate `true_state` table, hedged-attribution validator, knowledge-boundary clamp) + explicit negative tests in every assembly/projection story; the human review gate as the floor |
-| Runtime cost/latency too high (a beat is ~10+ calls) | High | High | Model-role tiering, block caching, progressive streaming, per-beat spend visibility + caps; orchestration epic in Phase 6 |
-| Spoiler leak from an early-chapter card (future-arc content) | Critical | Medium | Reveal ledger + section tags → `knowledge_boundary` clamp at compile, all behind the review gate |
-| API key compromise / leakage | Critical | Low | Encrypt at rest, never echo, never log; scoped to owner |
-| LLM provider outage / model deprecation | High | Medium | Provider-agnostic `LlmClient`; role→slug is config; graceful failure + retry/backoff + manual fallback where possible |
-| Authoring burden too high (engine is dense) | Medium | High | AI/hybrid creation modes, archetype libraries, outline compilation, sensible seeded defaults |
-| Scope creep across 7 phases | High | High | Strict Critical/High MVP gating per phase; Medium/Low deferrable; phases shippable independently |
-| Solo-dev throughput | Medium | High | Phases overlap after Phase 1; ruthless prioritization; the engine subsystems are already designed (ADRs) |
+| A stateless agent builds a detached artifact (the orphan-page disease) | High | High | The story convention (§3): every story declares `Preconditions` / `Integrates-into` / `Leak-guards`; ordering invariant enforced; review/spin/viewer surfaces only specced after their host exists |
+| Context-isolation leak (an agent receives data it must not have) | Critical | Medium | Assembler is the single boundary; registry-driven `leak_rules`; explicit negative tests in every assembly/projection story; separate `true_state` table; human review gate as the floor |
+| The core loop doesn't feel good | High | Medium | Play-first slicing surfaces the loop in Phase 1–2 (not Sprint 26); deepen only a loop already validated |
+| Runtime cost/latency too high (a beat is ~10+ calls) | High | High | Model-role tiering, block caching, progressive streaming, per-beat spend visibility + caps; orchestration in Phase 3 |
+| Spoiler leak from an early-chapter card | Critical | Medium | Reveal ledger + section tags → `knowledge_boundary` clamp at compile (Phase 5), all behind the review gate |
+| API key compromise / leakage | Critical | Low | Encrypt at rest, never echo, never log; scoped to owner (Phase 0) |
+| Authoring burden too high (engine is dense) | Medium | High | Minimal manual character/beat in Phase 1; AI/hybrid creation + archetypes + outline compile arrive in Phase 4–5 once play justifies them |
+| Solo-dev / single-agent throughput | Medium | High | Vertical slices ship independently; ruthless Critical/High gating; the engine subsystems are already designed (ADRs) |
 
 ---
 
-## 11. Phase documents
+## 13. Phase documents
 
 | Phase | File |
 |-------|------|
-| 1 | [phase-1-foundation-auth-shell.md](./phase-1-foundation-auth-shell.md) |
-| 2 | [phase-2-story-world-management.md](./phase-2-story-world-management.md) |
-| 3 | [phase-3-character-authoring.md](./phase-3-character-authoring.md) |
-| 4 | [phase-4-story-structure-prompting.md](./phase-4-story-structure-prompting.md) |
-| 5 | [phase-5-narrator-loop-session.md](./phase-5-narrator-loop-session.md) |
-| 6 | [phase-6-npc-behaviour-delta-engine.md](./phase-6-npc-behaviour-delta-engine.md) |
-| 7 | [phase-7-player-experience-review-ui.md](./phase-7-player-experience-review-ui.md) |
+| 0 (DONE) | [phase-0-foundation-asbuilt.md](./phase-0-foundation-asbuilt.md) |
+| 1 | [phase-1-walking-skeleton.md](./phase-1-walking-skeleton.md) |
+| 2 | [phase-2-one-live-character.md](./phase-2-one-live-character.md) |
+| 3 | [phase-3-multi-character-play.md](./phase-3-multi-character-play.md) |
+| 4 | [phase-4-directed-structure.md](./phase-4-directed-structure.md) |
+| 5 | [phase-5-psychology-depth.md](./phase-5-psychology-depth.md) |
+| 6 | [phase-6-control-observability.md](./phase-6-control-observability.md) |
 
 ---
 
-*Document Version: 1.0 · Author: Zulfikar Hidayatullah · Created: June 2026*
+*Document Version: 2.0 (play-first re-slice) · Author: Zulfikar Hidayatullah · Created: June 2026*
