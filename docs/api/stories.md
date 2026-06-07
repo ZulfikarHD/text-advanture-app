@@ -12,15 +12,9 @@
 | `PUT` | `/stories/{story:slug}` | `stories.update` | `StoryController@update` |
 | `DELETE` | `/stories/{story:slug}` | `stories.destroy` | `StoryController@destroy` |
 
-### Workspace placeholder surfaces (E2.1 / S-2.1.1)
+### Workspace surfaces (E2.1)
 
-Reachable "coming soon" surfaces so the per-story workspace nav spans every authoring surface without dead links. Each repointed at its real controller when the feature ships (PH-30). **Lorebook** has since shipped its real CRUD — see [lorebook.md](./lorebook.md).
-
-| Method | URI | Name | Controller |
-|--------|-----|------|------------|
-| `GET` | `/stories/{story:slug}/characters` | `stories.characters.index` | `StoryPlaceholderController@characters` |
-| `GET` | `/stories/{story:slug}/structure` | `stories.structure.index` | `StoryPlaceholderController@structure` |
-| `GET` | `/stories/{story:slug}/saves` | `stories.saves.index` | `StoryPlaceholderController@saves` |
+The per-story workspace nav spans every authoring surface. As of S-2.1.1 **all surfaces are live** — the shared `stories/ComingSoon` placeholder (and `StoryPlaceholderController`) are removed (**PH-30 resolved**). Each surface has its own contract: [characters.md](./characters.md), [structure.md](./structure.md), [lorebook.md](./lorebook.md), [reveal-ledger.md](./reveal-ledger.md), [story-overview.md](./story-overview.md), [story-settings.md](./story-settings.md), and [saves.md](./saves.md) (the session fork).
 
 ## Inertia props
 
@@ -52,26 +46,6 @@ type StoryData = {
     slug: string;
     title: string;
     description: string | null;
-};
-```
-
-### `stories/ComingSoon` (placeholder surfaces)
-
-Shared by all four placeholder workspace surfaces; `surface` drives the copy and icon.
-
-| Prop | Type | Notes |
-|------|------|-------|
-| `story` | `StoryRef` | The story whose workspace is open (required by the workspace layout) |
-| `surface` | `Surface` | Descriptor for the unbuilt surface |
-
-```typescript
-type StoryRef = { id: number; slug: string; title: string };
-
-type Surface = {
-    key: 'characters' | 'structure' | 'lorebook' | 'saves';
-    title: string;
-    description: string;
-    phase: string; // e.g. "Phase 3", "Phase 4"
 };
 ```
 

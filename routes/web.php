@@ -4,9 +4,9 @@ use App\Http\Controllers\Reviews\ReviewController;
 use App\Http\Controllers\Stories\CharacterController;
 use App\Http\Controllers\Stories\LorebookController;
 use App\Http\Controllers\Stories\RevealLedgerController;
+use App\Http\Controllers\Stories\SessionController;
 use App\Http\Controllers\Stories\StoryController;
 use App\Http\Controllers\Stories\StoryOverviewController;
-use App\Http\Controllers\Stories\StoryPlaceholderController;
 use App\Http\Controllers\Stories\StorySettingsController;
 use App\Http\Controllers\Stories\StructureController;
 use Illuminate\Support\Facades\Route;
@@ -129,12 +129,19 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('throttle:30,1')
         ->name('stories.reveal-ledger.destroy');
 
-    // Workspace placeholder surfaces (E2.1 / S-2.1.1). Reachable "coming soon"
-    // pages so the workspace nav spans every authoring surface without dead
-    // links. Repointed at their real controllers when each feature ships (PH-30).
-    // Characters shipped in E1.1; Structure shipped in E1.2 (see the CRUD blocks
-    // above). Saves lands in Phase 5.
-    Route::get('stories/{story:slug}/saves', [StoryPlaceholderController::class, 'saves'])->name('stories.saves.index');
+    // Sessions / saves (E2.1 / S-2.1.1). Start a playthrough by forking a
+    // play-ready story into the save realm and list the saves forked from it;
+    // the fork never mutates the authoring template (ADR 0012). The nested
+    // {playSession} binds through Story::playSessions() via scoped bindings, so
+    // a save from another story (or owner) resolves to 404; writes are throttled.
+    // Play is the reachable next step a fresh fork lands on (full reader: S-5.4.1).
+    Route::get('stories/{story:slug}/saves', [SessionController::class, 'index'])->name('stories.saves.index');
+    Route::post('stories/{story:slug}/saves', [SessionController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('stories.saves.store');
+    Route::get('stories/{story:slug}/saves/{playSession}/play', [SessionController::class, 'play'])
+        ->scopeBindings()
+        ->name('stories.saves.play');
 
     // Shared review gate (S-6.2). Item routes bind under the owner scope, so a
     // foreign proposal resolves to 404; writes are throttled.

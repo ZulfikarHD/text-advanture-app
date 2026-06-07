@@ -1,6 +1,6 @@
 # Persistence ERD
 
-Two-realm schema, the living detail of [ADR 0012](../../../adr/0012-persistence-schema.md). See [../../DATABASE.md](../../DATABASE.md) for column detail. The **authoring realm + `stories` ownership** is built as of Sprint 3 (S-4.1.1); the **save realm + global libraries** are **built as of Sprint 4** (S-4.2.1 / S-4.1.2), along with the owner-scoped **`provider_credentials`** key store (S-5.1.1).
+Two-realm schema, the living detail of [ADR 0012](../../../adr/0012-persistence-schema.md). See [../../DATABASE.md](../../DATABASE.md) for column detail. The **authoring realm + `stories` ownership** is built as of Sprint 3 (S-4.1.1); the **save realm + global libraries** are **built as of Sprint 4** (S-4.2.1 / S-4.1.2), along with the owner-scoped **`provider_credentials`** key store (S-5.1.1). As of Sprint 13 (S-2.1.1) `play_sessions` has its **first producer** — the [session fork](../Engine/Session_Fork_Flow.md) — so the `stories → play_sessions` edge below is now exercised in app code.
 
 ```mermaid
 erDiagram
@@ -77,6 +77,8 @@ erDiagram
 ```
 
 > Authoring-realm entities (top block) are immutable at runtime; save-realm entities (bottom block) are per-`play_session`. `beat_true_states` is deliberately a child table of `beat_records`, not a column, to make cross-feeding structurally impossible.
+>
+> **Session fork — first `play_sessions` rows (Sprint 13 / S-2.1.1).** `SessionService::fork()` writes **one** `play_sessions` row per started session at `state_node = session_start`, pointing `current_chapter_id` / `current_scene_id` / `current_beat_id` at the story's first beat (in document order). It **references** the immutable authoring rows by FK rather than copying structure (the "deep-copy" is the new save row + its pointers), and the authoring realm is never mutated by the fork. **No** `relationship_edges` (or any other save-realm child) are seeded yet — disposition-prior edge seeding is Phase 5 (ADR 0002), and plugs into the same fork transaction so atomicity holds as it grows.
 >
 > **`sessions` → `play_sessions` (Sprint 4, PH-17).** DATABASE.md §4.1 names the save "session"; it is built as **`play_sessions`** because the framework owns the `sessions` table for the database session driver. Child FK columns keep the spec name `session_id`.
 >

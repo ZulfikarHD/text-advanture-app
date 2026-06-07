@@ -13,6 +13,7 @@ runbooks/{topic}-diagnostics.md     # e.g. claude-api-diagnostics.md
 | Runbook | Purpose |
 |---------|---------|
 | [local-setup-diagnostics.md](./local-setup-diagnostics.md) | Clean-clone boot, MariaDB connection triage, lint/build/test gate, production checklist |
+| [session-fork-diagnostics.md](./session-fork-diagnostics.md) | Starting a session (fork): play-readiness gating, first-beat positioning, scoped-binding 404s, atomicity (S-2.1.1) |
 
 ## Likely first runbooks
 

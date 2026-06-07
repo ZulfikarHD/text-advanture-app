@@ -110,6 +110,17 @@ The engine's vocabulary, with the ADR/brief that defines each term. Read this be
 | **Resume anchor** | Micro-continuity block the narrator uses to resume after a pause. | brief |
 | **Model tiering** | Major NPC = full card (Sonnet); minor NPC = compressed (Haiku). | ADR 0007 |
 
+## Sessions & saves (two-realm play)
+
+| Term | Meaning | Source |
+|------|---------|--------|
+| **Authoring realm** | The story template (stories, chapters, scenes, beats, characters, lorebook, …); **immutable at runtime** — play never mutates it. | ADR 0012 |
+| **Save realm** | The per-`play_session` mutable state a playthrough evolves (position, edges, internal state, records, …). | ADR 0012 |
+| **Session / save / play session** | One playthrough — a `play_sessions` row that references the authoring template and carries the runtime position + state. Stored as `play_sessions` (the framework owns `sessions`, PH-17). | ADR 0012 |
+| **Fork** | Starting a session: deep-copy the play-ready story into a new save so the playthrough evolves without touching the template. The "copy" is structural **referencing** (FKs to the immutable rows) + a new save row positioned at the first beat, not duplication. No relationship edges are seeded until Phase 5. | S-2.1.1, ADR 0012 |
+| **State node** | The save's position in the session state machine (`session_start` / `narrator_turn` / `player_moment` / `npc_moment` / `beat_complete`); a fresh fork begins at `session_start`. | brief, ADR 0016 |
+| **Play-readiness gate** | The check a story must pass before it can be forked: ≥ 1 character, ≥ 1 beat, and a resolvable model for every engine role. Surfaced on the Overview and re-checked server-side on fork. | S-1.2.2 / S-2.1.1 |
+
 ## Authoring & LLM (ADR 0017–0020)
 
 | Term | Meaning | Source |

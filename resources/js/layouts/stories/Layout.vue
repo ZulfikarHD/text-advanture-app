@@ -5,9 +5,9 @@
  * Wraps every per-story surface so each is scoped to a single story and
  * reachable by tab navigation rather than a typed URL. The nav spans the full
  * authoring surface set: Overview, Characters, Structure, Lorebook, Reveal
- * ledger, Settings, Saves, and Details. Characters / Structure / Saves are
- * reachable "coming soon" placeholders until their features ship (PH-30); the
- * rest are live. Reads the shared `story` page prop every story page exposes.
+ * ledger, Settings, Saves, and Details — every surface is now live (Saves
+ * starts and lists playthroughs as of S-2.1.1). Reads the shared `story` page
+ * prop every story page exposes.
  */
 import { Link, usePage } from '@inertiajs/vue3';
 import {

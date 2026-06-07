@@ -15,4 +15,18 @@ enum StateNode: string
     case PlayerMoment = 'player_moment';
     case NpcMoment = 'npc_moment';
     case BeatComplete = 'beat_complete';
+
+    /**
+     * Human-readable label for the node (UI badges, save lists).
+     */
+    public function label(): string
+    {
+        return match ($this) {
+            self::SessionStart => 'Session start',
+            self::NarratorTurn => 'Narrator turn',
+            self::PlayerMoment => 'Player moment',
+            self::NpcMoment => 'NPC moment',
+            self::BeatComplete => 'Beat complete',
+        };
+    }
 }

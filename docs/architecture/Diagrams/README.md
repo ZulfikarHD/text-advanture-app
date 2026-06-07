@@ -18,6 +18,7 @@ Mermaid diagrams, grouped by subject. Filenames use `Title_Case`.
 |---------|------|
 | Agent context isolation | [Agents/Context_Isolation.md](./Agents/Context_Isolation.md) |
 | Session state machine | [Engine/Session_State_Machine.md](./Engine/Session_State_Machine.md) |
+| Session fork flow (start a playthrough) | [Engine/Session_Fork_Flow.md](./Engine/Session_Fork_Flow.md) |
 | LLM client flow (role → client → log) | [Engine/Llm_Client_Flow.md](./Engine/Llm_Client_Flow.md) |
 | Review gate flow (propose → decide) | [Engine/Review_Gate_Flow.md](./Engine/Review_Gate_Flow.md) |
 | Persistence ERD (draft) | [Data/Persistence_Erd.md](./Data/Persistence_Erd.md) |
@@ -26,7 +27,7 @@ Mermaid diagrams, grouped by subject. Filenames use `Title_Case`.
 | App shell & navigation | [App/App_Shell_Navigation.md](./App/App_Shell_Navigation.md) |
 | Story CRUD flow | [Authoring/Story_Crud_Flow.md](./Authoring/Story_Crud_Flow.md) |
 | Story settings & overview flow | [Authoring/Story_Settings_Overview_Flow.md](./Authoring/Story_Settings_Overview_Flow.md) |
-| Story workspace shell (tabs + placeholders) | [Authoring/Story_Workspace_Shell.md](./Authoring/Story_Workspace_Shell.md) |
+| Story workspace shell (tabs, all live) | [Authoring/Story_Workspace_Shell.md](./Authoring/Story_Workspace_Shell.md) |
 | Character CRUD flow (minimal manual) | [Authoring/Character_Crud_Flow.md](./Authoring/Character_Crud_Flow.md) |
 | Lorebook CRUD flow | [Authoring/Lorebook_Crud_Flow.md](./Authoring/Lorebook_Crud_Flow.md) |
 | Reveal ledger CRUD flow | [Authoring/Reveal_Ledger_Crud_Flow.md](./Authoring/Reveal_Ledger_Crud_Flow.md) |

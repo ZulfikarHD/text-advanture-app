@@ -66,6 +66,39 @@ class PlaySession extends Model
     }
 
     /**
+     * The authoring chapter this save is currently positioned at.
+     *
+     * Points at the immutable authoring realm (ADR 0012); a save references the
+     * template's structure rather than copying it.
+     *
+     * @return BelongsTo<Chapter, $this>
+     */
+    public function currentChapter(): BelongsTo
+    {
+        return $this->belongsTo(Chapter::class, 'current_chapter_id');
+    }
+
+    /**
+     * The authoring scene this save is currently positioned at.
+     *
+     * @return BelongsTo<Scene, $this>
+     */
+    public function currentScene(): BelongsTo
+    {
+        return $this->belongsTo(Scene::class, 'current_scene_id');
+    }
+
+    /**
+     * The authoring beat this save is currently positioned at.
+     *
+     * @return BelongsTo<Beat, $this>
+     */
+    public function currentBeat(): BelongsTo
+    {
+        return $this->belongsTo(Beat::class, 'current_beat_id');
+    }
+
+    /**
      * @return HasMany<RelationshipEdge, $this>
      */
     public function relationshipEdges(): HasMany

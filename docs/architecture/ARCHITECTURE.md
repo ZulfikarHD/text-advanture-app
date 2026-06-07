@@ -2,7 +2,7 @@
 
 > **Living snapshot** distilled from the [architecture brief](../directed_interactive_novel_engine_v2.html) and [ADR 0001–0016](../adr/README.md) (all `Proposed` — planning stage). · **Last Updated:** 2026-06-05
 >
-> The ADRs are the source of truth for the *why*. This file is the structured *what*. Where they disagree, the ADR wins.
+> The ADRs are the source of truth for the *why*. This file is the structured *what*. Where they disagree, the ADR wins. · **Last build log entry:** Sprint 13 (E2.1 — session fork, S-2.1.1).
 
 ---
 
@@ -363,3 +363,16 @@ S-1.2.1 turns the **Structure** placeholder into a live authoring surface — th
 - **Deferred.** Beat `intent`/`word_budget`/`nudge_target`, in-world elapsed-time authoring, outline compilation, and the AI/hybrid authoring path stay in Phase 4 (O6); slug-stored `pov_anchor`/`present_characters` carry no FK (PH-35).
 
 Routes: `stories.structure.index` + `stories.structure.{chapters,scenes,beats}.{store,update,destroy}`. Endpoint/props contracts: [../api/structure.md](../api/structure.md). Diagram: [Diagrams/Authoring/Structure_Crud_Flow.md](./Diagrams/Authoring/Structure_Crud_Flow.md).
+
+### Sprint 13 — Session fork (E2.1 / S-2.1.1)
+
+S-2.1.1 turns the **Saves** placeholder into the first **save-realm** surface: starting a session **forks** a play-ready story into a save that evolves without touching the template. It is the first producer of `play_sessions` rows — `play_sessions` was migrated behaviorless in Phase 0.
+
+- **The fork (S-2.1.1).** `SessionService::fork()` (constructor-injecting `StoryOverviewService`) re-checks the play-readiness gate server-side and, inside a `DB::transaction`, inserts **one** `play_sessions` row at `state_node = session_start`, positioned at the story's **first beat in document order** (ordered `chapter.number → scene.number → beat.number`, so the position is correct even when chapter 1 holds no beats), with `last_played_at` stamped and an auto-derived name (`Playthrough N`). A not-play-ready story throws `StoryNotPlayableException` (it fails closed, never guessing a position). The "deep-copy" is **structural referencing**, not duplication — the save points at the immutable authoring chapter/scene/beat by FK (ADR 0012). The authoring template is never mutated by the fork.
+- **No edges yet (the Phase-5 seam).** **No** `relationship_edges` (or any other save-realm child) are seeded this phase — the minimal cast carries no edges. Disposition-prior edge seeding (ADR 0002) plugs into the **same fork transaction**, so wrapping the single insert in `DB::transaction` now is the atomicity seam that holds as the fork grows; `SessionForkTest` proves the rollback by forcing a failure on the `created` event and asserting zero rows survive.
+- **Save surface.** `SessionController` (index/store/play) + `resources/js/pages/stories/Saves.vue`. The parent `{story:slug}` binds under `OwnerScope`; the nested `{playSession}` uses **`->scopeBindings()`** through `Story::playSessions()`, so a save from another story → 404 without a row-level policy — authorization stays on the parent `Story` (`view` to read index/play, `update` to fork). The page gates a single primary **Start session** action on `readiness.ready` (re-checked server-side), routing back to the Overview when unmet, and lists existing saves as cards (position summary, state badge, last-played in WIB) even if the story has since drifted out of readiness. The fork route is throttled (30/min).
+- **Reachable Play placeholder.** A fresh fork redirects to `sessions/Play.vue` (rendered under the app shell, no authoring tab bar) — a focused placeholder that orients the player at the save's `state_node` + starting position and routes back to Saves. The full prose reader / loop controls are S-5.4.1 (tracked as **PH-36**). No dead-ends: Play is reachable by the post-fork redirect and by every save row.
+- **Cleanup.** Saves was the last `stories/ComingSoon` consumer, so `StoryPlaceholderController` and `resources/js/pages/stories/ComingSoon.vue` are **removed** and the workspace layout docblock updated — **resolves PH-30** (every workspace surface is now live). `StateNode` gained a `label()` for UI badges.
+- **Deferred.** Multi-save management — name-on-create, load, reset, delete (S-2.1.2); loop-state persistence / resume (S-2.1.3); the Play reader (S-5.4.1); edge seeding on fork (Phase 5).
+
+Routes: `stories.saves.index` (repointed) + `stories.saves.store` + `stories.saves.play`. Endpoint/props contracts: [../api/saves.md](../api/saves.md). Diagram: [Diagrams/Engine/Session_Fork_Flow.md](./Diagrams/Engine/Session_Fork_Flow.md).

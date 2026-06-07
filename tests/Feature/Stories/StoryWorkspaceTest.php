@@ -9,33 +9,39 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * Feature tests for the workspace placeholder surfaces (E2.1 / S-2.1.1).
+ * Feature tests for the per-story workspace surfaces (E1–E2).
  *
- * Covers: every placeholder surface renders the shared ComingSoon page with its
- * descriptor for the owner, surfaces are owner-scoped (foreign story 404s without
- * leaking existence), and they sit behind the auth gate.
+ * Every workspace surface is now live (the last placeholder, Saves, shipped in
+ * S-2.1.1). This guards the shell invariants the workspace promises: each
+ * surface index is reachable by its owner, owner-scoped (a foreign story 404s
+ * without leaking existence), and behind the auth gate. Surface-specific
+ * behaviour lives in each surface's own test (e.g. SessionForkTest for Saves).
  */
 class StoryWorkspaceTest extends TestCase
 {
     use RefreshDatabase;
 
     /**
-     * The placeholder surfaces as [route name, surface key, surface title] rows.
+     * The workspace surface index route names, keyed by tab.
      *
-     * @return array<string, array{0: string, 1: string, 2: string}>
+     * @return array<string, array{0: string}>
      */
     public static function surfaceProvider(): array
     {
         return [
-            // Characters shipped in E1.1 and Structure in E1.2 — neither is a
-            // placeholder surface anymore (see CharacterCrudTest /
-            // StructureCrudTest). Only Saves remains a placeholder.
-            'saves' => ['stories.saves.index', 'saves', 'Saves'],
+            'overview' => ['stories.show'],
+            'characters' => ['stories.characters.index'],
+            'structure' => ['stories.structure.index'],
+            'lorebook' => ['stories.lorebook.index'],
+            'reveal-ledger' => ['stories.reveal-ledger.index'],
+            'settings' => ['stories.settings.edit'],
+            'saves' => ['stories.saves.index'],
+            'details' => ['stories.edit'],
         ];
     }
 
     #[DataProvider('surfaceProvider')]
-    public function test_owner_can_open_a_placeholder_surface(string $routeName, string $key, string $title): void
+    public function test_owner_can_open_a_workspace_surface(string $routeName): void
     {
         $user = User::factory()->create();
         $story = Story::factory()->create(['user_id' => $user->id]);
@@ -43,16 +49,10 @@ class StoryWorkspaceTest extends TestCase
         $response = $this->actingAs($user)->get(route($routeName, $story));
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('stories/ComingSoon')
-            ->where('story.slug', $story->slug)
-            ->where('surface.key', $key)
-            ->where('surface.title', $title)
-        );
     }
 
     #[DataProvider('surfaceProvider')]
-    public function test_placeholder_surface_404s_on_foreign_story(string $routeName): void
+    public function test_workspace_surface_404s_on_foreign_story(string $routeName): void
     {
         $owner = User::factory()->create();
         $other = User::factory()->create();
@@ -64,7 +64,7 @@ class StoryWorkspaceTest extends TestCase
     }
 
     #[DataProvider('surfaceProvider')]
-    public function test_guests_cannot_open_a_placeholder_surface(string $routeName): void
+    public function test_guests_cannot_open_a_workspace_surface(string $routeName): void
     {
         $story = Story::factory()->create();
 
