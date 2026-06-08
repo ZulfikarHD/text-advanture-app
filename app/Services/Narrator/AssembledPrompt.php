@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
  *
  * The output of {@see NarratorPromptAssembler}: an ordered list of folded
  * {@see AssembledBlock}s plus the trailing user instruction. Holds no LLM call;
- * the structured prose call (S-4.2.1) turns {@see self::messages()} into an
+ * {@see NarratorTurnService} (S-4.2.1) turns {@see self::messages()} into an
  * {@see LlmRequest} and sends it. Blocks whose producers
  * are not yet built are simply absent — this object never carries filler.
  */

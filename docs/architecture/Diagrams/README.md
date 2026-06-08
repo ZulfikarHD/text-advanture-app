@@ -20,6 +20,7 @@ Mermaid diagrams, grouped by subject. Filenames use `Title_Case`.
 | Session state machine | [Engine/Session_State_Machine.md](./Engine/Session_State_Machine.md) |
 | Session fork flow (start a playthrough) | [Engine/Session_Fork_Flow.md](./Engine/Session_Fork_Flow.md) |
 | Narrator prompt assembly (registry → blocks → messages) | [Engine/Narrator_Prompt_Assembly.md](./Engine/Narrator_Prompt_Assembly.md) |
+| Narrator turn — structured prose call (prompt → call → handoff) | [Engine/Narrator_Turn_Prose_Call.md](./Engine/Narrator_Turn_Prose_Call.md) |
 | LLM client flow (role → client → log) | [Engine/Llm_Client_Flow.md](./Engine/Llm_Client_Flow.md) |
 | Review gate flow (propose → decide) | [Engine/Review_Gate_Flow.md](./Engine/Review_Gate_Flow.md) |
 | Persistence ERD (draft) | [Data/Persistence_Erd.md](./Data/Persistence_Erd.md) |

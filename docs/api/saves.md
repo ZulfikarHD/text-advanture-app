@@ -12,6 +12,7 @@
 | `POST` | `/stories/{story:slug}/saves/{playSession}/reset` | `stories.saves.reset` | `SessionController@reset` |
 | `DELETE` | `/stories/{story:slug}/saves/{playSession}` | `stories.saves.destroy` | `SessionController@destroy` |
 | `GET` | `/stories/{story:slug}/saves/{playSession}/play` | `stories.saves.play` | `SessionController@play` |
+| `POST` | `/stories/{story:slug}/saves/{playSession}/narrate` | `stories.saves.narrate` | `SessionController@narrate` |
 
 - `{story:slug}` resolves under the `OwnerScope` global scope — a foreign story is **404**, never leaked.
 - `{playSession}` resolves via **scoped bindings** (`->scopeBindings()`) through `Story::playSessions()`: a save from another story (or owner) is **404**. `PlaySession` carries no `user_id`; isolation is transitive through the owner-scoped story.
@@ -69,6 +70,7 @@ type SaveItem = {
 - **`reset`** returns the save to its freshly-forked state in a transaction: re-positioned at the first beat, `state_node = session_start`, every loop-state counter cleared (`beat_word_count`/`chapter_word_count = 0`, `nudge_level`/`resume_anchor`/`narrative_clock = null`), `last_played_at` re-stamped. The same id/name are kept, and no sibling save or authoring row is touched.
 - **`destroy`** deletes the save (the `play_sessions` FK is `cascadeOnDelete`, so future save-realm children go with it); siblings and the template are untouched.
 - **`play`** *is* the load-as-resume path (S-2.1.3): it stamps `last_played_at` (so the save sorts most-recent and "continue where I left off" is accurate) and renders the save at its **persisted** loop position — never reset to the beat start.
+- **`narrate`** (S-4.2.1 / S-4.2.2) runs **one narrator turn** via `NarratorTurnService`: it assembles the narrator prompt, runs a single structured prose call (`prose · handoff · elapsed_bucket`), and on a **validated** result advances the loop spine by the handoff (entering the loop first if the save is at `session_start`), then redirects to `stories.saves.play` with a success toast. The call runs **before** any transition, so a malformed or failed call (retried to the bound, then `Failed`) leaves the save **exactly unchanged** and flashes an error toast — the loop never trusts an unparseable result. Narrating off-turn (the save is not at `session_start`/`narrator_turn`) is rejected without spending a call. Valid only from `session_start` or `narrator_turn`; gated by `update`. The reachable advance control + prose reader ship with the Play reader (S-5.4.1) — this slice is backend + tests only.
 - **`index`** lists existing saves most-recently-played first, even if the story has since drifted out of readiness; only the Start action is gated.
 
 ## Flash / toast
@@ -80,14 +82,18 @@ type SaveItem = {
 | Rename a save | `success` | "Save renamed." |
 | Reset a save | `success` | "Save reset to its starting position." |
 | Delete a save | `success` | "Save deleted." |
+| Narrate a turn (success) | `success` | "The narrator advanced the scene." |
+| Narrate — call failed / malformed (S-4.2.2) | `error` | "The narrator was interrupted and its turn could not be read. Your save is unchanged — try again." |
+| Narrate — not the narrator's turn | `error` | "It is not the narrator's turn right now." |
+| Narrate — no narrator model configured | `error` | "No narrator model is configured yet — set one under Settings → Model roles first." |
 
 ## Ownership & authorization
 
-- `StoryPolicy` (extending `OwnerPolicy`) gates by ownership: `view` for `index`/`play`, `update` for `store`/`update`/`reset`/`destroy`.
+- `StoryPolicy` (extending `OwnerPolicy`) gates by ownership: `view` for `index`/`play`, `update` for `store`/`update`/`reset`/`destroy`/`narrate`.
 - Saves write only to the save realm (`play_sessions`); the authoring template is immutable at runtime (ADR 0012), so the story is never mutated by forking, resetting, or play.
 
 ## Out of scope
 
-- **The Play reader** — narrated prose, scrollback, advance/pause controls (S-5.4.1). `sessions/Play` is a reachable placeholder this phase.
-- **Loop advancement has no HTTP surface yet.** The `state_node` transitions are built (`SessionStateMachine`, S-3.1.1) but are **service-level only** this phase — there is **no route** to advance the loop. The advance/pause endpoint lands with the Play reader (S-5.4.1), and the handoff that drives the transition comes from the prose call (S-4.2.1). The remaining persisted columns are written by play later: `resume_anchor` content by the narrator turn (S-5.3.1), word/nudge/clock counters in Phase 4 (PH-37).
+- **The Play reader** — narrated prose, scrollback, advance/pause controls (S-5.4.1). `sessions/Play` is a reachable placeholder this phase; the `narrate` endpoint above has **no reachable control in the UI yet** — it ships with the reader (PH-36/PH-41).
+- **Narrated prose is not persisted yet.** `narrate` advances `state_node` and returns the structured result, but writing the prose/handoff/elapsed into the immediate-context `events` scene log is **S-5.2.1** (PH-40). The remaining persisted columns also land later: `resume_anchor` content by the narrator turn (S-5.3.1), word/nudge/clock counters in Phase 4 (PH-37).
 - **Edge seeding** — disposition-prior relationship edges on fork (Phase 5, ADR 0002).

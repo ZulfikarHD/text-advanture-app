@@ -45,7 +45,7 @@ php artisan tinker --execute '
 
 ## Loop transitions (S-3.1.1)
 
-`SessionStateMachine` is the only conductor of the narrator-loop spine. It is backend-only this phase: there is **no route** yet (the Play advance UI is S-5.4.1) and the `Handoff` is **injected** by the caller (the prose-call producer is S-4.2.1), so today the transitions are exercised by tests, not by play. The spine touches only `state_node` + the `current_*` position.
+`SessionStateMachine` is the only conductor of the narrator-loop spine. The `Handoff` producer is now built — the [narrator prose call](./narrator-turn-diagnostics.md) (`NarratorTurnService`, S-4.2.1/S-4.2.2) runs a structured call and feeds its validated `Handoff` into the spine — but there is still **no reachable UI** that calls it (the Play advance control is S-5.4.1, PH-41), so in normal use the transitions are exercised by tests + the `narrate` endpoint, not by a played reader. The spine touches only `state_node` + the `current_*` position.
 
 | Symptom | Likely cause | Triage |
 |---------|--------------|--------|
@@ -93,6 +93,6 @@ The fork **and reset** are wrapped in `DB::transaction`. Today each is a single 
 
 ## Out of scope (later stories)
 
-- The remaining loop-state **producers** that feed the spine — the handoff producer (the prose call, **S-4.2.1**), the resume anchor (**S-5.3.1**), and the word/nudge clocks (Phase 4). The spine (S-3.1.1) advances `state_node`/position now, but consumes an injected handoff; nothing produces it in normal play yet (**PH-37**).
+- The remaining loop-state **producers** that feed the spine — the resume anchor (**S-5.3.1**) and the word/nudge clocks (Phase 4). The handoff producer (the prose call, **S-4.2.1/S-4.2.2**) is **now built** — see [narrator-turn-diagnostics.md](./narrator-turn-diagnostics.md) — but no reachable UI calls it yet (**PH-37 / PH-41**); the spine (S-3.1.1) advances `state_node`/position on its validated handoff.
 - The actual Play reader + advance/pause controls that *call* the spine — **S-5.4.1** (the current Play surface is a placeholder, PH-36).
 - The boundary/loop-exit subsystem when the last beat closes — Phase 4 (**PH-38**).

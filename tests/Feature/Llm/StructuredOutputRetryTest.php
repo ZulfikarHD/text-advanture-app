@@ -76,4 +76,56 @@ class StructuredOutputRetryTest extends TestCase
         ]);
         $this->assertDatabaseMissing('llm_calls', ['status' => LlmCallStatus::Ok->value]);
     }
+
+    public function test_a_value_outside_a_declared_enum_is_retried_then_fails(): void
+    {
+        // A structurally valid payload whose enum value is out of vocabulary is
+        // non-conforming, so it must be retried then surfaced - never trusted.
+        config(['services.openrouter.max_retries' => 1]);
+        Sleep::fake();
+        Http::preventStrayRequests();
+        Http::fake([
+            '*chat/completions' => Http::response([
+                'id' => 'gen-enum',
+                'choices' => [['message' => ['content' => json_encode(['handoff' => 'npc_moment'])]]],
+                'usage' => ['prompt_tokens' => 5, 'completion_tokens' => 5, 'cost' => 0.00001],
+            ]),
+        ]);
+
+        $user = User::factory()->create();
+        $this->actingAs($user);
+        (new ProviderCredentialService)->store($user, 'sk-or-v1-enum-9999');
+
+        $schema = [
+            'type' => 'object',
+            'properties' => ['handoff' => ['type' => 'string', 'enum' => ['player_moment', 'beat_complete']]],
+            'required' => ['handoff'],
+        ];
+
+        $request = new LlmRequest(
+            role: LlmRole::NarratorProse,
+            modelSlug: 'strong/model',
+            messages: [['role' => 'user', 'content' => 'narrate this beat']],
+            owner: $user,
+        );
+
+        $returnedData = false;
+
+        try {
+            app(LlmClient::class)->completeStructured($request, $schema, 'narrator_prose');
+            $returnedData = true;
+        } catch (LlmStructuredOutputException) {
+            // Expected: an out-of-enum value is non-conforming.
+        }
+
+        $this->assertFalse($returnedData, 'An out-of-vocabulary enum value must never be returned as data.');
+
+        Http::assertSentCount(2);
+
+        $this->assertDatabaseHas('llm_calls', [
+            'role' => LlmRole::NarratorProse->value,
+            'status' => LlmCallStatus::Failed->value,
+        ]);
+        $this->assertDatabaseMissing('llm_calls', ['status' => LlmCallStatus::Ok->value]);
+    }
 }

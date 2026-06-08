@@ -22,8 +22,8 @@ use Illuminate\Support\Collection;
  * {@see BlockProducer} registered for its key; a row with no producer (this
  * phase: MESH_AWARENESS, DIRECTOR_STATE) is skipped with no filler, and a
  * producer that yields nothing (e.g. RESUME_ANCHOR when not resuming) omits its
- * block. The result is an {@see AssembledPrompt} of messages only — the
- * structured prose call (S-4.2.1) resolves the model role and sends it.
+ * block. The result is an {@see AssembledPrompt} of messages only —
+ * {@see NarratorTurnService} (S-4.2.1) resolves the model role and sends it.
  *
  * This phase folds deterministically (template, not the compiler LLM role); the
  * `compile_instruction` LLM-fold path is deferred (PH-25/PH-39).

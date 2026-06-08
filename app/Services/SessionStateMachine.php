@@ -7,6 +7,7 @@ use App\Enums\StateNode;
 use App\Exceptions\Sessions\IllegalLoopTransitionException;
 use App\Models\Beat;
 use App\Models\PlaySession;
+use App\Services\Narrator\NarratorTurnService;
 
 /**
  * The narrator-loop spine — the session's only conductor (S-3.1.1 / S-3.1.2,
@@ -17,8 +18,9 @@ use App\Models\PlaySession;
  * narrator_resumes`, persisting the position on `play_sessions` as it goes.
  * There is no separate orchestrator: this one service owns the whole transition
  * table, and the only branch input is the narrator turn's structured
- * {@see Handoff} signal (produced by the prose call in S-4.2.1 and passed into
- * {@see applyHandoff()} — injected here so the spine is testable without an LLM).
+ * {@see Handoff} signal (produced by {@see NarratorTurnService}
+ * (S-4.2.1) and passed into {@see applyHandoff()} — still injected here so the
+ * spine stays testable without an LLM).
  *
  * `narrator_resumes` is the edge back to `narrator_turn` after a pause, not its
  * own node, so it is expressed by {@see resumeFromPlayerMoment()} (after the
@@ -56,8 +58,9 @@ class SessionStateMachine
      * Route a completed narrator turn by its handoff signal:
      * `narrator_turn -> player_moment | beat_complete`.
      *
-     * The handoff is the narrator turn's own structured output, so the next node
-     * is fully determined by it — no separate classifier pass. `npc_moment` is a
+     * The handoff is the narrator turn's own structured output (produced by
+     * {@see NarratorTurnService}), so the next node is
+     * fully determined by it — no separate classifier pass. `npc_moment` is a
      * valid registry handoff but its branch is not wired until Phase 2, so it is
      * rejected here rather than routed.
      *

@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Stories;
 
+use App\Exceptions\Llm\LlmCallFailedException;
+use App\Exceptions\Llm\UnresolvedModelRoleException;
+use App\Exceptions\Sessions\IllegalLoopTransitionException;
 use App\Exceptions\Sessions\StoryNotPlayableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Stories\RenameSessionRequest;
 use App\Http\Requests\Stories\StartSessionRequest;
 use App\Models\PlaySession;
 use App\Models\Story;
+use App\Services\Narrator\NarratorTurnService;
 use App\Services\SessionService;
 use App\Services\StoryOverviewService;
 use Illuminate\Http\RedirectResponse;
@@ -41,6 +45,7 @@ class SessionController extends Controller
     public function __construct(
         private readonly SessionService $sessions,
         private readonly StoryOverviewService $overview,
+        private readonly NarratorTurnService $narratorTurns,
     ) {}
 
     /**
@@ -163,6 +168,46 @@ class SessionController extends Controller
             ],
             'save' => $this->presentSave($playSession),
         ]);
+    }
+
+    /**
+     * Run one narrator turn and advance the save's loop (S-4.2.1 / S-4.2.2).
+     *
+     * Delegates the prose call to {@see NarratorTurnService}: a validated result
+     * advances the spine, while a malformed or failed call is surfaced as an
+     * error toast with the save left exactly as it was — the loop never trusts an
+     * unparseable result, and the player can retry without losing the session
+     * (the prose reader + advance control land in S-5.4.1). Either way the player
+     * is returned to the Play surface at the save's (un)changed position.
+     */
+    public function narrate(Story $story, PlaySession $playSession): RedirectResponse
+    {
+        Gate::authorize('update', $story);
+
+        try {
+            $this->narratorTurns->run($playSession);
+        } catch (IllegalLoopTransitionException) {
+            return $this->backToPlay($story, $playSession, 'error', __("It is not the narrator's turn right now."));
+        } catch (UnresolvedModelRoleException) {
+            return $this->backToPlay($story, $playSession, 'error', __('No narrator model is configured yet — set one under Settings → Model roles first.'));
+        } catch (LlmCallFailedException) {
+            return $this->backToPlay($story, $playSession, 'error', __('The narrator was interrupted and its turn could not be read. Your save is unchanged — try again.'));
+        }
+
+        return $this->backToPlay($story, $playSession, 'success', __('The narrator advanced the scene.'));
+    }
+
+    /**
+     * Flash a toast and return the player to the save's Play surface.
+     *
+     * @param  string  $type  The toast variant (`success` | `error`).
+     * @param  string  $message  The human-readable toast message.
+     */
+    private function backToPlay(Story $story, PlaySession $playSession, string $type, string $message): RedirectResponse
+    {
+        Inertia::flash('toast', ['type' => $type, 'message' => $message]);
+
+        return to_route('stories.saves.play', [$story, $playSession]);
     }
 
     /**

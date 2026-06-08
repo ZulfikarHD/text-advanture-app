@@ -227,7 +227,7 @@ class OpenRouterClient implements LlmClient
     }
 
     /**
-     * Validate a decoded payload against the required keys and property types.
+     * Validate a decoded payload against the required keys, types, and enums.
      *
      * @param  array<string, mixed>  $data
      * @param  array<string, mixed>  $schema
@@ -248,6 +248,16 @@ class OpenRouterClient implements LlmClient
             $expectedType = $definition['type'] ?? null;
 
             if ($expectedType !== null && ! $this->matchesType($data[$key], (string) $expectedType)) {
+                return false;
+            }
+
+            // A declared enum constrains the value to a closed vocabulary, so a
+            // value outside it (e.g. an out-of-phase handoff signal) is treated
+            // as non-conforming - the call is retried then surfaced rather than
+            // trusted (S-4.2.2). Schemas with no enum are unaffected.
+            $allowed = $definition['enum'] ?? null;
+
+            if (is_array($allowed) && ! in_array($data[$key], $allowed, true)) {
                 return false;
             }
         }

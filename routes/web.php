@@ -156,6 +156,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('stories/{story:slug}/saves/{playSession}/play', [SessionController::class, 'play'])
         ->scopeBindings()
         ->name('stories.saves.play');
+    // Run one narrator turn (E4.2 / S-4.2.1 / S-4.2.2). The prose call produces
+    // prose + handoff + elapsed bucket; a validated handoff advances the loop
+    // spine, while malformed output is retried then surfaced as a failed turn
+    // with the save unchanged. Throttled like the other save writes. The
+    // reachable advance control + prose reader land with S-5.4.1.
+    Route::post('stories/{story:slug}/saves/{playSession}/narrate', [SessionController::class, 'narrate'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.saves.narrate');
 
     // Shared review gate (S-6.2). Item routes bind under the owner scope, so a
     // foreign proposal resolves to 404; writes are throttled.
