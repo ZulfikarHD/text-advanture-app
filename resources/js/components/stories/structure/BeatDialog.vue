@@ -9,7 +9,6 @@
  */
 import { useForm } from '@inertiajs/vue3';
 import { watch } from 'vue';
-import StructureController from '@/actions/App/Http/Controllers/Stories/StructureController';
 import InputError from '@/components/InputError.vue';
 import type {
     BeatFormData,
@@ -26,6 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import StructureController from '@/actions/App/Http/Controllers/Stories/StructureController';
 
 const props = defineProps<{
     /** Story slug used to build the Wayfinder URLs. */

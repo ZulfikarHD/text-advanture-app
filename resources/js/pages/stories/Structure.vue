@@ -23,7 +23,6 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
-import StructureController from '@/actions/App/Http/Controllers/Stories/StructureController';
 import EmptyState from '@/components/EmptyState.vue';
 import BeatDialog from '@/components/stories/structure/BeatDialog.vue';
 import ChapterDialog from '@/components/stories/structure/ChapterDialog.vue';
@@ -45,6 +44,7 @@ import {
 } from '@/components/ui/card';
 import { useConfirm } from '@/composables/useConfirm';
 import { dashboard } from '@/routes';
+import StructureController from '@/actions/App/Http/Controllers/Stories/StructureController';
 import { index as charactersIndex } from '@/routes/stories/characters';
 
 type StoryRef = {

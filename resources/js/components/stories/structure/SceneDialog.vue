@@ -10,7 +10,6 @@
  */
 import { useForm } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
-import StructureController from '@/actions/App/Http/Controllers/Stories/StructureController';
 import InputError from '@/components/InputError.vue';
 import type {
     CharacterRef,
@@ -37,6 +36,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import StructureController from '@/actions/App/Http/Controllers/Stories/StructureController';
 
 const props = defineProps<{
     /** Story slug used to build the Wayfinder URLs. */

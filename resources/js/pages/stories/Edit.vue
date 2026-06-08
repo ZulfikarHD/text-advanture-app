@@ -7,12 +7,12 @@
  * this page only renders the details form for the "Details" surface.
  */
 import { Form, Head } from '@inertiajs/vue3';
-import StoryController from '@/actions/App/Http/Controllers/Stories/StoryController';
 import AlertError from '@/components/AlertError.vue';
 import Heading from '@/components/Heading.vue';
 import StoryFormFields from '@/components/stories/StoryFormFields.vue';
 import { Button } from '@/components/ui/button';
 import { dashboard } from '@/routes';
+import StoryController from '@/actions/App/Http/Controllers/Stories/StoryController';
 
 type StoryData = {
     id: number;

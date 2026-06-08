@@ -1,4 +1,5 @@
-Make a comprehensive plan for implementing S-1.1.1 and S-1.1.2 From @scrum/phase-2-story-world-management.md Read the technical note first.
+First of all you must understand what this app and how i intend to "Play" with this. think of it like novel crafter but with silly tavern RP elements. then
+Make a comprehensive plan for implementing E4.1 From @scrum/phase-1-walking-skeleton.md Read the technical note first.
 
 ## Phase 1 — Codebase understanding (via subagent, attach relevant skills)
 1. Gather understanding of Routes, Models, Services, Controllers, Middleware.
