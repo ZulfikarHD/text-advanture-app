@@ -229,24 +229,21 @@ class SessionController extends Controller
     /**
      * Commit the player's contribution at a player moment (S-5.1.1).
      *
-     * Hands the turn back to the narrator first (the state machine guards that it
-     * really is the player's moment), then appends the input to the scene log so
-     * the next narrator turn — and the readable scrollback — can see it. Acting
-     * off-turn is surfaced as an error toast with the save unchanged.
+     * Delegates to {@see SessionService::recordPlayerMoment()}, which hands the
+     * turn back to the narrator and appends the input to the scene log in one
+     * atomic transaction so the next narrator turn — and the readable scrollback
+     * — can see it. Acting off-turn is surfaced as an error toast with the save
+     * left exactly unchanged (the transaction rolls back).
      */
     public function input(SubmitPlayerInputRequest $request, Story $story, PlaySession $playSession): RedirectResponse
     {
         Gate::authorize('update', $story);
 
-        $beatId = $playSession->current_beat_id;
-
         try {
-            $this->stateMachine->resumeFromPlayerMoment($playSession);
+            $this->sessions->recordPlayerMoment($playSession, $request->validated()['content']);
         } catch (IllegalLoopTransitionException) {
             return $this->backToPlay($story, $playSession, 'error', __('It is not your turn to act right now.'));
         }
-
-        $this->sceneLog->recordPlayerInput($playSession, $request->validated()['content'], $beatId);
 
         return $this->backToPlay($story, $playSession, 'success', __('Your turn is in — the narrator takes it from here.'));
     }

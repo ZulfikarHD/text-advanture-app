@@ -77,8 +77,9 @@ sequenceDiagram
 - **No dead nav items.** Every tab is now a live, reachable surface — the
   shared placeholder mechanism that bridged the gap (PH-30) is retired now that
   Saves shipped (S-2.1.1). The standing "every page reachable via navigation"
-  rule still holds: the fresh-fork **Play** surface is itself a reachable stub
-  (PH-36) until its reader ships (S-5.4.1).
+  rule still holds: starting/opening a save lands on the live **Writing/Play**
+  page (the reader + loop controls shipped with S-5.4.1/S-5.1.1, resolving
+  PH-36).
 - **Owner scope on every surface.** Each route binds `{story:slug}` under
   `OwnerScope`, so a foreign story 404s on every tab; switching stories
   re-scopes the entire shell.

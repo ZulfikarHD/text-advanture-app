@@ -21,6 +21,7 @@ Mermaid diagrams, grouped by subject. Filenames use `Title_Case`.
 | Session fork flow (start a playthrough) | [Engine/Session_Fork_Flow.md](./Engine/Session_Fork_Flow.md) |
 | Narrator prompt assembly (registry → blocks → messages) | [Engine/Narrator_Prompt_Assembly.md](./Engine/Narrator_Prompt_Assembly.md) |
 | Narrator turn — structured prose call (prompt → call → handoff) | [Engine/Narrator_Turn_Prose_Call.md](./Engine/Narrator_Turn_Prose_Call.md) |
+| Player moment — commit the player's contribution (input → resume) | [Engine/Player_Moment_Flow.md](./Engine/Player_Moment_Flow.md) |
 | LLM client flow (role → client → log) | [Engine/Llm_Client_Flow.md](./Engine/Llm_Client_Flow.md) |
 | Review gate flow (propose → decide) | [Engine/Review_Gate_Flow.md](./Engine/Review_Gate_Flow.md) |
 | Persistence ERD (draft) | [Data/Persistence_Erd.md](./Data/Persistence_Erd.md) |

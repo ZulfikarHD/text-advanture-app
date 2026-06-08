@@ -1,8 +1,8 @@
 # Testing
 
-Test plans & QA checklists, one per feature, that map to automated tests (Pest/PHPUnit + Vitest).
+Test plans & QA checklists, one per feature, that map to automated tests (PHPUnit + Vitest).
 
-> **Status: empty skeleton.** Test plans arrive alongside features once the build starts.
+> Test plans are added alongside each feature as it ships (e.g. `S-3.1.1`, `S-4.1.1`, `S-4.2.2`, `S-5.1.1`). Backend tests are PHPUnit under `tests/Feature` / `tests/Unit`.
 
 ## Naming
 

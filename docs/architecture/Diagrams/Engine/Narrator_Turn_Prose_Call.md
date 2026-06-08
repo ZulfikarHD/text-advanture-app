@@ -39,7 +39,7 @@ An out-of-vocabulary `handoff` is **non-conforming**, so it is retried with back
 
 ## Scope this slice
 
-- **Backend + tests only.** The endpoint exists and is throttled, but its reachable advance control + the prose reader land with **S-5.4.1** (the current `sessions/Play` is a placeholder, PH-36).
-- **Persistence deferred.** The turn returns the structured result and advances `state_node`; writing the prose/handoff/elapsed into the immediate-context `events` scene log is **S-5.2.1** (PH-40). `resume_anchor` content is **S-5.3.1**.
+- **Reachable + rendered.** The endpoint's advance control ("Begin the scene" / "Continue") and the prose reader now live in the [Writing/Play page](../../../../resources/js/pages/sessions/Play.vue) (S-5.4.1); the player half is the [player moment flow](./Player_Moment_Flow.md) (S-5.1.1).
+- **Prose persisted.** The turn's `prose · handoff` are appended to the immediate-context `events` scene log via `SceneLogService::recordNarration` (S-5.2.1). Still deferred: `elapsed_bucket` consumption (Phase 5 decay, PH-40) and `resume_anchor` content (S-5.3.1).
 
 > Tested in [`tests/Feature/Narrator/NarratorTurnTest.php`](../../../../tests/Feature/Narrator/NarratorTurnTest.php) (success advances the loop; malformed is retried, recorded `Failed`, surfaced, and never advances; off-turn is rejected) and the enum-hardening case in [`tests/Feature/Llm/StructuredOutputRetryTest.php`](../../../../tests/Feature/Llm/StructuredOutputRetryTest.php).

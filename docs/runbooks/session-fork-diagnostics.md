@@ -45,7 +45,7 @@ php artisan tinker --execute '
 
 ## Loop transitions (S-3.1.1)
 
-`SessionStateMachine` is the only conductor of the narrator-loop spine. The `Handoff` producer is now built — the [narrator prose call](./narrator-turn-diagnostics.md) (`NarratorTurnService`, S-4.2.1/S-4.2.2) runs a structured call and feeds its validated `Handoff` into the spine — but there is still **no reachable UI** that calls it (the Play advance control is S-5.4.1, PH-41), so in normal use the transitions are exercised by tests + the `narrate` endpoint, not by a played reader. The spine touches only `state_node` + the `current_*` position.
+`SessionStateMachine` is the only conductor of the narrator-loop spine. Its producers are built: the [narrator prose call](./narrator-turn-diagnostics.md) (`NarratorTurnService`, S-4.2.1/S-4.2.2) produces the `Handoff`, and the [Writing/Play page](../architecture/Diagrams/Engine/Player_Moment_Flow.md) (S-5.4.1) now drives those transitions from the UI — narrate, player input (S-5.1.1), and continue. The spine touches only `state_node` + the `current_*` position.
 
 | Symptom | Likely cause | Triage |
 |---------|--------------|--------|
@@ -93,6 +93,5 @@ The fork **and reset** are wrapped in `DB::transaction`. Today each is a single 
 
 ## Out of scope (later stories)
 
-- The remaining loop-state **producers** that feed the spine — the resume anchor (**S-5.3.1**) and the word/nudge clocks (Phase 4). The handoff producer (the prose call, **S-4.2.1/S-4.2.2**) is **now built** — see [narrator-turn-diagnostics.md](./narrator-turn-diagnostics.md) — but no reachable UI calls it yet (**PH-37 / PH-41**); the spine (S-3.1.1) advances `state_node`/position on its validated handoff.
-- The actual Play reader + advance/pause controls that *call* the spine — **S-5.4.1** (the current Play surface is a placeholder, PH-36).
+- The remaining loop-state **producers** that feed the spine — the resume anchor (**S-5.3.1**) and the word/nudge clocks (Phase 4, **PH-37**). The handoff producer (the prose call, **S-4.2.1/S-4.2.2**) and the Play UI that drives the spine (narrate + player input + continue, **S-5.4.1/S-5.1.1**) are **now built** — see [narrator-turn-diagnostics.md](./narrator-turn-diagnostics.md).
 - The boundary/loop-exit subsystem when the last beat closes — Phase 4 (**PH-38**).

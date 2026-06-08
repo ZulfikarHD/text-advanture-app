@@ -10,7 +10,7 @@ Operational playbook for the **narrator prose call** — the structured turn tha
 
 The call runs **before** any state change, so a failed/malformed turn never advances the loop.
 
-> **No UI control yet (PH-41).** This endpoint is backend + tests only — nothing on the placeholder `sessions/Play` calls it. Exercise it from tests or a manual `POST`; the advance button ships with the Play reader (S-5.4.1).
+> **Reachable from the Play page (S-5.4.1).** The Writing/Play page's turn control `POST`s this endpoint ("Begin the scene" / "Continue") when it is the narrator's turn; the player half is the player moment (`input`, S-5.1.1 — see below).
 
 ## Symptom → cause → fix
 
@@ -23,6 +23,18 @@ The call runs **before** any state change, so a failed/malformed turn never adva
 | A `Failed` row exists but the `handoff` "looked fine" | The model returned `npc_moment` (or another value outside the schema enum) | Expected this phase: the `handoff` enum is **narrowed to `player_moment` / `beat_complete`** — `npc_moment` is out of vocabulary, so it is non-conforming and retried then surfaced (its branch lights up in Phase 2). Not a bug. |
 | The turn `404`s | The `{playSession}` doesn't belong to the `{story}` (scoped binding), or the story isn't owned by the signed-in user | Correct isolation — navigate via the save, never a hand-typed URL. `play_sessions` carries no `user_id`; it is reached only through its owner-scoped story. |
 | Many `Failed` rows in a row, all retried twice | The model consistently returns malformed/non-conforming JSON, or the provider is degraded | Inspect the raw `messages`/response by enabling `services.openrouter.log_messages` (below), then re-run. Consider a stronger `narrator_prose` slug. The retry **bound** is `services.openrouter.max_retries`. |
+
+## Player moment (S-5.1.1)
+
+The player half of the loop: `POST /stories/{slug}/saves/{playSession}/input` → `SessionController@input` → `Gate::authorize('update', $story)` → `SessionService::recordPlayerMoment()`. Inside **one `DB::transaction`** it hands the turn back (`resumeFromPlayerMoment`: `player_moment → narrator_turn`, same beat) and appends the input to the `events` scene log. The `continue` endpoint (`SessionController@continueBeat`) closes a finished beat at a beat boundary.
+
+| Symptom | Likely cause | Triage |
+|---------|--------------|--------|
+| Error toast **"It is not your turn to act right now."** | `input` was `POST`ed when the save is not on `player_moment` (an `IllegalLoopTransitionException`) | Expected. Input is valid only at a player moment. The narrator must run first (`narrate`) and hand off with `player_moment`. The save is **unchanged** and nothing is recorded (the transaction rolled back before any write). |
+| Validation error on **content** | Empty input, or longer than `max:5000` (`SubmitPlayerInputRequest`) | Write something before sending; the composer mirrors the cap with a live counter and disables Send past 5000. |
+| Input "submitted" but **no `events` row** and the save still on `player_moment` | A failure mid-transaction (e.g. a DB error in `recordPlayerInput`) rolled the whole moment back | This is the atomicity guarantee, not a bug: the turn is never handed back without the input. Retry; if it repeats, inspect the DB error in the app log. |
+| Error toast **"There is no beat to continue from right now."** | `continue` was `POST`ed when the save is not on `beat_complete` | Expected. "Continue" is the beat-boundary action only. |
+| The story **won't advance past the last beat** | `completeBeat` holds on `beat_complete` when no next beat exists (terminal, PH-38) | Expected end-of-story this phase. The Play page shows the "end of the story" state; boundary/loop-exit subsystems arrive in Phase 4. |
 
 ## Read the failed call from tinker (read-only)
 
@@ -60,7 +72,7 @@ php artisan tinker --execute '
 
 ## Out of scope (later stories)
 
-- **The reachable advance control + prose reader** that *call* this endpoint — S-5.4.1 (PH-41); the current Play surface is a placeholder (PH-36).
-- **Persisting the prose** into the immediate-context `events` scene log — S-5.2.1 (PH-40); `elapsed_bucket` consumption by decay — Phase 5.
+- **`elapsed_bucket` consumption** by decay — Phase 5 (PH-40); the turn returns it but nothing consumes it yet.
 - **The resume anchor** content (S-5.3.1) and **word/nudge/clock** counters (Phase 4).
-- **The recorder sub-call** + the **`npc_moment`** branch (Phase 2).
+- **The bounded immediate-context window + scene summary** at SCENE_DONE — S-5.2.1 remainder (the raw `events` are recorded now).
+- **The recorder sub-call** + the **`npc_moment`** branch + **sourced delivery / two-layer record** (Phase 2).

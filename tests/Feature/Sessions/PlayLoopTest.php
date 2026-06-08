@@ -11,17 +11,21 @@ use App\Models\PlaySession;
 use App\Models\Scene;
 use App\Models\Story;
 use App\Models\User;
+use App\Services\SceneLogService;
+use App\Services\SessionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
  * Feature tests for the playable Writing/Play loop (S-5.1.1 / S-5.4.1).
  *
  * Covers the player-facing half of the loop the Writing page drives: submitting
- * input records it to the scene log and hands the turn back to the narrator;
- * acting off-turn is rejected with the save unchanged; "continue" closes a
- * finished beat and resumes at the next, holding at the end of the story; and the
- * Play page exposes the scene-log timeline, codex, and flow it renders.
+ * input records it to the scene log and hands the turn back to the narrator
+ * atomically (a failed mid-turn write rolls the whole moment back); acting
+ * off-turn is rejected with the save unchanged; "continue" closes a finished beat
+ * and resumes at the next, holding at the end of the story; and the Play page
+ * exposes the scene-log timeline, codex, and flow it renders.
  */
 class PlayLoopTest extends TestCase
 {
@@ -79,6 +83,29 @@ class PlayLoopTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('content');
+    }
+
+    public function test_a_failed_input_write_rolls_back_the_whole_player_moment(): void
+    {
+        $user = User::factory()->create();
+        [, $save] = $this->sceneSave($user, StateNode::PlayerMoment);
+
+        // A scene-log write that fails mid-turn must take the hand-off with it:
+        // the save stays on player_moment with nothing recorded (atomic, S-5.1.1).
+        $this->mock(SceneLogService::class)
+            ->shouldReceive('recordPlayerInput')
+            ->once()
+            ->andThrow(new RuntimeException('scene log write failed'));
+
+        try {
+            app(SessionService::class)->recordPlayerMoment($save, 'I reach for the latch.');
+            $this->fail('Expected the failed scene-log write to bubble up.');
+        } catch (RuntimeException) {
+            // The failure is expected; the assertions below prove the rollback.
+        }
+
+        $this->assertSame(StateNode::PlayerMoment, $save->fresh()->state_node);
+        $this->assertDatabaseCount('events', 0);
     }
 
     public function test_continue_closes_a_finished_beat_and_resumes_at_the_next(): void

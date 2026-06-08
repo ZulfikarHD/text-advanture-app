@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\StateNode;
+use App\Exceptions\Sessions\IllegalLoopTransitionException;
 use App\Exceptions\Sessions\StoryNotPlayableException;
 use App\Models\Beat;
 use App\Models\Chapter;
@@ -22,6 +23,8 @@ use Illuminate\Support\Facades\DB;
  * - **rename / reset / delete** (S-2.1.2): manage independent parallel saves.
  * - **resume** (S-2.1.3): stamp last-played so loading restores where play
  *   left off.
+ * - **recordPlayerMoment** (S-5.1.1): commit the player's contribution and hand
+ *   the turn back to the narrator atomically.
  *
  * Forking and resetting seed nothing else this phase — the minimal characters
  * carry no edges, so no `relationship_edges` are created (disposition-prior
@@ -33,6 +36,8 @@ class SessionService
     public function __construct(
         private readonly StoryOverviewService $overview,
         private readonly BeatSequence $beats,
+        private readonly SessionStateMachine $stateMachine,
+        private readonly SceneLogService $sceneLog,
     ) {}
 
     /**
@@ -187,6 +192,37 @@ class SessionService
         $save->update(['last_played_at' => now()]);
 
         return $save;
+    }
+
+    /**
+     * Commit the player's contribution at a player moment (S-5.1.1).
+     *
+     * Hands the turn back to the narrator and appends the input to the scene log
+     * as one atomic boundary: the loop never persists a turn handed back without
+     * its input, nor an input without the matching hand-off. The node guard runs
+     * first so acting off-turn throws (and rolls back) before anything is
+     * written; the save stays on the same beat so the narrator continues from
+     * the player's prose rather than restarting the beat.
+     *
+     * @param  PlaySession  $save  The save awaiting the player at a player moment (already authorized + scoped).
+     * @param  string  $content  The player's written contribution.
+     * @return PlaySession The same save, back on `narrator_turn` at the same beat.
+     *
+     * @throws IllegalLoopTransitionException When the save is not on `player_moment`.
+     */
+    public function recordPlayerMoment(PlaySession $save, string $content): PlaySession
+    {
+        return DB::transaction(function () use ($save, $content): PlaySession {
+            // Anchor the input to the beat the player acted on before the spine
+            // advances, then guard-and-transition before writing so an off-turn
+            // attempt rolls back with nothing recorded.
+            $beatId = $save->current_beat_id;
+
+            $this->stateMachine->resumeFromPlayerMoment($save);
+            $this->sceneLog->recordPlayerInput($save, $content, $beatId);
+
+            return $save;
+        });
     }
 
     /**

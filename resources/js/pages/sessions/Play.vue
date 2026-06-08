@@ -21,7 +21,7 @@ import {
     GitBranch,
     Sparkles,
 } from '@lucide/vue';
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue';
 import SessionController from '@/actions/App/Http/Controllers/Stories/SessionController';
 import CodexPanel from '@/components/play/CodexPanel.vue';
 import { Badge } from '@/components/ui/badge';
@@ -91,8 +91,16 @@ const props = defineProps<{
 }>();
 
 const scrollRegion = ref<HTMLElement | null>(null);
+const inputRef = useTemplateRef('inputRef');
 const busy = ref(false);
 const inputForm = useForm<{ content: string }>({ content: '' });
+
+// Mirror the server cap (SubmitPlayerInputRequest: content max:5000) so the
+// player sees the limit before a round-trip rejects an over-long contribution.
+const inputMaxLength = 5000;
+const overInputLimit = computed(
+    () => inputForm.content.length > inputMaxLength,
+);
 
 const hasProse = computed(() => props.timeline.length > 0);
 
@@ -118,6 +126,16 @@ function scrollToLatest(): void {
         if (region) {
             region.scrollTop = region.scrollHeight;
         }
+    });
+}
+
+/**
+ * Move focus to the composer when it becomes the player's turn so writing back
+ * is immediate — the loop should feel like a conversation, not a form to find.
+ */
+function focusInput(): void {
+    nextTick(() => {
+        inputRef.value?.$el?.focus();
     });
 }
 
@@ -157,7 +175,11 @@ function continueBeat(): void {
 }
 
 function submitInput(): void {
-    if (inputForm.processing || inputForm.content.trim().length === 0) {
+    if (
+        inputForm.processing ||
+        inputForm.content.trim().length === 0 ||
+        overInputLimit.value
+    ) {
         return;
     }
 
@@ -173,8 +195,23 @@ function submitInput(): void {
     );
 }
 
-onMounted(scrollToLatest);
+onMounted(() => {
+    scrollToLatest();
+
+    if (props.flow.awaitingPlayer) {
+        focusInput();
+    }
+});
 watch(() => props.timeline.length, scrollToLatest);
+// When the narrator hands off, drop the player straight into the composer.
+watch(
+    () => props.flow.awaitingPlayer,
+    (awaiting) => {
+        if (awaiting) {
+            focusInput();
+        }
+    },
+);
 
 setLayoutProps<{ breadcrumbs: BreadcrumbItem[] }>({
     breadcrumbs: [
@@ -386,6 +423,7 @@ setLayoutProps<{ breadcrumbs: BreadcrumbItem[] }>({
                             @submit.prevent="submitInput"
                         >
                             <Textarea
+                                ref="inputRef"
                                 v-model="inputForm.content"
                                 rows="3"
                                 placeholder="Write what you do or say…"
@@ -399,18 +437,32 @@ setLayoutProps<{ breadcrumbs: BreadcrumbItem[] }>({
                                     <kbd class="font-sans">⌘</kbd>/<kbd class="font-sans">Ctrl</kbd>
                                     + Enter to send
                                 </p>
-                                <Button
-                                    type="submit"
-                                    class="h-11"
-                                    :disabled="
-                                        inputForm.processing ||
-                                        inputForm.content.trim().length === 0
-                                    "
-                                    data-test="play-send"
-                                >
-                                    <CornerDownLeft class="size-4" />
-                                    Send
-                                </Button>
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="text-xs tabular-nums"
+                                        :class="
+                                            overInputLimit
+                                                ? 'text-destructive'
+                                                : 'text-muted-foreground'
+                                        "
+                                        data-test="play-input-count"
+                                    >
+                                        {{ inputForm.content.length }}/{{ inputMaxLength }}
+                                    </span>
+                                    <Button
+                                        type="submit"
+                                        class="h-11"
+                                        :disabled="
+                                            inputForm.processing ||
+                                            inputForm.content.trim().length === 0 ||
+                                            overInputLimit
+                                        "
+                                        data-test="play-send"
+                                    >
+                                        <CornerDownLeft class="size-4" />
+                                        Send
+                                    </Button>
+                                </div>
                             </div>
                             <p
                                 v-if="inputForm.errors.content"
