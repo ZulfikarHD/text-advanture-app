@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\StateNode;
 use App\Exceptions\Sessions\StoryNotPlayableException;
 use App\Models\Beat;
+use App\Models\Chapter;
 use App\Models\PlaySession;
 use App\Models\Story;
 use Illuminate\Support\Facades\DB;
@@ -70,6 +71,34 @@ class SessionService
             // here, inside this transaction, so the fork stays atomic as it
             // grows. No relationship_edges are created this phase.
         });
+    }
+
+    /**
+     * Resolve the playthrough to drop the player into — the silent fork (E0.2.2).
+     *
+     * The chapter-first front door never asks the player to manage saves: opening
+     * a book (or a chapter) resumes the most-recent playthrough, or forks a fresh
+     * one when none exists yet. When a chapter is named *and* the resolved save
+     * has not been played yet (still at session_start), the save is aligned to
+     * that chapter's opening beat so "pick a chapter, start there" holds. An
+     * in-progress save always resumes where it left off — entering never rewinds
+     * lived progress.
+     *
+     * @param  Story  $story  The play-ready story being entered (already authorized).
+     * @param  Chapter|null  $chapter  The chapter the player chose, when entering chapter-first.
+     * @return PlaySession The resolved save, stamped as most-recently-played.
+     *
+     * @throws StoryNotPlayableException When no save exists yet and the story is not play-ready.
+     */
+    public function enter(Story $story, ?Chapter $chapter = null): PlaySession
+    {
+        $save = $this->latestSave($story) ?? $this->fork($story);
+
+        if ($chapter !== null && $save->state_node === StateNode::SessionStart) {
+            $this->positionAtChapter($save, $chapter);
+        }
+
+        return $this->resume($save);
     }
 
     /**
@@ -158,6 +187,47 @@ class SessionService
         $save->update(['last_played_at' => now()]);
 
         return $save;
+    }
+
+    /**
+     * Resolve the story's most-recently-played save, if any.
+     *
+     * Mirrors the Saves list ordering (last_played_at, then id) so "continue"
+     * lands on exactly the save the list shows at the top.
+     *
+     * @param  Story  $story  The story whose latest save is wanted.
+     */
+    private function latestSave(Story $story): ?PlaySession
+    {
+        return $story->playSessions()
+            ->orderByDesc('last_played_at')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    /**
+     * Align a not-yet-played save to a chapter's opening beat.
+     *
+     * Only ever called for a save still at session_start, so it cannot rewind a
+     * playthrough that has already progressed. When the chapter has no beat the
+     * save keeps the fork's first-beat position.
+     *
+     * @param  PlaySession  $save  The freshly-resolved save (at session_start).
+     * @param  Chapter  $chapter  The chapter to position at.
+     */
+    private function positionAtChapter(PlaySession $save, Chapter $chapter): void
+    {
+        $beat = $this->beats->firstInChapter($chapter);
+
+        if ($beat === null) {
+            return;
+        }
+
+        $save->update([
+            'current_chapter_id' => $beat->scene->chapter_id,
+            'current_scene_id' => $beat->scene_id,
+            'current_beat_id' => $beat->id,
+        ]);
     }
 
     /**

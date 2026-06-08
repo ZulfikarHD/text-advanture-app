@@ -137,6 +137,16 @@ Route::middleware(['auth'])->group(function () {
     // bindings, so a save from another story (or owner) resolves to 404; writes
     // are throttled. Opening Play resumes the save at its persisted loop position
     // (S-2.1.3); the full prose reader is S-5.4.1.
+    // Play front door (E0.2 / E0.2.2). The chapter-first entry that hides the
+    // fork: entering a book resumes the most-recent playthrough or silently forks
+    // one, and entering a specific chapter starts a fresh playthrough there. Both
+    // land on the Writing/Play page (E0.4). The {chapter} binds through
+    // Story::chapters() via scoped bindings, so a chapter from another story 404s.
+    Route::get('stories/{story:slug}/play', [SessionController::class, 'enter'])->name('stories.play');
+    Route::get('stories/{story:slug}/chapters/{chapter}/play', [SessionController::class, 'enterChapter'])
+        ->scopeBindings()
+        ->name('stories.chapters.play');
+
     Route::get('stories/{story:slug}/saves', [SessionController::class, 'index'])->name('stories.saves.index');
     Route::post('stories/{story:slug}/saves', [SessionController::class, 'store'])
         ->middleware('throttle:30,1')
@@ -165,6 +175,19 @@ Route::middleware(['auth'])->group(function () {
         ->scopeBindings()
         ->middleware('throttle:30,1')
         ->name('stories.saves.narrate');
+    // Commit the player's contribution at a player moment (S-5.1.1): records the
+    // input to the scene log and hands the turn back to the narrator. Throttled
+    // like the other save writes.
+    Route::post('stories/{story:slug}/saves/{playSession}/input', [SessionController::class, 'input'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.saves.input');
+    // Close a finished beat and resume at the next one (S-3.1.2): the player's
+    // "continue" at a beat boundary. Throttled like the other save writes.
+    Route::post('stories/{story:slug}/saves/{playSession}/continue', [SessionController::class, 'continueBeat'])
+        ->scopeBindings()
+        ->middleware('throttle:30,1')
+        ->name('stories.saves.continue');
 
     // Shared review gate (S-6.2). Item routes bind under the owner scope, so a
     // foreign proposal resolves to 404; writes are throttled.

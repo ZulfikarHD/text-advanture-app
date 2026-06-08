@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Stories;
 
 use App\Http\Controllers\Controller;
+use App\Models\Chapter;
 use App\Models\Story;
 use App\Services\StoryOverviewService;
 use Illuminate\Support\Facades\Gate;
@@ -37,6 +38,33 @@ class StoryOverviewController extends Controller
             ],
             'counts' => $this->overview->counts($story),
             'readiness' => $this->overview->readiness($story),
+            'chapters' => $this->presentChapterSpine($story),
         ]);
+    }
+
+    /**
+     * Shape the story's chapters as the play-entry spine (E0.2).
+     *
+     * The ordered chapter list the overview renders as the chapter-first entrance:
+     * each row links into the Writing/Play page positioned at that chapter. The
+     * `playableBeats` count tells the author which chapters can actually be
+     * entered yet (a chapter with no beat falls back to the story's first).
+     *
+     * @param  Story  $story  The story whose chapters anchor the spine.
+     * @return list<array{id: int, number: int, title: string, playableBeats: int}>
+     */
+    private function presentChapterSpine(Story $story): array
+    {
+        return $story->chapters()
+            ->withCount(['scenes as playable_beats' => fn ($query) => $query->join('beats', 'beats.scene_id', '=', 'scenes.id')])
+            ->orderBy('number')
+            ->get()
+            ->map(fn (Chapter $chapter): array => [
+                'id' => $chapter->id,
+                'number' => $chapter->number,
+                'title' => $chapter->title,
+                'playableBeats' => (int) $chapter->playable_beats,
+            ])
+            ->all();
     }
 }

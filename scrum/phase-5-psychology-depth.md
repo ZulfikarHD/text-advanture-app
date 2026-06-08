@@ -3,7 +3,7 @@
 
 **Timeline:** ~3 Months (11–12 Sprints)
 **Sprint Duration:** 1 Week
-**Depends on:** Phase 4 (directed structure, nudge, boundary events + reserved drift/decay slots), Phase 2 (assembler/recorder/projection + reserved appraisal slot), Phase 1 (loop spine).
+**Depends on:** Phase 4 (directed structure, nudge, boundary events + reserved drift/decay slots), Phase 2 (assembler/recorder/projection + reserved appraisal slot), Phase 1 (loop spine + the play front door E0; the fork that seeds edges is the invisible one triggered by chapter selection, E0.2).
 **Governing ADRs:** 0001 (three-layer split), 0013 (bible→card compile + spoiler clamp), 0018 (creation pipeline + archetypes), 0002 (edges), 0006 (registers), 0014 (internal state `[SELF]`), 0007 (awareness fold / SNAPSHOT / MASKS / DIRECTIVES), 0005 (appraisal), 0003 (delta engine), 0004 (decay + scars), 0016 (in-loop sequencing of appraisal/drift/decay).
 
 > **Goal — characters that *evolve*, explainably and spoiler-safely.** Phases 2–4 give characters who play themselves and a human who directs them; this phase gives them an **inner life that changes**: a relationship **mesh** (asymmetric edges with axes, bounds, registers), an **internal state** (mood, emotions, motivation, masks), the **delta engine** (appraisal proposes → review gate → commit, with drift vs. rupture), **decay + latched scars** (commitment and trauma), and the **compile pipeline** that turns a spoiler-laden bible into a per-chapter, knowledge-bounded card. This lights the rich NPC blocks `SELF`/`SNAPSHOT`/`MASKS`/`DIRECTIVES`, turns the nudge into a **register/mask/awareness-gated** delivery, and finally lights the narrator `MESH_AWARENESS` block now that the mesh exists. After this phase the engine is **more than SillyTavern**: behavior = axis value × expression mask × (card voice + relational register), evolving under explainable, reviewable deltas.
@@ -229,7 +229,7 @@ Scenario: Capped awareness models a blind spot
 ```
 
 > **Technical Notes E2.1:**
-> - **Preconditions:** E1 (disposition priors on cards); Phase 1 session fork (now extended to seed edges); Phase 0 `relationship_edges` + `axes` tables.
+> - **Preconditions:** E1 (disposition priors on cards); the Phase-1 session fork — now the **invisible fork triggered by chapter selection (E0.2)** — extended to seed edges; Phase 0 `relationship_edges` + `axes` tables.
 > - **Integrates-into:** the Phase-1 `SessionService` fork (add edge seeding to the same atomic transaction); a `RelationshipMesh`/edge model in the save realm.
 > - **Leak-guards:** edges are **owner-perspective** — the basis of `own_perspective_only`, now actively enforced (Phase 2 had no edges to leak). `capped` awareness sets up `awareness_fold` (Epic E3). ADR 0002 / 0004 (bounds).
 

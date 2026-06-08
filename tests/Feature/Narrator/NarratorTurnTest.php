@@ -107,6 +107,22 @@ class NarratorTurnTest extends TestCase
         $response->assertInertiaFlash('toast.type', 'success');
     }
 
+    public function test_a_valid_prose_call_records_a_narration_event(): void
+    {
+        $this->fakeProseCall('player_moment');
+        [$user, $story, $save] = $this->narratableSession();
+        $this->actAsOwnerWithKey($user);
+
+        $this->post(route('stories.saves.narrate', [$story, $save]));
+
+        $this->assertDatabaseHas('events', [
+            'session_id' => $save->id,
+            'beat_id' => $save->current_beat_id,
+            'type' => 'narration',
+            'content' => 'The classroom hums with tension as Luna looks up from her gloves.',
+        ]);
+    }
+
     public function test_malformed_output_is_retried_then_recorded_as_failed(): void
     {
         // Two attempts (1 retry); fake sleep so backoff is instant.

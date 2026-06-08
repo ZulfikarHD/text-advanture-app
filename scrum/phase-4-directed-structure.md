@@ -3,7 +3,7 @@
 
 **Timeline:** ~1.5 Months (5–6 Sprints)
 **Sprint Duration:** 1 Week
-**Depends on:** Phase 3 (multi-character play, orchestration), Phase 2 (assembler/recorder/projection), Phase 1 (loop spine).
+**Depends on:** Phase 3 (multi-character play, orchestration), Phase 2 (assembler/recorder/projection), Phase 1 (loop spine + the play front door E0; player-facing prompts surface in the **Writing/Play page host E0.4**).
 **Governing ADRs:** 0019 (outline compilation), 0015 (beat document + `BEAT_DONE` + boundaries), 0008 (psychological nudge + escalation ladder), 0016 (loop sequencing of clock + boundaries), 0020 (`NUDGE` / `BEAT` / `DIRECTOR_STATE` blocks).
 
 > **Goal — turn free roleplay into a *directed* novel.** Phases 1–3 deliver live multi-character play; this phase adds the **authorial direction** that makes it a *Directed* Interactive Novel: a real **outline → chapter → scene → beat** structure (AI-compiled or hand-authored), the **beat document** (omniscient `intent`, `goal`, `word_budget`, `nudge_target`), the **nudge** (leak-checked authorial pressure delivered to an NPC), and the **word-budget pacing clock** with `BEAT_DONE`, the escalation ceiling/break-glass, and the **boundary events** (`SCENE_DONE`/`CHAPTER_DONE`) that drive batched subsystems. After this phase the human directs *where the story goes* while characters still play themselves — the Novel Crafter half of the vision sitting on top of the SillyTavern half.
@@ -272,7 +272,7 @@ Scenario: Escalate to force a landing
 
 > **Technical Notes E3.1:**
 > - **Preconditions:** S-1.2.1 (`word_budget`/`goal`), S-2.1.x (nudge level), Phase 1 loop state (word counters exist on the session), Phase 0 review gate; `LlmClient` judge role.
-> - **Integrates-into:** the Phase-1 `SessionStateMachine` runs the clock + ladder (ADR 0016 §5); the goal judge is a review-gate producer. Thresholds (1.0×, 1.6×) are config (shared tunable surface in Phase 6; defaults until then).
+> - **Integrates-into:** the Phase-1 `SessionStateMachine` runs the clock + ladder (ADR 0016 §5); the player-facing "Continue / Skip / Direct?" break-glass prompt surfaces **in the Writing/Play page host (E0.4)**, not a new screen; the goal judge is a review-gate producer. Thresholds (1.0×, 1.6×) are config (shared tunable surface in Phase 6; defaults until then).
 > - **Leak-guards:** none new; the nudge it escalates remains leak-checked (E2).
 
 ---

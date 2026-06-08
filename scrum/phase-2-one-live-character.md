@@ -3,7 +3,7 @@
 
 **Timeline:** ~1.5 Months (5–6 Sprints)
 **Sprint Duration:** 1 Week
-**Depends on:** Phase 1 (the loop spine, narrator prose call, player moment, play surface).
+**Depends on:** Phase 1 (the play front door E0 — Home → chapter → the **Writing/Play page host** E0.4; the loop spine; narrator prose call; player moment). All play UI in this phase **mounts into the E0.4 Writing/Play page** — no new play page is created.
 **Governing ADRs:** 0007 (NPC context assembly — the assembler + isolation boundary), 0010 (recorder mechanics), 0009 (POV projection), 0016 (narrator turn = prose + recorder; in-loop sequencing), 0020 (NPC blocks).
 
 > **Goal — play a scene with one in-character NPC.** This phase builds the piece the whole engine is organized around: **the assembler that is both a compiler and the isolation boundary**, plus the **recorder** (two-layer `surface`/`true_state` record) and **POV projection** that produce the witnessed excerpt an NPC is allowed to see. A single present NPC takes a turn, reads only its own card + its witnessed, POV-projected surface, and responds in character. This is **SillyTavern-style single-character play** — and it establishes the three-agent context boundary that every later phase enriches.
@@ -239,8 +239,8 @@ Scenario: The display path never feeds an NPC the anchor's interiority
 ```
 
 > **Technical Notes E3.1:**
-> - **Preconditions:** S-2.1.1 (committed surface + witnesses), Phase 1 play surface.
-> - **Integrates-into:** a `PovProjector` that sits between the recorder's `surface` and the assembler's `SCENE_EXCERPT`; the display path reuses the Phase-1 play surface.
+> - **Preconditions:** S-2.1.1 (committed surface + witnesses), the Phase-1 Writing/Play page host (E0.4).
+> - **Integrates-into:** a `PovProjector` that sits between the recorder's `surface` and the assembler's `SCENE_EXCERPT`; the display path renders into the **Writing/Play page host (E0.4)** — the same chapter-centric surface the player already entered through.
 > - **Leak-guards:** this is the **third leak guard** (others' hidden truth + narrator omniscience). Two per-edge directional dials (legibility at the recorder, decode at projection) — decode is **faithful by default** this phase because `reads_target` lives on edges/registers built in Phase 5. Safety is structural and model-independent; fidelity is best-effort + human-backstopped. ADR 0009.
 
 ---
@@ -275,7 +275,7 @@ Scenario: Infer with ask-when-ambiguous
 
 > **Technical Notes E4.1:**
 > - **Preconditions:** Phase 1 player input (S-5.1.1), the recorder (S-2.1.1).
-> - **Integrates-into:** the Phase-1 play input control + the recorder. **Player delivery is SOURCED, never decoded from bare text** (prose → tone tag → infer/ask). NPC delivery needs no decode (the NPC reports its own intent).
+> - **Integrates-into:** the **Writing/Play page host's input control (E0.4)** + the recorder. **Player delivery is SOURCED, never decoded from bare text** (prose → tone tag → infer/ask). NPC delivery needs no decode (the NPC reports its own intent).
 > - **Leak-guards:** the player's committed surface is the witnessed input feeding the NPC's `SCENE_EXCERPT` (subject to projection). ADR 0010.
 
 ---
@@ -287,7 +287,7 @@ Scenario: Infer with ask-when-ambiguous
 | ID | User Story | Story Points | Priority | Sprint |
 |----|------------|--------------|----------|--------|
 | S-5.1.1 | As a **system**, I want the `npc_moment` handoff branch to run the single present NPC's compile→act turn, recorded and witness-tagged, then resume the narrator so that the narrator → me → NPC loop is complete for one character | 8 | Critical | 5 |
-| S-5.1.2 | As an **author/player**, I want pending `beat_record` proposals reviewed **inline in the play screen** (accept / edit / reject) so that I am the fidelity floor mid-play — using the existing `ReviewGateService`, not a detached page | 5 | Critical | 5 |
+| S-5.1.2 | As an **author/player**, I want pending `beat_record` proposals reviewed **inline in the Writing/Play page** (accept / edit / reject) so that I am the fidelity floor mid-play — using the existing `ReviewGateService`, not a detached page | 5 | Critical | 5 |
 
 **Acceptance Criteria - S-5.1.1:**
 ```gherkin
@@ -311,7 +311,7 @@ Feature: Inline Beat-Record Review
 
 Scenario: Review a pending record without leaving play
   Given the recorder enqueued a beat_record proposal
-  When I review it inline on the play screen
+  When I review it inline in the Writing/Play page
   Then I can accept, edit, or reject it
   And only accepted/edited content becomes the canonical record
   And the reviewer + timestamp are recorded
@@ -327,8 +327,8 @@ Scenario: The private layer is never exposed in review
 ```
 
 > **Technical Notes E5.1:**
-> - **Preconditions:** E1 (assembler/act), E2 (recorder + `propose()` wired), E3 (projection), Phase 1 spine + play surface.
-> - **Integrates-into:** add the `npc_moment` branch to the Phase-1 `SessionStateMachine`; add an **inline review panel** to the Phase-1 `Play.vue` that calls the existing `ReviewGateService` accept/edit/reject. **Do not** build a new review page — that is the orphan mistake; the unified surface comes in Phase 6.
+> - **Preconditions:** E1 (assembler/act), E2 (recorder + `propose()` wired), E3 (projection), Phase 1 spine + the Writing/Play page host (E0.4).
+> - **Integrates-into:** add the `npc_moment` branch to the Phase-1 `SessionStateMachine`; add an **inline review panel** to the **Writing/Play page host (E0.4, the reshaped `Play.vue`)** that calls the existing `ReviewGateService` accept/edit/reject. **Do not** build a new review page — that is the orphan mistake; the unified surface comes in Phase 6.
 > - **Leak-guards:** recorder-first sequencing (S-2.1.4) guarantees the inline review reasons over the committed projected surface; the review view never renders `true_state`. ADR 0010 / 0016 / 0012 §5.
 
 ---
@@ -405,7 +405,7 @@ See the [program DoD](./README.md#9-global-definition-of-done-dod). Phase-2 emph
 |------|--------|-------------|------------|
 | Forbidden data reaches an NPC prompt | Critical | Medium | Assembler is the single boundary; registry-driven blocks; explicit negative tests on every path; separate true_state table |
 | A weak model emits an unhedged mental-state claim | High | Medium | Hedged-attribution is a structural validator (model-independent) + review gate as the floor; minor NPCs never record |
-| Review gate rebuilt as a new detached page (repeating the orphan mistake) | High | Medium | Story convention: beat_record review integrates inline into Play.vue via the existing ReviewGateService; unified surface deferred to Phase 6 |
+| Review gate rebuilt as a new detached page (repeating the orphan mistake) | High | Medium | Story convention: beat_record review integrates inline into the Writing/Play page host (E0.4) via the existing ReviewGateService; unified surface deferred to Phase 6 |
 | Projection leaks interiority / hidden facts | Critical | Medium | witness-filter → surface-only → knowledge_boundary pipeline; structural separation of true_state; leak-guard negative tests |
 | Two-call narrator + NPC turns drive cost up | Medium | Medium | Stable-block caching (basic here), model tiering; full orchestration/streaming in Phase 3 |
 

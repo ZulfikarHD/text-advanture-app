@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Story - root of the authoring realm and the first owner-scoped product model.
@@ -81,6 +82,19 @@ class Story extends Model
     public function playSessions(): HasMany
     {
         return $this->hasMany(PlaySession::class);
+    }
+
+    /**
+     * The most-recently-played save — the one "continue" resumes (E0.1).
+     *
+     * Powers the play-first home: the latest playthrough by `last_played_at`, so
+     * a book card can offer one-tap continue at its last position.
+     *
+     * @return HasOne<PlaySession, $this>
+     */
+    public function latestPlaySession(): HasOne
+    {
+        return $this->hasOne(PlaySession::class)->latestOfMany('last_played_at');
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Stories;
 
+use App\Enums\StateNode;
 use App\Exceptions\Llm\LlmCallFailedException;
 use App\Exceptions\Llm\UnresolvedModelRoleException;
 use App\Exceptions\Sessions\IllegalLoopTransitionException;
@@ -9,10 +10,18 @@ use App\Exceptions\Sessions\StoryNotPlayableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Stories\RenameSessionRequest;
 use App\Http\Requests\Stories\StartSessionRequest;
+use App\Http\Requests\Stories\SubmitPlayerInputRequest;
+use App\Models\Chapter;
+use App\Models\Character;
+use App\Models\Event;
+use App\Models\LorebookEntry;
 use App\Models\PlaySession;
 use App\Models\Story;
+use App\Services\BeatSequence;
 use App\Services\Narrator\NarratorTurnService;
+use App\Services\SceneLogService;
 use App\Services\SessionService;
+use App\Services\SessionStateMachine;
 use App\Services\StoryOverviewService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
@@ -46,7 +55,51 @@ class SessionController extends Controller
         private readonly SessionService $sessions,
         private readonly StoryOverviewService $overview,
         private readonly NarratorTurnService $narratorTurns,
+        private readonly SceneLogService $sceneLog,
+        private readonly SessionStateMachine $stateMachine,
+        private readonly BeatSequence $beats,
     ) {}
+
+    /**
+     * Enter a book's playthrough — the chapter-first front door (E0.2.2).
+     *
+     * The fork stays invisible: this resumes the most-recent playthrough or
+     * silently forks a fresh one, then lands the player on the Writing/Play page.
+     * A not-play-ready story (with no save to resume) is routed back to the
+     * overview with an error toast rather than an exception page.
+     */
+    public function enter(Story $story): RedirectResponse
+    {
+        Gate::authorize('update', $story);
+
+        try {
+            $session = $this->sessions->enter($story);
+        } catch (StoryNotPlayableException) {
+            return $this->notPlayable($story);
+        }
+
+        return to_route('stories.saves.play', [$story, $session]);
+    }
+
+    /**
+     * Enter a specific chapter — start (or resume) play positioned there (E0.2).
+     *
+     * Selecting a chapter resumes an in-progress playthrough where it left off,
+     * or starts a fresh one at that chapter's opening beat. The fork mechanics
+     * stay hidden behind the chapter spine; see {@see SessionService::enter()}.
+     */
+    public function enterChapter(Story $story, Chapter $chapter): RedirectResponse
+    {
+        Gate::authorize('update', $story);
+
+        try {
+            $session = $this->sessions->enter($story, $chapter);
+        } catch (StoryNotPlayableException) {
+            return $this->notPlayable($story);
+        }
+
+        return to_route('stories.saves.play', [$story, $session]);
+    }
 
     /**
      * List the saves forked from this story and the play-readiness gate.
@@ -167,7 +220,59 @@ class SessionController extends Controller
                 'title' => $story->title,
             ],
             'save' => $this->presentSave($playSession),
+            'timeline' => $this->presentTimeline($playSession),
+            'codex' => $this->presentCodex($story),
+            'flow' => $this->presentFlow($playSession),
         ]);
+    }
+
+    /**
+     * Commit the player's contribution at a player moment (S-5.1.1).
+     *
+     * Hands the turn back to the narrator first (the state machine guards that it
+     * really is the player's moment), then appends the input to the scene log so
+     * the next narrator turn — and the readable scrollback — can see it. Acting
+     * off-turn is surfaced as an error toast with the save unchanged.
+     */
+    public function input(SubmitPlayerInputRequest $request, Story $story, PlaySession $playSession): RedirectResponse
+    {
+        Gate::authorize('update', $story);
+
+        $beatId = $playSession->current_beat_id;
+
+        try {
+            $this->stateMachine->resumeFromPlayerMoment($playSession);
+        } catch (IllegalLoopTransitionException) {
+            return $this->backToPlay($story, $playSession, 'error', __('It is not your turn to act right now.'));
+        }
+
+        $this->sceneLog->recordPlayerInput($playSession, $request->validated()['content'], $beatId);
+
+        return $this->backToPlay($story, $playSession, 'success', __('Your turn is in — the narrator takes it from here.'));
+    }
+
+    /**
+     * Close a finished beat and resume at the next one (S-3.1.2).
+     *
+     * The player's "continue" at a beat boundary: the state machine advances to
+     * the next beat in document order, or holds at the end of the story when none
+     * remains. Continuing off a beat boundary is surfaced as an error toast.
+     */
+    public function continueBeat(Story $story, PlaySession $playSession): RedirectResponse
+    {
+        Gate::authorize('update', $story);
+
+        try {
+            $this->stateMachine->completeBeat($playSession);
+        } catch (IllegalLoopTransitionException) {
+            return $this->backToPlay($story, $playSession, 'error', __('There is no beat to continue from right now.'));
+        }
+
+        if ($playSession->state_node === StateNode::BeatComplete) {
+            return $this->backToPlay($story, $playSession, 'success', __('You have reached the end of the story.'));
+        }
+
+        return $this->backToPlay($story, $playSession, 'success', __('On to the next beat.'));
     }
 
     /**
@@ -184,8 +289,13 @@ class SessionController extends Controller
     {
         Gate::authorize('update', $story);
 
+        // Capture the narrated beat before the turn so the scene-log entry is
+        // anchored to the beat the prose was written for, not whatever the spine
+        // advances to afterward.
+        $beatId = $playSession->current_beat_id;
+
         try {
-            $this->narratorTurns->run($playSession);
+            $result = $this->narratorTurns->run($playSession);
         } catch (IllegalLoopTransitionException) {
             return $this->backToPlay($story, $playSession, 'error', __("It is not the narrator's turn right now."));
         } catch (UnresolvedModelRoleException) {
@@ -193,6 +303,8 @@ class SessionController extends Controller
         } catch (LlmCallFailedException) {
             return $this->backToPlay($story, $playSession, 'error', __('The narrator was interrupted and its turn could not be read. Your save is unchanged — try again.'));
         }
+
+        $this->sceneLog->recordNarration($playSession, $result, $beatId);
 
         return $this->backToPlay($story, $playSession, 'success', __('The narrator advanced the scene.'));
     }
@@ -208,6 +320,108 @@ class SessionController extends Controller
         Inertia::flash('toast', ['type' => $type, 'message' => $message]);
 
         return to_route('stories.saves.play', [$story, $playSession]);
+    }
+
+    /**
+     * Flash a not-play-ready toast and route back to the story overview.
+     *
+     * The chapter-first front door has no save to fall back on, so an
+     * unfinished story lands on its overview to finish the requirements rather
+     * than on a dead Writing page.
+     */
+    private function notPlayable(Story $story): RedirectResponse
+    {
+        Inertia::flash('toast', [
+            'type' => 'error',
+            'message' => __('This story is not play-ready yet — finish the requirements on its overview first.'),
+        ]);
+
+        return to_route('stories.show', $story);
+    }
+
+    /**
+     * Shape the save's scene log for the readable scrollback (S-5.4.1).
+     *
+     * @param  PlaySession  $save  The save whose timeline is rendered.
+     * @return list<array{id: int, type: string, content: string, speaker: string|null, createdAt: string|null}>
+     */
+    private function presentTimeline(PlaySession $save): array
+    {
+        return $save->events()
+            ->with('character:id,name')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Event $event): array => [
+                'id' => $event->id,
+                'type' => $event->type->value,
+                'content' => $event->content,
+                'speaker' => $event->character?->name,
+                'createdAt' => $event->created_at?->toIso8601String(),
+            ])
+            ->all();
+    }
+
+    /**
+     * Shape the story's cast + world facts for the Writing page's codex rail.
+     *
+     * Read-only references the player can glance at while playing; never exposes
+     * a character's private interiority (only name + slug), keeping the rail safe
+     * for a player surface.
+     *
+     * @param  Story  $story  The story being played.
+     * @return array{characters: list<array{id: int, name: string, slug: string, isPlayer: bool}>, lore: list<array{id: int, title: string|null}>}
+     */
+    private function presentCodex(Story $story): array
+    {
+        return [
+            'characters' => $story->characters()
+                ->orderByDesc('is_player')
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug', 'is_player'])
+                ->map(fn (Character $character): array => [
+                    'id' => $character->id,
+                    'name' => $character->name,
+                    'slug' => $character->slug,
+                    'isPlayer' => $character->is_player,
+                ])
+                ->all(),
+            'lore' => $story->lorebookEntries()
+                ->orderBy('id')
+                ->get(['id', 'title'])
+                ->map(fn (LorebookEntry $entry): array => [
+                    'id' => $entry->id,
+                    'title' => $entry->title,
+                ])
+                ->all(),
+        ];
+    }
+
+    /**
+     * Derive whose turn it is so the Writing page shows the right one control.
+     *
+     * Maps the loop node to the single next action: the narrator may advance, the
+     * player may write, the player may continue past a beat boundary, or the
+     * story has ended (a beat boundary with no next beat in document order).
+     *
+     * @param  PlaySession  $save  The save whose loop position is read.
+     * @return array{state: string, awaitingNarrator: bool, awaitingPlayer: bool, atBeatBoundary: bool, ended: bool}
+     */
+    private function presentFlow(PlaySession $save): array
+    {
+        $state = $save->state_node;
+        $atBeatComplete = $state === StateNode::BeatComplete;
+
+        $hasNextBeat = $atBeatComplete
+            && $save->current_beat_id !== null
+            && $this->beats->next($save->currentBeat()->firstOrFail()) !== null;
+
+        return [
+            'state' => $state->value,
+            'awaitingNarrator' => in_array($state, [StateNode::SessionStart, StateNode::NarratorTurn], true),
+            'awaitingPlayer' => $state === StateNode::PlayerMoment,
+            'atBeatBoundary' => $atBeatComplete && $hasNextBeat,
+            'ended' => $atBeatComplete && ! $hasNextBeat,
+        ];
     }
 
     /**

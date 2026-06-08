@@ -3,7 +3,7 @@
 
 **Timeline:** ~1 Month (4 Sprints)
 **Sprint Duration:** 1 Week
-**Depends on:** Phase 2 (assembler/isolation boundary, recorder two-layer, POV projection, single `npc_moment`, inline review).
+**Depends on:** Phase 2 (assembler/isolation boundary, recorder two-layer, POV projection, single `npc_moment`, inline review) + Phase 1 (the Writing/Play page host E0.4 — all multi-character streaming mounts here).
 **Governing ADRs:** 0016 (turn loop + in-loop sequencing), 0007 (assembler caching), 0008 (cost/observability — per-beat accounting), 0011 (interaction queue / inaction).
 
 > **Goal — a scene full of people.** Phase 2 made one NPC live; this phase makes **many** live at once. It adds the **interaction queue** (who acts next, and why), the **inaction timer** (a present-but-unaddressed character eventually reacts so the scene breathes), and the **compile → act orchestration** that runs several NPC turns per beat efficiently: deterministic sequencing, stable-block caching across characters and turns, **progressive streaming** so the human watches the scene unfold, and **per-beat cost accounting**. After this phase the app reaches **full SillyTavern-style multi-character roleplay** — every character still bound by the Phase-2 isolation boundary.
@@ -166,7 +166,7 @@ Feature: Progressive Streaming
 Scenario: Output streams in queue order
   Given a beat with several NPC turns
   When orchestration runs
-  Then each character's prose streams to the play surface as it generates, in queue order
+  Then each character's prose streams to the Writing/Play page (E0.4 host) as it generates, in queue order
   And the human is not blocked on the whole batch before seeing anything
 
 Scenario: Streaming degrades gracefully
@@ -192,7 +192,7 @@ Scenario: Visible to the operator
 
 > **Technical Notes E2.1:**
 > - **Preconditions:** E1 queue; Phase 2 compile→act + recorder; Phase 0 `llm_calls` table + `LlmClient` streaming.
-> - **Integrates-into:** an `NpcTurnOrchestrator` invoked by the state machine on `npc_moment`; it drives the Phase-2 `NpcTurnService` per queued character, reuses the Phase-2 assembler's stable system blocks, streams via the Phase-1 play surface, and reads `llm_calls` for aggregation.
+> - **Integrates-into:** an `NpcTurnOrchestrator` invoked by the state machine on `npc_moment`; it drives the Phase-2 `NpcTurnService` per queued character, reuses the Phase-2 assembler's stable system blocks, streams into the **Writing/Play page host (E0.4)**, and reads `llm_calls` for aggregation.
 > - **Leak-guards:** caching is **per-character keyed** — a reuse test proves a cached block never crosses into another character's prompt (the boundary must survive the optimization). Cost accounting is the data source the Phase-6 dashboard + caps consume. ADR 0007 §caching / 0008 / 0016.
 
 ---
@@ -237,7 +237,7 @@ See the [program DoD](./README.md#9-global-definition-of-done-dod). Phase-3 emph
 - [ ] **Every queued turn passes the Phase-2 isolation boundary unchanged**; the caching reuse test proves a cached block **never** crosses into another character's prompt.
 - [ ] Multi-character beats are **deterministic and reproducible**; a failed character turn is **isolated** and retryable without corrupting the record.
 - [ ] Output **streams in queue order**; per-beat **cost is aggregated and attributed** by role/character.
-- [ ] No new detached UI: streaming + addressing live in the Phase-1 play surface. `pnpm lint` clean; UX states covered; responsive + keyboard-accessible.
+- [ ] No new detached UI: streaming + addressing live in the **Writing/Play page host (E0.4)**. `pnpm lint` clean; UX states covered; responsive + keyboard-accessible.
 
 ---
 
@@ -261,7 +261,7 @@ See the [program DoD](./README.md#9-global-definition-of-done-dod). Phase-3 emph
 | Crowded-scene latency/cost blows up | High | Medium | Stable-block caching + model tiering + streaming; per-beat cost accounting to see it early |
 | Queue feels unnatural (wrong character speaks) | Medium | Medium | Salience = addressing + recency + presence now; relationship-weighted salience tuned in Phase 5 |
 | A failed mid-beat turn corrupts the record | High | Low | Deterministic sequencing + per-turn isolation + retry/resume without partial commits |
-| Building a separate multi-char UI | Medium | Low | Streaming + addressing integrate into the existing play surface, not a new area |
+| Building a separate multi-char UI | Medium | Low | Streaming + addressing integrate into the Writing/Play page host (E0.4), not a new area |
 
 ---
 

@@ -127,7 +127,7 @@ Scenario: Re-draft a pending proposal
 
 > **Technical Notes E2.1:**
 > - **Preconditions:** Phase 1 prose call, Phase 2 NPC turn + recorder, Phase 5 producers; Phase 0 `llm_calls`.
-> - **Integrates-into:** add a spin action to the Phase-1 play surface + the unified review surface; reuse the existing generation services (re-invoke, don't fork new pipelines).
+> - **Integrates-into:** add a spin action to the **Writing/Play page host (E0.4)** + the unified review surface; reuse the existing generation services (re-invoke, don't fork new pipelines).
 > - **Leak-guards:** a spun NPC turn re-runs the Phase-2 assembler boundary unchanged. ADR 0016 / 0007.
 
 ---
@@ -182,7 +182,7 @@ Scenario: Emotions, mood, motivation, masks
 
 > **Technical Notes E3.1:**
 > - **Preconditions:** Phase 5 edges + append-only audit log + internal state.
-> - **Integrates-into:** a new viewer reached from the per-session play/saves surface; reads the save realm + audit log (read-only).
+> - **Integrates-into:** the relationship viewer is a **panel within the Writing/Play page host (E0.4)** (alongside the branches/history panel), reached in-context during play; reads the save realm + audit log (read-only).
 > - **Leak-guards:** read-only over committed data; renders one character's own perspective; never juxtaposes another character's `true_state`. Append-only log is never mutated by the viewer. ADR 0003 / 0002.
 
 ---

@@ -52,7 +52,7 @@ stateDiagram-v2
 
 ## Notes
 
-- Only **Workspace** + **Review** + **Settings** are surfaced; **Play** is intentionally deferred to Phase 5 (no dead nav items).
+- Only **Workspace** + **Review** + **Settings** are surfaced in the sidebar; **Play has no sidebar item by design** — it is reached **play-first** by opening a book and selecting a chapter, which lands in the **Writing/Play page** (the front door, scrum Phase 1 · Epic E0). It is not a deferred dead item; it is simply not a top-level nav destination.
 - Settings links to the profile landing (`profile.edit`) but is highlighted across the entire `/settings/*` area via a prefix match, so Profile / Security / Appearance all show the Settings tab active.
 - Workspace is active for both `/dashboard` and `/stories/*` paths, keeping the edit page contextually linked.
 - The empty state is the required **empty** UI state: it teaches the next step with a create CTA. The populated state shows a responsive card grid with edit (pencil → dedicated page) and delete (trash → useConfirm dialog, never native `confirm()`).

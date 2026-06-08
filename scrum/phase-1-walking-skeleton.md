@@ -6,7 +6,9 @@
 **Depends on:** Phase 0 (running app, both DB realms, `LlmClient` + roles, seeded `prompt_blocks`, story/workspace surfaces).
 **Governing ADRs:** 0016 (narrator loop), 0015 (beat document — minimal), 0018 (character creation — minimal manual), 0012 (persistence/session), 0020 (prompt blocks — narrator subset).
 
-> **Goal — the first playable thing.** A human can create one minimal character and one hand-authored beat, **start a session**, and **play a solo narrated scene**: the narrator writes prose, hands off to the player, the player writes back, and the narrator continues. This builds the **loop spine** (session fork → state machine → narrator turn → player moment → resume) and the **narrator's final prompt** (`POV_CONTRACT, BEAT, SCENE_STATE, LOREBOOK, RESUME_ANCHOR`). No NPC agents, no recorder two-layer, no psychology yet — those light up in Phases 2 and 5. **After this phase you can feel the loop.**
+> **Goal — the first playable thing.** A human can create one minimal character and one hand-authored beat, **open a chapter** (which starts a playthrough behind the scenes), and **play a solo narrated scene**: the narrator writes prose, hands off to the player, the player writes back, and the narrator continues. This builds the **loop spine** (session fork → state machine → narrator turn → player moment → resume) and the **narrator's final prompt** (`POV_CONTRACT, BEAT, SCENE_STATE, LOREBOOK, RESUME_ANCHOR`). No NPC agents, no recorder two-layer, no psychology yet — those light up in Phases 2 and 5. **After this phase you can feel the loop.**
+
+> **The way in (E0 — the front door, built first).** Before any engine machinery, this phase establishes **how a human reaches play and where play lives**, so the experience is **"open a book, pick a chapter, and I'm writing/playing"** — never "configure a session." Sign in → **Home** (your books, one-tap **Continue**) → open a book → **select a chapter** → land in the **Writing/Play page** (a Novel-Crafter-style workspace that also hosts the RP loop). A **new** book uses the thinnest onboarding — the only required step is **one main/POV character + POV contract**; everything else is skippable; **Chapter 01 is auto-created** and you drop straight into the Writing page. The two-realm save fork (ADR 0012) is **kept but invisible**: selecting a chapter silently resumes-or-creates the playthrough. "Saves" is demoted from the entrance to an optional **branches/history** panel inside the Writing page. **E0 is the host every later play story mounts into.**
 
 > **What is deliberately deferred:** NPC turns + the `NPC_MOMENT` handoff (Phase 2), the two-layer recorder + `true_state`/witnessing + POV projection (Phase 2), sourced player delivery into a record (Phase 2), the nudge / word-budget clock / `MESH_AWARENESS` / `DIRECTOR_STATE` (Phase 4), all relationship/internal psychology (Phase 5). This phase keeps a single canonical prose history, not a two-layer record.
 
@@ -18,13 +20,204 @@
 
 | Epic ID | Epic Name | Priority | Story Points | Sprints |
 |---------|-----------|----------|--------------|---------|
+| E0 | The Play Front Door (Home → chapter → Writing page) | Critical | 21 | 1–3 |
 | E1 | Minimal Authoring for Play | Critical | 13 | 1 |
 | E2 | Session & Save (Fork) | Critical | 16 | 2 |
 | E3 | Session State Machine (the spine) | Critical | 13 | 3 |
 | E4 | Narrator Turn — Prose Call | Critical | 18 | 3–4 |
 | E5 | Player Moment, Memory & Prose Display | Critical | 16 | 4–5 |
 
-**Total Estimated:** ~76 Story Points
+**Total Estimated:** ~97 Story Points
+
+> **Read E0 first.** E0 is the *front door and host* — the navigation and the Writing/Play page the rest of the phase fills in. Its **shell** stories (E0.1 Home, E0.4 Writing/Play page) are built in Sprint 1 with only Phase-0 preconditions; its **wiring** stories (E0.2 chapter entrance, E0.3 onboarding) schedule after the authoring + fork they depend on (E1/E2), completing the door once the engine behind it exists.
+
+---
+
+## EPIC E0: The Play Front Door — Home → book → chapter → Writing page
+
+> **The missing front door — and the reason the loop kept being built without a place to live.** Every other epic builds *machinery for play*; this one builds the **way in** and the **place play happens**, so the human's first experience is **"open a book, pick a chapter, and I'm writing/playing,"** not "configure a session." It is specified **first** because it is the **host** every later play story mounts into (the prose reader E5.4, the narrator → me loop E3/E4/E5, and later NPC turns in Phase 2) and the **front door** all navigation funnels through. **Play-first:** an *existing* book takes **zero setup** (Home → book → chapter → Writing page, resumed in place); a *new* book uses the **thinnest** onboarding — only a main/POV character + POV contract is required, everything else skippable — then drops you straight into the Writing page on an **auto-created Chapter 01**. The two-realm save fork (ADR 0012) is **kept but invisible**: selecting a chapter silently resumes-or-creates the playthrough. **"Saves" is demoted** from the entrance to an optional branches/history panel inside the Writing page.
+
+```mermaid
+flowchart TD
+    Login["Sign in"] --> Home["Home / workstation (your books, one-tap Continue)"]
+    Home --> HasStory{"Book exists?"}
+
+    HasStory -->|"Yes"| Pick["Open book → chapter spine"]
+    Pick --> PickCh["Select a chapter"]
+    PickCh --> Resolve["Silently resume-or-create playthrough (fork hidden)"]
+    Resolve --> Writing["Writing / Play page<br/>(Novel-Crafter workspace + RP loop)"]
+
+    HasStory -->|"No / New book"| Create["New book → essentials"]
+    Create --> Req["Required: ONE main/POV character + POV contract<br/>(skip lore, reveal-ledger, extra structure)"]
+    Req --> Ch01["Auto-create Chapter 01 (+ default scene/beat); renameable later"]
+    Ch01 --> Writing
+```
+
+### E0.1 — Home / workstation (your books, play-first)
+
+| ID | User Story | Story Points | Priority | Sprint |
+|----|------------|--------------|----------|--------|
+| S-0.1.1 | As a **player**, I want to land on a Home of my books after signing in — each offering a one-tap **Continue** into exactly where I last played and a clear **New book** action — so that getting into play takes the fewest possible steps | 3 | Critical | 1 |
+
+**Acceptance Criteria - S-0.1.1:**
+```gherkin
+Feature: Play-first Home
+
+Scenario: Continue straight into play
+  Given I own at least one book with an in-progress playthrough
+  When I sign in and land on Home
+  Then each book offers a one-tap "Continue" that resumes my last position in the Writing page
+  And I never pass through a separate "start session" or "saves" screen to continue
+
+Scenario: A new user with no books
+  Given I own no books yet
+  When I land on Home
+  Then I am shown guidance and a single clear "New book" action
+  And there is no dead navigation to play surfaces that cannot yet work
+
+Scenario: Start a brand-new book
+  Given I am on Home
+  When I choose "New book"
+  Then I begin the streamlined onboarding (E0.3)
+```
+
+> **Technical Notes E0.1:**
+> - **Preconditions:** Phase 0 Workspace dashboard (`Dashboard.vue` story list), app shell, and the post-login redirect to `dashboard`.
+> - **Integrates-into:** **reshape the existing `/dashboard` (`Dashboard.vue`) into the play-first Home** — story cards gain a **Continue** affordance that resolves the owner's most-recent active playthrough + position. The resolution wires fully once E2.1 (fork) + S-2.1.3 (loop state) exist; until then **Continue** routes to the book's chapter spine (E0.2). No new top-level page; no new sidebar item.
+> - **Leak-guards:** `none` (navigation only; Phase-0 owner-scoping still applies — a user only ever sees their own books).
+
+---
+
+### E0.2 — Open a book → pick a chapter → Writing page (the entrance)
+
+| ID | User Story | Story Points | Priority | Sprint |
+|----|------------|--------------|----------|--------|
+| S-0.2.1 | As a **player**, I want to open a book and see its **chapters** (the chapter spine), then **select a chapter** and land directly in the Writing/Play page positioned at that chapter — with no visible session/fork step | 3 | Critical | 2 |
+| S-0.2.2 | As a **system**, I want selecting a chapter to **silently resolve play state** (resume the player's active playthrough, or auto-create one positioned at that chapter on first play) so that the fork stays invisible and entry is one tap | 5 | Critical | 3 |
+
+**Acceptance Criteria - S-0.2.1:**
+```gherkin
+Feature: Chapter-centric entrance
+
+Scenario: Open a book to its chapter spine
+  Given I own a book
+  When I open it
+  Then I see its chapters in reading order as the primary way in
+  And selecting a chapter takes me into the Writing/Play page for that chapter
+
+Scenario: No visible session machinery
+  Given I select a chapter
+  Then I am not asked to "start a session" or pick a save first
+  And I arrive in the Writing page ready to play
+```
+
+**Acceptance Criteria - S-0.2.2:**
+```gherkin
+Feature: Invisible play-state resolution
+
+Scenario: Resume in place
+  Given I have an active playthrough of this book
+  When I open the chapter I am currently at
+  Then my playthrough resumes at its persisted position (it is not restarted)
+
+Scenario: First play of a book
+  Given I have no playthrough yet
+  When I select a chapter
+  Then a playthrough is created behind the scenes, positioned at that chapter's start
+  And the fork is never shown to me as a step
+
+Scenario: One default playthrough in the main flow
+  Given I have exactly one active playthrough
+  When I select a chapter
+  Then chapter selection always uses it
+  And keeping multiple parallel playthroughs (branches) is an optional action, never required to play
+```
+
+> **Technical Notes E0.2:**
+> - **Preconditions:** E1.2 (chapters — the spine to list) for S-0.2.1; **S-2.1.1 (fork) + S-2.1.3 (loop state) + E3 (spine)** for S-0.2.2.
+> - **Integrates-into:** the per-book view (today the `stories.show` Overview) gains a **chapter spine** entrance; selecting a chapter routes into the Writing/Play page (the reshaped `sessions/Play.vue`, E0.4). S-0.2.2 wraps the existing `SessionService` fork/resume so the `stories.saves.store` + `stories.saves.play` behavior is triggered **implicitly** by chapter selection instead of an explicit "Start session" button. The authoring template is still never mutated (ADR 0012).
+> - **Leak-guards:** `none` at the door (the player tier sees rendered prose only once inside; engine isolation lives in Phase 2+).
+
+---
+
+### E0.3 — Streamlined new-book onboarding (POV-gated, then play)
+
+| ID | User Story | Story Points | Priority | Sprint |
+|----|------------|--------------|----------|--------|
+| S-0.3.1 | As a **player**, I want to create a new book by entering only the essentials plus **one main/POV character with a POV contract** — skipping lore, reveal ledger, and extra structure — and be dropped straight into the Writing page on an **auto-created Chapter 01** (renameable later), so that nothing stands between me and playing | 5 | Critical | 3 |
+
+**Acceptance Criteria - S-0.3.1:**
+```gherkin
+Feature: Thinnest onboarding to play
+
+Scenario: Minimum required, everything else skippable
+  Given I am creating a new book
+  When I provide the book essentials and one main/POV character with a POV contract
+  Then I can skip lore, reveal-ledger, and any further structure authoring
+  And the book is created ready to play
+
+Scenario: Auto Chapter 01, then straight into the Writing page
+  Given a new book with no chapter
+  When onboarding completes
+  Then Chapter 01 is created automatically, with a default scene and beat so the narrator can open
+  And I am taken straight into the Writing/Play page for Chapter 01
+
+Scenario: Rename later, not now
+  Given Chapter 01 was auto-created
+  Then I can rename it at any later time
+  And renaming is never required before playing
+
+Scenario: POV is the only hard gate
+  Given I omit a main/POV character or its POV contract
+  When I try to finish onboarding
+  Then it cannot complete and I am told clearly that a POV character + contract is required
+  And no other authoring entry (lore, reveal-ledger, extra beats) blocks reaching the Writing page
+```
+
+> **Technical Notes E0.3:**
+> - **Preconditions:** E1.1 (the minimal POV character + mandatory `knowledge_boundary`), E1.2 (the Chapter-1 anchor behavior + a beat the narrator can open on), S-0.2.2 (silent play-state resolution); story create from Phase 0.
+> - **Integrates-into:** extends the existing story-create flow (`stories.store`) into a short onboarding that ends by routing into the Writing page (E0.4). Reuses the **Chapter-1 anchor** already specified in E1.1 (committing the first character ensures a default Chapter 1) so onboarding and manual authoring converge on the same auto-chapter and never double-create. Onboarding additionally **auto-seeds a default scene + a default beat** (POV taken from the POV character/contract; a system-supplied default `goal`) so the relaxed gate below is met with no manual structure authoring.
+> - **Business Logic — relaxed front-door readiness:** the gate to reach the Writing page is **a main/POV character + POV contract + ≥ 1 chapter** (auto Chapter 01 satisfies it). Lore, reveal-ledger, and extra beats stay optional. The beat `goal` becomes an **authoring enrichment** (the system supplies a default so E1.2's "a goal is required" invariant holds without burdening the player); goals only become *load-bearing* for directed play in Phase 4. This is a deliberate relaxation of the Overview play-readiness used by the fork (S-1.2.1 / `Session_Fork_Flow`) for the fast path.
+> - **Leak-guards:** `knowledge_boundary` is still **mandatory** on the POV/main character even on this fast path — onboarding skips *optional* authoring only, never the leak-critical fields the engine depends on later.
+
+---
+
+### E0.4 — The Writing / Play page shell (Novel-Crafter workspace + RP host)
+
+| ID | User Story | Story Points | Priority | Sprint |
+|----|------------|--------------|----------|--------|
+| S-0.4.1 | As a **player/author**, I want the Writing/Play page to be the central workspace — a codex rail (characters, lore), the chapter's prose stream in the center, and the play/RP controls within reach — so that one page hosts both reading the chapter and playing the loop, and every later play feature mounts here | 5 | Critical | 1 |
+
+**Acceptance Criteria - S-0.4.1:**
+```gherkin
+Feature: Writing / Play workspace shell (the host)
+
+Scenario: One workspace for the chapter
+  Given I enter a chapter's Writing page
+  Then the chapter's prose stream is the center of the workspace
+  And a codex rail gives quick access to this book's characters and lore
+  And the controls to play/advance and to give my input are within reach
+
+Scenario: The shell is the host; content mounts into it
+  Given the Writing page shell exists
+  Then the prose reader (S-5.4.1), the narrator → me loop (E3/E4/E5), and later NPC turns (Phase 2) render inside this shell
+  And no separate detached play page is created — they extend this host
+
+Scenario: Branches are optional, not the entrance
+  Given I am in the Writing page
+  Then I can optionally open a branches/history panel to manage parallel playthroughs (the former "Saves")
+  And I never need it to start or continue playing
+
+Scenario: Orientation and safe failure
+  Given I am in the Writing page
+  Then I can see which book and chapter I am in
+  And if a generation fails, prior prose stays readable and I can retry without losing my place
+```
+
+> **Technical Notes E0.4:**
+> - **Preconditions:** Phase 0 app shell + the existing `sessions/Play.vue` page and `stories.saves.play` route (reshaped, not replaced) + the Phase-0 characters/lorebook surfaces the codex rail reads.
+> - **Integrates-into:** **reshape `sessions/Play.vue` into the Writing/Play workspace shell** — the codex rail reads the book's existing character + lorebook data; the center hosts the prose stream that S-5.4.1 fills; the play/input controls host E5.1. **Demote the Saves tab** (`stories.saves.index`) from the workspace entrance to an optional branches/history panel surfaced from within the Writing page. The chapter-entry route (E0.2) lands here. This is the single host; the standing anti-orphan rule (program §3) means later play stories **extend** it rather than standing up a new page.
+> - **Leak-guards:** player sees rendered prose only (the player tier of the three-agent isolation model). The **codex rail shows authoring-side book data to the human only** — it never feeds an agent prompt, so it sits outside the assembler boundary and introduces no leak.
 
 ---
 
@@ -129,7 +322,7 @@ Scenario: Story becomes play-ready
 
 | ID | User Story | Story Points | Priority | Sprint |
 |----|------------|--------------|----------|--------|
-| S-2.1.1 | As a **player**, I want to start a session that deep-copies the play-ready story into a save realm so that a playthrough evolves without touching the template | 8 | Critical | 2 |
+| S-2.1.1 | As a **player**, I want starting a playthrough to deep-copy the play-ready story into a save realm (the fork mechanics behind the invisible chapter-entry of E0.2.2) so that a playthrough evolves without touching the template | 8 | Critical | 2 |
 | S-2.1.2 | As a **player**, I want multiple independent saves (name, list, load, reset, delete) so that I can keep parallel playthroughs | 5 | High | 2 |
 | S-2.1.3 | As a **system**, I want to persist loop state (state_node, current chapter/scene/beat, resume_anchor, last-played) so that a session resumes exactly where it left off | 3 | Critical | 2 |
 
@@ -188,7 +381,7 @@ Scenario: Consistent under interruption
 
 > **Technical Notes E2.1:**
 > - **Preconditions:** Phase 0 `play_sessions` table (migrated, behaviorless) + owner-scoping concerns.
-> - **Integrates-into:** the per-story workspace `saves` surface (replace `ComingSoon`); a new `SessionService`. Loop state lives on `play_sessions` (`state_node`, position, `resume_anchor`, `last_played_at`). Word-counters/nudge-level/narrative-clock columns exist but stay unused until Phase 4.
+> - **Integrates-into:** a new `SessionService` holding the fork/resume mechanics. **This epic builds the fork *mechanics*, not the entrance** — the player-facing trigger is **chapter selection (E0.2.2)**, which calls these same `SessionService` operations invisibly. The `saves` surface is **not** the way in; it is repurposed by E0.4 into the optional **branches/history panel** inside the Writing/Play page. Loop state lives on `play_sessions` (`state_node`, position, `resume_anchor`, `last_played_at`). Word-counters/nudge-level/narrative-clock columns exist but stay unused until Phase 4.
 > - **Leak-guards:** none (no agent runs in a fork). Multi-save/reset/delete come free from the fork model (ADR 0012).
 
 ---
@@ -232,7 +425,7 @@ Scenario: No separate orchestrator
 
 > **Technical Notes E3.1:**
 > - **Preconditions:** S-2.1.1 (a forked session), S-2.1.3 (loop state).
-> - **Integrates-into:** a `SessionStateMachine` service advanced from the play surface (E5.4). It owns the spine; the `npc_moment` branch is added (not rebuilt) in Phase 2, and boundary events (`SCENE_DONE`/`CHAPTER_DONE` batched subsystems) are added in Phase 4.
+> - **Integrates-into:** a `SessionStateMachine` service advanced from the Writing/Play page host (E0.4; its prose reader is filled by E5.4). It owns the spine; the `npc_moment` branch is added (not rebuilt) in Phase 2, and boundary events (`SCENE_DONE`/`CHAPTER_DONE` batched subsystems) are added in Phase 4.
 > - **Leak-guards:** none directly; it is the conductor that later sequences recorder-first ordering (Phase 2) and boundary subsystems (Phase 4). ADR 0016 §1/§4.
 
 ---
@@ -339,7 +532,7 @@ Scenario: Input is the player's own behavior
 
 > **Technical Notes E5.1:**
 > - **Preconditions:** E3 spine, E4 prose call.
-> - **Integrates-into:** the play surface (E5.4). This phase stores player input as plain text in the immediate context / scene log. **Sourced delivery (prose → tone tag → infer/ask) and recording into the two-layer record arrive in Phase 2**, where an NPC must witness the player's surface.
+> - **Integrates-into:** the Writing/Play page host (E0.4) — the player input control lives here (its prose reader is filled by E5.4). This phase stores player input as plain text in the immediate context / scene log. **Sourced delivery (prose → tone tag → infer/ask) and recording into the two-layer record arrive in Phase 2**, where an NPC must witness the player's surface.
 > - **Leak-guards:** none this phase (no NPC consumes the player's surface yet).
 
 ---
@@ -401,20 +594,20 @@ Scenario: Build on pause, inject on resume
 
 ---
 
-### E5.4 — Play Surface (Prose Display)
+### E5.4 — Play Surface (Prose Display) — fills the E0.4 Writing-page host
 
 | ID | User Story | Story Points | Priority | Sprint |
 |----|------------|--------------|----------|--------|
-| S-5.4.1 | As a **player**, I want a play screen that renders prose in the scene's POV contract with a readable scrollback and advance/pause-save controls so that I can actually play the loop and stay oriented | 5 | Critical | 5 |
+| S-5.4.1 | As a **player**, I want the Writing/Play page to render prose in the scene's POV contract with a readable scrollback and advance/pause-save controls so that I can actually play the loop and stay oriented | 5 | Critical | 5 |
 
 **Acceptance Criteria - S-5.4.1:**
 ```gherkin
 Feature: Play Surface
 
-Scenario: Enter play from a save
-  Given a play-ready story and a save
-  When I open the play screen
-  Then prose renders in the scene's POV contract with comfortable typography
+Scenario: Enter play by selecting a chapter
+  Given a play-ready book
+  When I open it and select a chapter (E0.2 — the playthrough resolves silently)
+  Then prose renders in the scene's POV contract with comfortable typography inside the Writing-page host
   And I can read a scrollback of committed prose in order
 
 Scenario: Advance, pause/save, orientation
@@ -428,36 +621,41 @@ Scenario: Generation failure is recoverable
 ```
 
 > **Technical Notes E5.4:**
-> - **Preconditions:** E2 saves, E3 spine, E4 prose, E5.1 input.
-> - **Integrates-into:** a new `Play.vue` page reached from the per-story workspace `saves` surface via a session route (e.g. `sessions.play`); reuse the app shell + loading/empty/error states from Phase 0.
+> - **Preconditions:** **S-0.4.1 (the Writing/Play page host)**, E2 saves, E3 spine, E4 prose, E5.1 input.
+> - **Integrates-into:** **the Writing/Play page shell from E0.4** (the reshaped `sessions/Play.vue`) — this story fills the host's center prose region; it does **not** stand up a new page. Reached by selecting a chapter (E0.2), not via a Saves "Start" button; reuse the app shell + loading/empty/error states from Phase 0.
 > - **Leak-guards:** player sees rendered prose only (the player tier of the three-agent isolation model). Progressive streaming is minimal here (single narrator call); full multi-call streaming arrives in Phase 3.
 
 ---
 
 ## Sprint Roadmap
 
-### Sprint 1: Minimal Authoring (E1)
+### Sprint 1: Front Door Shell + Minimal Authoring (E0 shell + E1)
 ```
+├── S-0.1.1: Play-first Home (your books, one-tap Continue, New book)
+├── S-0.4.1: Writing/Play page shell — the host content mounts into (reshape sessions/Play.vue)
 ├── S-1.1.1: Minimal manual character (+ mandatory knowledge_boundary)
 ├── S-1.1.2: Player character (appearance + base_opacity, no interiority)
 ├── S-1.2.1: One chapter/scene/beat by hand (goal + POV/tone/present-characters)
-└── Test: story reports play-ready with >=1 char + >=1 beat + resolvable narrator model
+└── Test: story reports play-ready; the Writing-page host renders (empty) and is reachable
 ```
 
-### Sprint 2: Session Fork & Saves (E2)
+### Sprint 2: Session Fork & Chapter Entrance (E2 + E0.2 entrance)
 ```
 ├── S-2.1.1: Start a session (atomic deep-copy fork; template never mutated)
-├── S-2.1.2: Multi-save (name/list/load/reset/delete)
+├── S-2.1.2: Multi-save (name/list/load/reset/delete) — now the optional branches panel
 ├── S-2.1.3: Loop state persistence (state_node, position, resume_anchor)
-└── Test: fork atomic; resume restores exact position
+├── S-0.2.1: Open book → chapter spine → select chapter → Writing page
+└── Test: fork atomic; resume restores exact position; chapter selection reaches the Writing page
 ```
 
-### Sprint 3: Spine & Narrator Assembly (E3 + E4.1)
+### Sprint 3: Spine, Narrator Assembly & Invisible Entry (E3 + E4.1 + E0.2/E0.3)
 ```
 ├── S-3.1.1: State machine spine (player_moment | beat_complete)
 ├── S-3.1.2: State machine is the only conductor
 ├── S-4.1.1: Narrator prompt assembly (POV_CONTRACT/BEAT/SCENE_STATE/LOREBOOK/RESUME_ANCHOR)
-└── Test: deferred blocks absent (no filler); assembly is registry-driven
+├── S-0.2.2: Silent play-state resolution on chapter open (fork hidden; resume-or-create)
+├── S-0.3.1: Streamlined POV-gated onboarding → auto Chapter 01 → Writing page
+└── Test: deferred blocks absent (no filler); chapter open never shows a fork/session step
 ```
 
 ### Sprint 4: Prose Call & Player Input (E4.2 + E5.1)
@@ -473,7 +671,7 @@ Scenario: Generation failure is recoverable
 ├── S-5.2.1: Immediate context + scene summary at SCENE_DONE
 ├── S-5.3.1: Build + inject resume anchor
 ├── S-5.4.1: Play surface (POV prose, scrollback, advance/pause-save)
-└── Phase 1 end-to-end: create a chapter, start a session, play narrator -> me -> narrator
+└── Phase 1 end-to-end: open a chapter (playthrough starts silently), play narrator -> me -> narrator
 ```
 
 ---
@@ -482,7 +680,8 @@ Scenario: Generation failure is recoverable
 
 See the [program DoD](./README.md#9-global-definition-of-done-dod). Phase-1 emphasis:
 
-- [ ] A human can create one character + one beat, start a session, and **play a solo narrated loop** (narrator → player → narrator) end to end.
+- [ ] **The front door works play-first:** sign in → Home → open a book → select a chapter → land in the Writing/Play page, with **no visible session/fork step**; an existing book's **Continue** resumes in place; a new book reaches the Writing page through POV-gated onboarding on an auto-created Chapter 01.
+- [ ] A human can create one character + one beat, open a chapter (the playthrough starts silently), and **play a solo narrated loop** (narrator → player → narrator) end to end.
 - [ ] **Session fork is atomic** and never mutates the authoring template; multi-save/reset/delete are owner-scoped and independent.
 - [ ] **Save/resume restores the exact loop position** and continues from the resume anchor rather than restarting the beat.
 - [ ] **Handoff is the prose call's structured output** (player_moment | beat_complete); malformed structured output is retried then surfaced — never trusted.
@@ -495,6 +694,8 @@ See the [program DoD](./README.md#9-global-definition-of-done-dod). Phase-1 emph
 
 | Metric | Target | Measurement |
 |--------|--------|-------------|
+| Taps to play (existing book) | ≤ 3 from Home | Home → book → chapter → Writing page, no session/fork screen |
+| Taps to play (new book) | POV character is the only required field | New book → POV character + contract → auto Chapter 01 → Writing page |
 | First playable loop | Achieved | A human plays narrator → me → narrator end to end |
 | Fork integrity | 100% | Template never mutated; fork atomic; resume restores exact position |
 | Handoff determinism | 100% | Every turn routed by the prose call's structured handoff |
@@ -510,7 +711,7 @@ See the [program DoD](./README.md#9-global-definition-of-done-dod). Phase-1 emph
 | The loop doesn't feel good | High | Medium | This phase exists to surface that early; iterate on the narrator prompt before deepening |
 | Fork mutates the template | Critical | Low | Atomic transactional deep-copy; template-immutability test |
 | Resume restarts the beat / loses tone | Medium | Medium | Resume anchor (scene type · last line · POV · tone) + exact loop-state restore |
-| Building a detached play page | Medium | Low | Play surface integrates into the existing workspace `saves` nav, not a new top-level area |
+| Building a detached play page | Medium | Low | The Writing/Play page host (E0.4) is built first as the single mount point; the prose reader (S-5.4.1) and the loop fill it rather than standing up a new page; entry is chapter-centric (E0.2), not a Saves "Start" button |
 | Over-building beyond the skeleton (recorder/psychology creep) | Medium | Medium | Strict deferral list at the top of this doc; only narrator blocks light up this phase |
 
 ---

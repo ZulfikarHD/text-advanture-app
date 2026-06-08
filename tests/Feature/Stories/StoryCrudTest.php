@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Stories;
 
+use App\Enums\StateNode;
 use App\Models\Chapter;
 use App\Models\Character;
 use App\Models\LorebookEntry;
@@ -134,6 +135,44 @@ class StoryCrudTest extends TestCase
             ->component('Dashboard')
             ->has('stories', 1)
             ->where('stories.0.title', 'Mine')
+        );
+    }
+
+    public function test_index_exposes_a_resume_hint_for_a_played_story(): void
+    {
+        $user = User::factory()->create();
+        $story = Story::factory()->create(['user_id' => $user->id]);
+        $chapter = Chapter::factory()->create([
+            'story_id' => $story->id,
+            'number' => 3,
+            'title' => 'Into the Hollow',
+        ]);
+        $story->playSessions()->create([
+            'name' => 'Playthrough 1',
+            'state_node' => StateNode::NarratorTurn,
+            'current_chapter_id' => $chapter->id,
+            'last_played_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertInertia(fn ($page) => $page
+            ->component('Dashboard')
+            ->where('stories.0.resume.chapterNumber', 3)
+            ->where('stories.0.resume.chapterTitle', 'Into the Hollow')
+        );
+    }
+
+    public function test_index_resume_hint_is_null_for_an_unplayed_story(): void
+    {
+        $user = User::factory()->create();
+        Story::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertInertia(fn ($page) => $page
+            ->component('Dashboard')
+            ->where('stories.0.resume', null)
         );
     }
 

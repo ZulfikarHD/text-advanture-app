@@ -58,7 +58,7 @@ The **assembler ([ADR 0007](../docs/adr/0007-npc-context-assembly.md)) is both a
 
 ## 3. The stateless-agent story convention (the structural fix)
 
-Because each story is implemented by a **fresh agent whose only memory is the story text**, every story in this program (Phases 1–6) carries three machine-checkable fields in its Technical Notes, in addition to its Gherkin:
+Because each story is implemented by a **fresh agent whose only memory is the story text**, every story in this program (Phases 1–7) carries three machine-checkable fields in its Technical Notes, in addition to its Gherkin:
 
 - **Preconditions** — what must already exist in the codebase for this story to be buildable (e.g. "the assembler from S-2.1.1", "the `play_sessions` fork from S-1.1.1"). If a precondition is not yet built, the story is mis-ordered.
 - **Integrates-into** — the **existing** surface/route/service this story extends. A story must **never** stand up a new detached page when it belongs inside an existing host. (This is the rule the orphaned `/reviews` page violated.)
@@ -100,14 +100,15 @@ Each phase ends in a **felt, playable increment** and lights up more of the per-
 | Phase | Theme | Felt outcome | Blocks lit / guards activated | Folds (old v1) | Est. SP |
 |-------|-------|--------------|-------------------------------|----------------|---------|
 | **0** | Foundation & authoring shell — **DONE** | A themed, authed app with both DB realms, the LLM client, seeded libraries, and story/lorebook/reveal-ledger surfaces | `prompt_blocks` seeded; no agent runs yet | old P1 + P2 (E1–E4) | — (built) |
-| **1** | Walking Skeleton — narrator → me loop | I create a chapter and **play a solo narrated scene**; the narrator writes, I respond, it continues | Narrator: `POV_CONTRACT, BEAT, SCENE_STATE, LOREBOOK, RESUME_ANCHOR`. Player = prose only | old P5 E1/E2/E3.1/E5/E6 + minimal P3/P4 | ~60 |
+| **1** | Walking Skeleton — front door + narrator → me loop | I **sign in → open a book → pick a chapter → I'm in the Writing/Play page** playing a solo narrated scene (the narrator writes, I respond, it continues). New books drop me in via a **POV-gated onboarding**; the save fork is **invisible** | Front door (E0): Home, chapter entrance, Writing/Play shell host. Narrator: `POV_CONTRACT, BEAT, SCENE_STATE, LOREBOOK, RESUME_ANCHOR`. Player = prose only | old P5 E1/E2/E3.1/E5/E6 + minimal P3/P4 | ~97 |
 | **2** | One Live Character — SillyTavern parity | I play a scene with **one in-character NPC** who only knows what it witnessed | NPC: `IDENTITY, SCENE_RULES`, user `SCENE_EXCERPT`. Guards on: `knowledge_boundary, hedged_attribution, own_perspective_only`. Recorder two-layer + POV projection. First inline review-gate producer | old P5 E3.2/E4/E6 + P6 E1 (thinned) + P7 E2 | ~60 |
 | **3** | Multi-Character Play | Multiple NPCs **take turns naturally** in one scene | Orchestration of the same blocks across NPCs; no new guard | old P6 E8/E9 | ~27 |
 | **4** | Directed Structure — NovelCrafter spine | Beats have **goals**; the narrator steers; the **nudge** pressures a character — directed play | Narrator: `BEAT` (enriched), `DIRECTOR_STATE`. NPC: `NUDGE` (guard: `omniscient_authoring` + `knowledge_boundary`) | old P4 (all) + P5 E5.2 + P6 E7 | ~68 |
 | **5** | Psychology Depth — more than SillyTavern | Characters **evolve** (relationships, scars, moods) for explainable reasons; spoiler-safe per chapter | Narrator: `MESH_AWARENESS` (turns on once the mesh exists). NPC: `SELF, SNAPSHOT, MASKS, DIRECTIVES` (guards: `awareness_fold, own_perspective_only`); nudge becomes register/mask/awareness-gated | old P3 (all) + P6 E2–E7 | ~165 |
 | **6** | Control & Observability | Full authorial control: review everything mid-play, spin, inspect relationships, watch spend | Unified review surface, relationship viewer, cost dashboard, registry/tunable management | old P7 + P2 E5 + P4 E5 | ~90 |
+| **7** | Assisted Authoring — three ways to make every entry | For **any** entry (character, lorebook, scene, beat, chapter, reveal) I can **type it**, draft it from a one-line **brief**, or generate it **in full** — then save / spin / edit / discard; whatever a model returns lands in the **same fields**, and I pick the model | Reuses the structured-output + `prompt_blocks` contract for authoring generation; authoring realm (`none` guards) | old P4 outline-compile (0019) + P5 character AI/hybrid (0018), **generalized to every entry** | ~50 |
 
-**Remaining program total:** ~487 story points across Phases 1–6 (Phase 0 already delivered). Sprint numbering restarts at **Phase 1, Sprint 1** (Phase 0 is the prior build).
+**Remaining program total:** ~537 story points across Phases 1–7 (Phase 0 already delivered). Sprint numbering restarts at **Phase 1, Sprint 1** (Phase 0 is the prior build). **Phase 7 is authoring-only** (no play-loop dependency) and so can be scheduled independently once the entry hosts + LLM client exist.
 
 ---
 
@@ -117,7 +118,8 @@ Each phase ends in a **felt, playable increment** and lights up more of the per-
 Phase 0 (DONE: app, auth, both DB realms, LlmClient, seeded libraries incl. prompt_blocks,
          story / lorebook / reveal-ledger surfaces)
    │
-   └─► Phase 1  Walking Skeleton (narrator → me loop)            ── builds the loop spine + narrator final prompt
+   └─► Phase 1  Walking Skeleton (front door + narrator → me loop) ── builds the play front door (E0: Home → chapter → Writing/Play page,
+          │                                                            POV-gated onboarding, fork hidden, Saves demoted) + the loop spine + narrator final prompt
           │
           └─► Phase 2  One Live Character                        ── builds the assembler + isolation boundary + recorder/projection
                  │                                                  (the contract every later phase enriches)
@@ -128,9 +130,18 @@ Phase 0 (DONE: app, auth, both DB realms, LlmClient, seeded libraries incl. prom
                                └─► Phase 5  Psychology Depth       ── lights up MESH_AWARENESS + SELF/SNAPSHOT/MASKS/DIRECTIVES + the delta engine
                                       │
                                       └─► Phase 6  Control & Observability ── surfaces all of the above to the human
+
+Phase 0/1 (entry hosts: story/character/lorebook/reveal + chapter/scene/beat; LlmClient + model roles)
+   └─► Phase 7  Assisted Authoring ── authoring-only side track (no play-loop dependency): the shared three-mode
+                                       (Manual/Brief/Full) creation contract for EVERY entry, which the Phase 4
+                                       outline-compile (0019) and Phase 5 character AI/hybrid (0018) plug into
 ```
 
 The **assembler + `prompt_blocks` registry** (built in Phase 2) is the cross-cutting backbone; Phases 4–5 add producers and turn on each block's `leak_rule`. The **review gate** is *not* a foundation page — it first becomes real inline in Phase 2 (reviewing beat records), gains producers through Phases 4–5, and is unified into one surface in Phase 6 (where the orphaned `/reviews` page is repurposed).
+
+The **play front door** (Phase 1 · Epic E0) is the cross-cutting *UX* backbone: **Home → open a book → select a chapter → land in the Writing/Play page** is the single way in, and the **Writing/Play page is the host** every later play story mounts into (the prose reader, the narrator → me loop, then NPC turns in Phase 2). The two-realm fork (ADR 0012) is **kept but invisible** — chapter selection silently resumes-or-creates the playthrough — and **"Saves" is demoted** from the entrance to an optional branches/history panel. This is the deliberate fix for the disease in §1: a play surface must never be a detached artifact reached through configuration; it is the front door, built first, that the engine fills in.
+
+The **assisted-authoring contract** (Phase 7 · Epic E1) is the cross-cutting *authoring* backbone: **every** entry creation surface offers the same three doors — **Manual** (the existing hand-authored form, still the default), **Brief** (write a one-line intent → a model drafts the full entry), and **Full** (draft from minimal seed). Whatever a model returns is **validated into the entry's canonical fields** (the same shape + validation a manual save uses, mirroring the narrator prose schema), then the author **saves / spins / edits / discards** — the engine never auto-commits a generated entry, and the author picks which model drafts each one. Like the play front door, this is built **once into the existing creation hosts** (never a detached "AI generation" page), and the deeper per-entry generators — character AI/hybrid + archetypes (ADR 0018) and outline→beats compile (ADR 0019) — **plug into this same contract** rather than re-implementing generation.
 
 ---
 
@@ -191,10 +202,10 @@ A user story is **DONE** when:
 | 0009 POV projection | per-NPC excerpt projection | Phase 2 |
 | 0010 Recorder mechanics | surface/true_state/witness, legibility | Phase 2 |
 | 0007 NPC context assembly | compile→act, isolation boundary | Phase 2 (thin) + Phase 5 (full blocks) |
-| 0019 Outline compilation | outline → chapters/scenes/beats | Phase 4 |
+| 0019 Outline compilation | outline → chapters/scenes/beats | Phase 4 (bulk compile) + Phase 7 (reuses the assisted-creation contract) |
 | 0015 Beat document + boundaries | beats, BEAT_DONE, elapsed buckets | Phase 1 (minimal beat) + Phase 4 (full) |
 | 0008 Psychological nudge | directed pressure, ladder, ceiling | Phase 4 (derive + runtime) + Phase 5 (register-gated) |
-| 0018 Character creation | AI/manual/hybrid + archetypes | Phase 1 (minimal manual) + Phase 5 (full pipeline) |
+| 0018 Character creation | AI/manual/hybrid + archetypes | Phase 1 (minimal manual) + Phase 7 (generalized 3-mode creation contract) + Phase 5 (full pipeline / archetypes / psychology fields) |
 | 0001 Three-layer character data | cards/edges/internal split | Phase 1 (card) + Phase 5 (edges/internal) |
 | 0013 Authoring/compile pipeline | bible→card, lorebook, reveal ledger | Phase 0 (lorebook/ledger) + Phase 5 (compile/clamp) |
 | 0002 Relationship edge schema | edges, axes, priors, register binding | Phase 5 |
@@ -216,7 +227,7 @@ A user story is **DONE** when:
 | Runtime cost/latency too high (a beat is ~10+ calls) | High | High | Model-role tiering, block caching, progressive streaming, per-beat spend visibility + caps; orchestration in Phase 3 |
 | Spoiler leak from an early-chapter card | Critical | Medium | Reveal ledger + section tags → `knowledge_boundary` clamp at compile (Phase 5), all behind the review gate |
 | API key compromise / leakage | Critical | Low | Encrypt at rest, never echo, never log; scoped to owner (Phase 0) |
-| Authoring burden too high (engine is dense) | Medium | High | Minimal manual character/beat in Phase 1; AI/hybrid creation + archetypes + outline compile arrive in Phase 4–5 once play justifies them |
+| Authoring burden too high (engine is dense) | Medium | High | Minimal manual character/beat in Phase 1; **generalized three-mode (Manual/Brief/Full) assisted creation for every entry in Phase 7**; AI/hybrid + archetypes + outline compile deepen it in Phase 4–5 once play justifies them |
 | Solo-dev / single-agent throughput | Medium | High | Vertical slices ship independently; ruthless Critical/High gating; the engine subsystems are already designed (ADRs) |
 
 ---
@@ -232,6 +243,7 @@ A user story is **DONE** when:
 | 4 | [phase-4-directed-structure.md](./phase-4-directed-structure.md) |
 | 5 | [phase-5-psychology-depth.md](./phase-5-psychology-depth.md) |
 | 6 | [phase-6-control-observability.md](./phase-6-control-observability.md) |
+| 7 | [phase-7-assisted-authoring.md](./phase-7-assisted-authoring.md) |
 
 ---
 

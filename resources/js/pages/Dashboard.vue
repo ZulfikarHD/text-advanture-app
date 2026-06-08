@@ -1,14 +1,17 @@
 <script setup lang="ts">
 /**
- * Dashboard - the workspace story list (S-1.1.2).
+ * Dashboard - the play-first home (E0.1 / S-0.1.1).
  *
- * Lists the author's stories with edit/delete actions. When empty, renders a
- * teaching EmptyState with a single primary "New story" CTA that opens the
- * CreateStoryDialog. Story delete uses useConfirm (never native alerts).
+ * The front door: each book is something to *play*, not just edit. Every card
+ * leads with a one-tap Play/Continue that drops the player straight into the
+ * Writing/Play page (resuming the latest playthrough or silently starting one),
+ * with Open (the authoring workspace) and edit/delete kept secondary. When empty,
+ * a teaching EmptyState offers the single "New story" CTA. Delete uses useConfirm.
  */
 import { Head, Link, router } from '@inertiajs/vue3';
-import { BookOpen, Pencil, Plus, Trash2 } from '@lucide/vue';
+import { BookOpen, Pencil, Play, Plus, Settings2, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
+import SessionController from '@/actions/App/Http/Controllers/Stories/SessionController';
 import StoryController from '@/actions/App/Http/Controllers/Stories/StoryController';
 import EmptyState from '@/components/EmptyState.vue';
 import CreateStoryDialog from '@/components/stories/CreateStoryDialog.vue';
@@ -16,7 +19,6 @@ import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
-    CardDescription,
     CardFooter,
     CardHeader,
     CardTitle,
@@ -25,12 +27,19 @@ import { useConfirm } from '@/composables/useConfirm';
 import { dashboard } from '@/routes';
 import { show as storyShow } from '@/routes/stories';
 
+type ResumePoint = {
+    chapterNumber: number | null;
+    chapterTitle: string | null;
+    lastPlayedForHumans: string | null;
+};
+
 type StorySummary = {
     id: number;
     slug: string;
     title: string;
     description: string | null;
     updatedAtForHumans: string | null;
+    resume: ResumePoint | null;
 };
 
 const props = defineProps<{
@@ -84,7 +93,7 @@ defineOptions({
                     Workspace
                 </h1>
                 <p class="text-sm text-muted-foreground">
-                    Create and manage the interactive stories you author.
+                    Pick up where you left off, or start something new.
                 </p>
             </div>
             <Button
@@ -139,39 +148,74 @@ defineOptions({
                             {{ story.title }}
                         </Link>
                     </CardTitle>
-                    <CardDescription class="font-mono text-xs">
-                        {{ story.slug }}
-                    </CardDescription>
                 </CardHeader>
-                <CardContent class="flex-1">
+                <CardContent class="flex-1 space-y-3">
                     <p
                         v-if="story.description"
-                        class="line-clamp-3 text-sm text-muted-foreground"
+                        class="line-clamp-2 text-sm text-muted-foreground"
                     >
                         {{ story.description }}
                     </p>
-                    <p
-                        v-else
-                        class="text-sm text-muted-foreground/60 italic"
-                    >
+                    <p v-else class="text-sm text-muted-foreground/60 italic">
                         No description
+                    </p>
+
+                    <!-- Resume hint: where the latest playthrough left off -->
+                    <p
+                        v-if="story.resume"
+                        class="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground"
+                        :data-test="`resume-${story.slug}`"
+                    >
+                        <span class="font-medium text-foreground">
+                            Chapter {{ story.resume.chapterNumber }}
+                        </span>
+                        <span v-if="story.resume.chapterTitle" class="truncate">
+                            · {{ story.resume.chapterTitle }}
+                        </span>
+                        <span v-if="story.resume.lastPlayedForHumans">
+                            · {{ story.resume.lastPlayedForHumans }}
+                        </span>
+                    </p>
+                    <p
+                        v-else-if="story.updatedAtForHumans"
+                        class="text-xs text-muted-foreground"
+                    >
+                        Updated {{ story.updatedAtForHumans }}
                     </p>
                 </CardContent>
                 <CardFooter
-                    class="flex items-center justify-between border-t border-border pt-4"
+                    class="flex flex-col gap-2 border-t border-border pt-4"
                 >
-                    <p
-                        v-if="story.updatedAtForHumans"
-                        class="text-xs text-muted-foreground"
+                    <!-- Primary: drop straight into play -->
+                    <Button
+                        as-child
+                        class="h-11 w-full"
+                        :data-test="`play-story-${story.slug}`"
                     >
-                        {{ story.updatedAtForHumans }}
-                    </p>
-                    <div class="flex items-center gap-1">
+                        <Link :href="SessionController.enter(story.slug)">
+                            <Play class="size-4" />
+                            {{ story.resume ? 'Continue' : 'Play' }}
+                        </Link>
+                    </Button>
+
+                    <!-- Secondary: open the authoring workspace + manage -->
+                    <div class="flex w-full items-center gap-1">
+                        <Button
+                            as-child
+                            variant="outline"
+                            class="h-10 flex-1"
+                            :data-test="`workspace-story-${story.slug}`"
+                        >
+                            <Link :href="storyShow(story.slug)">
+                                <Settings2 class="size-4" />
+                                Open
+                            </Link>
+                        </Button>
                         <Button
                             as-child
                             variant="ghost"
                             size="icon"
-                            class="size-9"
+                            class="size-10"
                             :data-test="`edit-story-${story.slug}`"
                         >
                             <Link
@@ -190,14 +234,12 @@ defineOptions({
                         <Button
                             variant="ghost"
                             size="icon"
-                            class="size-9 text-destructive hover:text-destructive"
+                            class="size-10 text-destructive hover:text-destructive"
                             :data-test="`delete-story-${story.slug}`"
                             @click="deleteStory(story)"
                         >
                             <Trash2 class="size-4" />
-                            <span class="sr-only"
-                                >Delete {{ story.title }}</span
-                            >
+                            <span class="sr-only">Delete {{ story.title }}</span>
                         </Button>
                     </div>
                 </CardFooter>

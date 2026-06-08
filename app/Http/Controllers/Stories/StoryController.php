@@ -31,6 +31,7 @@ class StoryController extends Controller
     public function index(Request $request): Response
     {
         $stories = Story::query()
+            ->with(['latestPlaySession' => fn ($query) => $query->with('currentChapter:id,number,title')])
             ->orderByDesc('updated_at')
             ->get()
             ->map(fn (Story $story): array => [
@@ -39,11 +40,37 @@ class StoryController extends Controller
                 'title' => $story->title,
                 'description' => $story->description,
                 'updatedAtForHumans' => $story->updated_at?->diffForHumans(),
+                'resume' => $this->presentResume($story),
             ]);
 
         return Inertia::render('Dashboard', [
             'stories' => $stories,
         ]);
+    }
+
+    /**
+     * Shape a story's resume hint for the play-first home (E0.1).
+     *
+     * Null when the story has never been played; otherwise the position and
+     * recency the "Continue" CTA surfaces so a book card invites resuming where
+     * the player left off.
+     *
+     * @param  Story  $story  The story with its `latestPlaySession` eager-loaded.
+     * @return array{chapterNumber: int|null, chapterTitle: string|null, lastPlayedForHumans: string|null}|null
+     */
+    private function presentResume(Story $story): ?array
+    {
+        $save = $story->latestPlaySession;
+
+        if ($save === null) {
+            return null;
+        }
+
+        return [
+            'chapterNumber' => $save->currentChapter?->number,
+            'chapterTitle' => $save->currentChapter?->title,
+            'lastPlayedForHumans' => $save->last_played_at?->diffForHumans(),
+        ];
     }
 
     /**

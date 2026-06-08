@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Beat;
+use App\Models\Chapter;
 use App\Models\Story;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -32,6 +33,22 @@ class BeatSequence
     {
         return $this->ordered()
             ->where('chapters.story_id', $story->getKey())
+            ->first();
+    }
+
+    /**
+     * Resolve the earliest beat within a single chapter, in document order.
+     *
+     * Powers chapter-first entry (E0.2): selecting a chapter positions a fresh
+     * playthrough at that chapter's opening beat rather than the story's first.
+     *
+     * @param  Chapter  $chapter  The chapter whose first beat is wanted.
+     * @return Beat|null The first beat of the chapter, or null when it has none.
+     */
+    public function firstInChapter(Chapter $chapter): ?Beat
+    {
+        return $this->ordered()
+            ->where('chapters.id', $chapter->getKey())
             ->first();
     }
 

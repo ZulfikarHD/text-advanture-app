@@ -133,6 +133,27 @@ class StoryOverviewTest extends TestCase
         );
     }
 
+    public function test_overview_exposes_the_chapter_spine_with_beat_counts(): void
+    {
+        $user = User::factory()->create();
+        $story = Story::factory()->create(['user_id' => $user->id]);
+
+        $chapter = Chapter::factory()->create(['story_id' => $story->id, 'number' => 1, 'title' => 'The Arrival']);
+        $scene = Scene::factory()->create(['chapter_id' => $chapter->id, 'number' => 1]);
+        Beat::factory()->count(2)->sequence(
+            ['number' => 1],
+            ['number' => 2],
+        )->create(['scene_id' => $scene->id]);
+
+        $response = $this->actingAs($user)->get(route('stories.show', $story));
+
+        $response->assertInertia(fn ($page) => $page
+            ->component('stories/Overview')
+            ->where('chapters.0.title', 'The Arrival')
+            ->where('chapters.0.playableBeats', 2)
+        );
+    }
+
     public function test_overview_404s_on_foreign_story(): void
     {
         $owner = User::factory()->create();
