@@ -23,6 +23,7 @@ export type RevealLedgerEntry = {
  */
 import { useForm } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
+import RevealLedgerController from '@/actions/App/Http/Controllers/Stories/RevealLedgerController';
 import AlertError from '@/components/AlertError.vue';
 import RevealLedgerEntryFormFields from '@/components/stories/RevealLedgerEntryFormFields.vue';
 import type {
@@ -39,7 +40,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import RevealLedgerController from '@/actions/App/Http/Controllers/Stories/RevealLedgerController';
 
 const props = defineProps<{
     /** Story slug used to build the Wayfinder URLs. */

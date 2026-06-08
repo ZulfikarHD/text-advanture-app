@@ -32,6 +32,7 @@ export type PreviewResult = {
 import { useHttp } from '@inertiajs/vue3';
 import { FlaskConical, Info, Lock, SearchX } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import LorebookController from '@/actions/App/Http/Controllers/Stories/LorebookController';
 import InputError from '@/components/InputError.vue';
 import type { ChapterOption } from '@/components/stories/LorebookEntryFormFields.vue';
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +56,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
-import LorebookController from '@/actions/App/Http/Controllers/Stories/LorebookController';
 
 const props = defineProps<{
     /** Story slug used to build the Wayfinder preview URL. */

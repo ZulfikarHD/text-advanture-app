@@ -18,6 +18,7 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import CharacterController from '@/actions/App/Http/Controllers/Stories/CharacterController';
 import EmptyState from '@/components/EmptyState.vue';
 import CharacterDialog from '@/components/stories/CharacterDialog.vue';
 import type { Character } from '@/components/stories/CharacterDialog.vue';
@@ -32,7 +33,6 @@ import {
 } from '@/components/ui/card';
 import { useConfirm } from '@/composables/useConfirm';
 import { dashboard } from '@/routes';
-import CharacterController from '@/actions/App/Http/Controllers/Stories/CharacterController';
 
 type StoryRef = {
     id: number;

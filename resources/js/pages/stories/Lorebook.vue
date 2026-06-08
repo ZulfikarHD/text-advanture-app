@@ -10,6 +10,7 @@
 import { Head, router } from '@inertiajs/vue3';
 import { BookMarked, FlaskConical, Lock, Pencil, Plus, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
+import LorebookController from '@/actions/App/Http/Controllers/Stories/LorebookController';
 import EmptyState from '@/components/EmptyState.vue';
 import LorebookEntryDialog from '@/components/stories/LorebookEntryDialog.vue';
 import type {LorebookEntry} from '@/components/stories/LorebookEntryDialog.vue';
@@ -26,7 +27,6 @@ import {
 } from '@/components/ui/card';
 import { useConfirm } from '@/composables/useConfirm';
 import { dashboard } from '@/routes';
-import LorebookController from '@/actions/App/Http/Controllers/Stories/LorebookController';
 
 type StoryRef = {
     id: number;

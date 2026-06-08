@@ -25,7 +25,6 @@ import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { dashboard } from '@/routes';
-import type { NavItem } from '@/types';
 import { edit as storyEdit, show as storyShow } from '@/routes/stories';
 import { index as charactersIndex } from '@/routes/stories/characters';
 import { index as lorebookIndex } from '@/routes/stories/lorebook';
@@ -33,6 +32,7 @@ import { index as revealLedgerIndex } from '@/routes/stories/reveal-ledger';
 import { index as savesIndex } from '@/routes/stories/saves';
 import { edit as storySettingsEdit } from '@/routes/stories/settings';
 import { index as structureIndex } from '@/routes/stories/structure';
+import type { NavItem } from '@/types';
 
 type StoryRef = { id: number; slug: string; title: string };
 

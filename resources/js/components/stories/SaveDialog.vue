@@ -20,6 +20,7 @@ export type RenameableSave = {
  */
 import { useForm } from '@inertiajs/vue3';
 import { watch } from 'vue';
+import SessionController from '@/actions/App/Http/Controllers/Stories/SessionController';
 import AlertError from '@/components/AlertError.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import SessionController from '@/actions/App/Http/Controllers/Stories/SessionController';
 
 const props = defineProps<{
     /** Story slug used to build the Wayfinder URLs. */

@@ -23,6 +23,7 @@ import {
     Trash2,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import SessionController from '@/actions/App/Http/Controllers/Stories/SessionController';
 import EmptyState from '@/components/EmptyState.vue';
 import SaveDialog from '@/components/stories/SaveDialog.vue';
 import type { RenameableSave } from '@/components/stories/SaveDialog.vue';
@@ -32,7 +33,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useConfirm } from '@/composables/useConfirm';
 import { useFormat } from '@/composables/useFormat';
 import { dashboard } from '@/routes';
-import SessionController from '@/actions/App/Http/Controllers/Stories/SessionController';
 import { show as storyShow } from '@/routes/stories';
 
 type StoryRef = {

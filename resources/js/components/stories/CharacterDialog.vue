@@ -29,6 +29,7 @@ export type Character = {
  */
 import { useForm } from '@inertiajs/vue3';
 import { watch } from 'vue';
+import CharacterController from '@/actions/App/Http/Controllers/Stories/CharacterController';
 import CharacterFormFields from '@/components/stories/CharacterFormFields.vue';
 import type { CharacterFormData } from '@/components/stories/CharacterFormFields.vue';
 import { Button } from '@/components/ui/button';
@@ -40,7 +41,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import CharacterController from '@/actions/App/Http/Controllers/Stories/CharacterController';
 
 const props = defineProps<{
     /** Story slug used to build the Wayfinder URLs. */

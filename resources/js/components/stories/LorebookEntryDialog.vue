@@ -23,6 +23,7 @@ export type LorebookEntry = {
 import { Link, useForm } from '@inertiajs/vue3';
 import { TriangleAlert } from '@lucide/vue';
 import { computed, watch } from 'vue';
+import LorebookController from '@/actions/App/Http/Controllers/Stories/LorebookController';
 import AlertError from '@/components/AlertError.vue';
 import LorebookEntryFormFields from '@/components/stories/LorebookEntryFormFields.vue';
 import type {ChapterOption, LorebookFormData} from '@/components/stories/LorebookEntryFormFields.vue';
@@ -36,7 +37,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import LorebookController from '@/actions/App/Http/Controllers/Stories/LorebookController';
 import { index as charactersIndex } from '@/routes/stories/characters';
 
 /** The form data plus the dialog-only world-fact acknowledgement (S-3.1.2). */

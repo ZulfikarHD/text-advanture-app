@@ -22,9 +22,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { dashboard } from '@/routes';
-import type { BreadcrumbItem } from '@/types';
 import { show as storyShow } from '@/routes/stories';
 import { index as savesIndex } from '@/routes/stories/saves';
+import type { BreadcrumbItem } from '@/types';
 
 type StoryRef = {
     id: number;

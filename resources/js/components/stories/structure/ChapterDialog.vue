@@ -8,6 +8,7 @@
  */
 import { useForm } from '@inertiajs/vue3';
 import { watch } from 'vue';
+import StructureController from '@/actions/App/Http/Controllers/Stories/StructureController';
 import InputError from '@/components/InputError.vue';
 import type {
     ChapterFormData,
@@ -32,7 +33,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import StructureController from '@/actions/App/Http/Controllers/Stories/StructureController';
 
 const props = defineProps<{
     /** Story slug used to build the Wayfinder URLs. */

@@ -11,6 +11,7 @@
  */
 import { Head, useForm } from '@inertiajs/vue3';
 import { Info } from '@lucide/vue';
+import StorySettingsController from '@/actions/App/Http/Controllers/Stories/StorySettingsController';
 import AlertError from '@/components/AlertError.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -26,7 +27,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import StorySettingsController from '@/actions/App/Http/Controllers/Stories/StorySettingsController';
 
 type PovOption = {
     value: string;

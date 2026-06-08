@@ -21,6 +21,7 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import RevealLedgerController from '@/actions/App/Http/Controllers/Stories/RevealLedgerController';
 import EmptyState from '@/components/EmptyState.vue';
 import RevealLedgerEntryDialog from '@/components/stories/RevealLedgerEntryDialog.vue';
 import type { RevealLedgerEntry } from '@/components/stories/RevealLedgerEntryDialog.vue';
@@ -39,7 +40,6 @@ import {
 } from '@/components/ui/card';
 import { useConfirm } from '@/composables/useConfirm';
 import { dashboard } from '@/routes';
-import RevealLedgerController from '@/actions/App/Http/Controllers/Stories/RevealLedgerController';
 import { index as structureIndex } from '@/routes/stories/structure';
 
 type StoryRef = {
