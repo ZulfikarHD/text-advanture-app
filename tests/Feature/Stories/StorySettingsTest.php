@@ -76,6 +76,21 @@ class StorySettingsTest extends TestCase
         $this->assertSame('first_person', $story->fresh()->settings['default_pov']);
     }
 
+    public function test_default_pov_saves_on_its_own_without_role_rows(): void
+    {
+        $user = User::factory()->create();
+        $story = Story::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->from(route('stories.settings.edit', $story))
+            ->put(route('stories.settings.update', $story), [
+                'default_pov' => 'first_person',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('first_person', $story->fresh()->settings['default_pov']);
+    }
+
     public function test_invalid_default_pov_is_rejected(): void
     {
         $user = User::factory()->create();
@@ -108,6 +123,70 @@ class StorySettingsTest extends TestCase
 
         $this->assertDatabaseHas('model_profiles', [
             'scope' => ModelScope::Story->value,
+            'story_id' => $story->id,
+            'role' => LlmRole::NarratorProse->value,
+            'model_slug' => 'story/narrator',
+        ]);
+    }
+
+    public function test_a_single_role_override_saves_without_a_pov(): void
+    {
+        $user = User::factory()->create();
+        $story = Story::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->from(route('stories.settings.edit', $story))
+            ->put(route('stories.settings.update', $story), [
+                'roles' => [[
+                    'role' => LlmRole::NarratorProse->value,
+                    'override' => true,
+                    'model_slug' => 'story/narrator',
+                    'temperature' => 0.5,
+                    'max_tokens' => 1000,
+                    'is_active' => true,
+                ]],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('model_profiles', [
+            'scope' => ModelScope::Story->value,
+            'story_id' => $story->id,
+            'role' => LlmRole::NarratorProse->value,
+            'model_slug' => 'story/narrator',
+        ]);
+    }
+
+    public function test_saving_one_role_leaves_other_overrides_untouched(): void
+    {
+        $user = User::factory()->create();
+        $story = Story::factory()->create(['user_id' => $user->id]);
+
+        ModelProfile::factory()->create([
+            'scope' => ModelScope::Story,
+            'story_id' => $story->id,
+            'role' => LlmRole::BeatJudge,
+            'model_slug' => 'story/beat-judge',
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('stories.settings.update', $story), [
+                'roles' => [[
+                    'role' => LlmRole::NarratorProse->value,
+                    'override' => true,
+                    'model_slug' => 'story/narrator',
+                    'temperature' => 0.5,
+                    'max_tokens' => 1000,
+                    'is_active' => true,
+                ]],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('model_profiles', [
+            'story_id' => $story->id,
+            'role' => LlmRole::BeatJudge->value,
+            'model_slug' => 'story/beat-judge',
+        ]);
+        $this->assertDatabaseHas('model_profiles', [
             'story_id' => $story->id,
             'role' => LlmRole::NarratorProse->value,
             'model_slug' => 'story/narrator',

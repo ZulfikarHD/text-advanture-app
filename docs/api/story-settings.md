@@ -46,8 +46,8 @@ type RoleRow = {
 
 | Field | Type | Rules |
 |-------|------|-------|
-| `default_pov` | `string` | required, enum `PovMode` (`first_person`, `second_person`, `third_limited`, `third_omniscient`) |
-| `roles` | `array` | required, min 1 |
+| `default_pov` | `string` | **sometimes**, required, enum `PovMode` (`first_person`, `second_person`, `third_limited`, `third_omniscient`) |
+| `roles` | `array` | **sometimes**, required, min 1 |
 | `roles.*.role` | `string` | required, enum `LlmRole` |
 | `roles.*.override` | `bool` | required |
 | `roles.*.model_slug` | `string?` | `required_if` override true, max 120 |
@@ -55,10 +55,16 @@ type RoleRow = {
 | `roles.*.max_tokens` | `int?` | `required_if` override true, 1–200000 |
 | `roles.*.is_active` | `bool?` | nullable |
 
+> Both `default_pov` and `roles` are **`sometimes`**, so the screen saves each section independently: the POV section sends only `default_pov`; each role card sends only its own single-row `roles` array; the "Save all" bar sends both. Whichever section is present is validated and persisted; an omitted section is left untouched.
+
+### UI — model picker & per-section save
+
+The override `model_slug` is a **searchable combobox** (`ModelCombobox.vue`) fed by `provider.models` ([provider.md](./provider.md) §7), so authors pick from the models their key can reach (with a hand-typed slug fallback). POV and each role override are independently savable (own Save + dirty/saved state); a "Save all" bar surfaces only while changes are pending — keeping the save action in every section (Fitts's Law + Goal-Gradient).
+
 ## Persistence
 
-- `default_pov` is written into `stories.settings` JSON (`settings.default_pov`).
-- Per role, when `override` is **true** the service `updateOrCreate`s a
+- `default_pov` is written into `stories.settings` JSON (`settings.default_pov`) **only when present** in the payload.
+- Per role row present in the payload, when `override` is **true** the service `updateOrCreate`s a
   `model_profiles` row (`scope=story`, `story_id`, `role`); when **false** it
   **deletes** that row so the role falls back to the global default.
 - The whole save runs inside a single `DB::transaction`.

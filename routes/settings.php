@@ -35,6 +35,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('provider/test', [ProviderController::class, 'test'])
         ->middleware('throttle:6,1')
         ->name('provider.test');
+    Route::get('provider/models', [ProviderController::class, 'models'])
+        ->middleware('throttle:30,1')
+        ->name('provider.models');
 
     Route::get('model-roles', [ModelRoleController::class, 'edit'])->name('model-roles.edit');
     Route::put('model-roles', [ModelRoleController::class, 'update'])

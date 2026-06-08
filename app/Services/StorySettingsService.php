@@ -38,21 +38,25 @@ class StorySettingsService
     /**
      * Persist a story's settings as a single atomic operation.
      *
-     * Writes the default POV into the `settings` JSON and, per role, either
-     * upserts a story-scoped {@see ModelProfile} (when overriding the global
-     * default) or deletes it (so the role falls back to the global default).
+     * Writes the default POV into the `settings` JSON (when present) and, per
+     * role row (when present), either upserts a story-scoped {@see ModelProfile}
+     * (when overriding the global default) or deletes it (so the role falls back
+     * to the global default). Either section may be omitted so the screen can
+     * save the POV and individual role cards independently.
      *
      * @param  Story  $story  The story to configure (already policy-authorized).
-     * @param  array{default_pov: string, roles: list<array{role: string, override: bool, model_slug?: string|null, temperature?: float|int|string|null, max_tokens?: int|string|null, is_active?: bool|null}>}  $data
+     * @param  array{default_pov?: string, roles?: list<array{role: string, override: bool, model_slug?: string|null, temperature?: float|int|string|null, max_tokens?: int|string|null, is_active?: bool|null}>}  $data
      */
     public function update(Story $story, array $data): void
     {
         DB::transaction(function () use ($story, $data): void {
-            $settings = $story->settings ?? [];
-            $settings['default_pov'] = $data['default_pov'];
-            $story->update(['settings' => $settings]);
+            if (array_key_exists('default_pov', $data)) {
+                $settings = $story->settings ?? [];
+                $settings['default_pov'] = $data['default_pov'];
+                $story->update(['settings' => $settings]);
+            }
 
-            foreach ($data['roles'] as $row) {
+            foreach ($data['roles'] ?? [] as $row) {
                 $this->syncRoleOverride($story, $row);
             }
         });

@@ -12,6 +12,7 @@ Endpoint and Inertia-props contract for the **provider API-key** settings surfac
 | PUT | `/settings/provider` | `provider.update` | auth (throttle 6/min) | Store or replace the API key |
 | DELETE | `/settings/provider` | `provider.destroy` | auth | Remove the stored key |
 | POST | `/settings/provider/test` | `provider.test` | auth (throttle 6/min) | Test the stored key against the provider (S-5.1.2) |
+| GET | `/provider/models` | `provider.models` | auth (throttle 30/min) | List the models the stored key can reach, for the model-role picker (§7) |
 
 Reached from the **Settings → Provider** sidebar entry — the page is fully nav-reachable (no URL typing). Removal is confirmed through the shared `ConfirmDialog` (`useConfirm`), never a native `confirm()`/`alert()`; success raises a `sonner` toast via the shared `toast` flash.
 
@@ -62,6 +63,18 @@ The probe itself always answers **200**; the `ok` flag carries the verdict, so t
 | `failureReason` | `string \| null` | The provider's (sanitised) reason (failure) — e.g. "Invalid API key", "No API key is stored…" |
 
 Failure cases handled: no stored key, an invalid/expired key (provider 401 → its `error.message`), and an unreachable provider (connection error). The result renders inline on the Provider page — success lists reachable models, failure shows the reason — with **no native `alert()`**. Throttled (6/min); guests redirect to `login`.
+
+## 7. GET `/provider/models` (provider.models) — Sprint 5
+
+Backs the **searchable model picker** on the model-roles screen (see [model-roles.md](./model-roles.md) §4). A standalone JSON request (Inertia `useHttp`) that reads the provider `/models` catalog with the owner's key via `ProviderModelCatalog`, normalises it, and caches it briefly (30 min, per owner+base-url). The catalog spans every reachable model, including the `anthropic/claude-*` Claude tier.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `models[].id` | `string` | Model slug, e.g. `anthropic/claude-sonnet-4` |
+| `models[].name` | `string` | Human label; falls back to the slug when absent |
+| `models[].contextLength` | `int \| null` | Context window in tokens, or `null` when unknown |
+
+Degrades gracefully: a missing key or an unreachable provider returns `{ "models": [] }` (never an error), so the picker falls back to manual slug entry. Transient failures are **not** cached. Pricing is intentionally omitted (cost is displayed in Rupiah elsewhere, never raw provider USD). Throttled (30/min); guests redirect to `login`.
 
 ## Related
 

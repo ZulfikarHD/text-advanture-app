@@ -6,18 +6,25 @@
  * Lets one story deviate from the global defaults. The default POV is stored in
  * the story's settings; each engine role can override the global model profile.
  * Resolution order is per-story override -> global default, so a role with its
- * override switched off falls back to the global mapping. Rubric/tunable
- * overrides are deferred to a later sprint (E5.1).
+ * override switched off falls back to the global mapping.
+ *
+ * UX: the POV and each role override are independently savable sections (own
+ * Save + dirty/saved state), so committing one change never means scrolling to
+ * a shared footer (Fitts's Law + Goal-Gradient). Override models are chosen
+ * from the provider's live catalog via a searchable picker (Hick's Law). A
+ * "Save all" bar appears only while changes are pending.
  */
-import { Head, useForm } from '@inertiajs/vue3';
-import { Info } from '@lucide/vue';
+import { Head, Link, useForm, useHttp } from '@inertiajs/vue3';
+import { Check, Info, KeyRound } from '@lucide/vue';
+import { computed, onMounted, ref } from 'vue';
+import ProviderController from '@/actions/App/Http/Controllers/Settings/ProviderController';
 import StorySettingsController from '@/actions/App/Http/Controllers/Stories/StorySettingsController';
 import AlertError from '@/components/AlertError.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import ModelCombobox from '@/components/ModelCombobox.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -27,6 +34,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
+import { edit as providerSettings } from '@/routes/provider';
 
 type PovOption = {
     value: string;
@@ -60,6 +70,21 @@ type StoryData = {
     title: string;
 };
 
+type ModelOption = {
+    id: string;
+    name: string;
+    contextLength: number | null;
+};
+
+type RoleFormRow = {
+    role: string;
+    override: boolean;
+    model_slug: string;
+    temperature: number;
+    max_tokens: number;
+    is_active: boolean;
+};
+
 const props = defineProps<{
     story: StoryData;
     defaultPov: string;
@@ -67,46 +92,242 @@ const props = defineProps<{
     roles: RoleRow[];
 }>();
 
-const form = useForm({
-    default_pov: props.defaultPov,
-    roles: props.roles.map((role) => ({
+function updateUrl(): string {
+    return StorySettingsController.update.url({ story: props.story.slug });
+}
+
+function initialRow(role: RoleRow): RoleFormRow {
+    return {
         role: role.role,
         override: role.override,
         model_slug: role.modelSlug,
         temperature: role.temperature,
         max_tokens: role.maxTokens,
         is_active: role.isActive,
-    })),
+    };
+}
+
+// The default-POV section saves on its own.
+const povForm = useForm({ default_pov: props.defaultPov });
+
+// One independent form per role so each override saves on its own.
+const roleForms = props.roles.map((role) =>
+    useForm<{ roles: RoleFormRow[] }>({ roles: [initialRow(role)] }),
+);
+
+// Drives the "Save all" bar: submits POV + every role in card order in one
+// request, so validation errors come back keyed by card index.
+const bulkForm = useForm<{ default_pov: string; roles: RoleFormRow[] }>({
+    default_pov: props.defaultPov,
+    roles: [],
 });
 
-function submit(): void {
-    form.put(StorySettingsController.update.url({ story: props.story.slug }), {
+const dirtyCount = computed(
+    () =>
+        (povForm.isDirty ? 1 : 0) +
+        roleForms.filter((form) => form.isDirty).length,
+);
+const hasUnsavedChanges = computed(() => dirtyCount.value > 0);
+
+function savePov(): void {
+    povForm.put(updateUrl(), {
         preserveScroll: true,
+        onSuccess: () => {
+            povForm.defaults();
+            bulkForm.clearErrors();
+        },
     });
 }
+
+function saveRole(index: number): void {
+    roleForms[index].put(updateUrl(), {
+        preserveScroll: true,
+        onSuccess: () => {
+            roleForms[index].defaults();
+            bulkForm.clearErrors();
+        },
+    });
+}
+
+function saveAllChanges(): void {
+    bulkForm
+        .transform(() => ({
+            default_pov: povForm.default_pov,
+            roles: roleForms.map((form) => ({ ...form.roles[0] })),
+        }))
+        .put(updateUrl(), {
+            preserveScroll: true,
+            onSuccess: () => {
+                povForm.defaults();
+                roleForms.forEach((form) => form.defaults());
+            },
+        });
+}
+
+function discardAllChanges(): void {
+    povForm.reset();
+    povForm.clearErrors();
+    roleForms.forEach((form) => {
+        form.reset();
+        form.clearErrors();
+    });
+    bulkForm.clearErrors();
+}
+
+/**
+ * Merge a role's per-section and bulk-save errors so the card shows whichever
+ * save path last reported a problem.
+ */
+function errorsForRole(index: number): string[] {
+    const own = Object.values(roleForms[index].errors) as string[];
+    const bulk = Object.entries(bulkForm.errors as Record<string, string>)
+        .filter(([key]) => key.startsWith(`roles.${index}.`))
+        .map(([, message]) => message);
+
+    return [...own, ...bulk];
+}
+
+function errorForField(
+    index: number,
+    field: 'model_slug' | 'temperature' | 'max_tokens',
+): string | undefined {
+    const own = (roleForms[index].errors as Record<string, string>)[
+        `roles.0.${field}`
+    ];
+    const bulk = (bulkForm.errors as Record<string, string>)[
+        `roles.${index}.${field}`
+    ];
+
+    return own ?? bulk;
+}
+
+function isRoleSaved(index: number): boolean {
+    return roleForms[index].recentlySuccessful || bulkForm.recentlySuccessful;
+}
+
+function isRoleBusy(index: number): boolean {
+    return roleForms[index].processing || bulkForm.processing;
+}
+
+const povError = computed<string | undefined>(
+    () =>
+        povForm.errors.default_pov ??
+        (bulkForm.errors as Record<string, string>).default_pov,
+);
+const isPovSaved = computed(
+    () => povForm.recentlySuccessful || bulkForm.recentlySuccessful,
+);
+const isPovBusy = computed(() => povForm.processing || bulkForm.processing);
+
+// The reachable-model catalog, shared by every override picker.
+const availableModels = ref<ModelOption[]>([]);
+const catalogLoaded = ref(false);
+const catalog = useHttp({});
+
+const noModelsAvailable = computed(
+    () => catalogLoaded.value && availableModels.value.length === 0,
+);
+
+onMounted(() => {
+    catalog.get(ProviderController.models.url(), {
+        onSuccess: (response) => {
+            availableModels.value =
+                (response as { models?: ModelOption[] }).models ?? [];
+            catalogLoaded.value = true;
+        },
+        onError: () => {
+            catalogLoaded.value = true;
+        },
+    });
+});
 </script>
 
 <template>
     <Head :title="`${props.story.title} · Settings`" />
 
-    <form class="space-y-8" @submit.prevent="submit">
-        <AlertError
-            v-if="form.hasErrors"
-            :errors="Object.values(form.errors)"
-            title="We couldn't save your settings."
-        />
+    <div class="space-y-8">
+        <!-- Save-all bar: surfaces only while an open loop exists (Zeigarnik). -->
+        <Transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="-translate-y-2 opacity-0"
+            leave-active-class="transition duration-150 ease-in"
+            leave-to-class="-translate-y-2 opacity-0"
+        >
+            <div
+                v-if="hasUnsavedChanges"
+                class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background/80 px-4 py-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60"
+                data-test="story-settings-save-all-bar"
+            >
+                <p class="text-sm text-foreground">
+                    <span class="font-medium">{{ dirtyCount }}</span>
+                    {{ dirtyCount === 1 ? 'change' : 'changes' }} not yet saved
+                </p>
+                <div class="flex items-center gap-2">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        class="h-9"
+                        :disabled="bulkForm.processing"
+                        @click="discardAllChanges"
+                    >
+                        Discard
+                    </Button>
+                    <Button
+                        type="button"
+                        size="sm"
+                        class="h-9"
+                        :disabled="bulkForm.processing"
+                        data-test="save-all-story-settings-button"
+                        @click="saveAllChanges"
+                    >
+                        <Spinner v-if="bulkForm.processing" class="size-4" />
+                        Save all
+                    </Button>
+                </div>
+            </div>
+        </Transition>
 
         <!-- Default POV -->
         <section class="space-y-4">
-            <Heading
-                variant="small"
-                title="Default point of view"
-                description="The POV new scenes inherit. Individual scenes can still re-declare their own."
-            />
+            <div class="flex items-start justify-between gap-3">
+                <Heading
+                    variant="small"
+                    title="Default point of view"
+                    description="The POV new scenes inherit. Individual scenes can still re-declare their own."
+                />
+                <div class="flex shrink-0 items-center gap-3">
+                    <span
+                        v-if="isPovSaved"
+                        class="flex items-center gap-1 text-xs font-medium text-primary"
+                    >
+                        <Check class="size-3.5" />
+                        Saved
+                    </span>
+                    <span
+                        v-else-if="povForm.isDirty"
+                        class="flex items-center gap-1.5 text-xs text-muted-foreground"
+                    >
+                        <span class="size-1.5 rounded-full bg-amber-500" />
+                        Unsaved
+                    </span>
+                    <Button
+                        type="button"
+                        size="sm"
+                        class="h-9"
+                        :disabled="isPovBusy || !povForm.isDirty"
+                        data-test="save-story-pov-button"
+                        @click="savePov"
+                    >
+                        <Spinner v-if="isPovBusy" class="size-4" />
+                        Save
+                    </Button>
+                </div>
+            </div>
 
             <div class="grid max-w-md gap-2">
                 <Label for="default_pov">Default POV</Label>
-                <Select id="default_pov" v-model="form.default_pov">
+                <Select id="default_pov" v-model="povForm.default_pov">
                     <SelectTrigger class="h-11" data-test="default-pov-trigger">
                         <SelectValue placeholder="Choose a POV" />
                     </SelectTrigger>
@@ -120,7 +341,7 @@ function submit(): void {
                         </SelectItem>
                     </SelectContent>
                 </Select>
-                <InputError :message="form.errors.default_pov" />
+                <InputError :message="povError" />
             </div>
         </section>
 
@@ -129,16 +350,46 @@ function submit(): void {
             <Heading
                 variant="small"
                 title="Model-role overrides"
-                description="Override the global model for any engine role, just for this story. Roles left unchecked use the global default."
+                description="Override the global model for any engine role, just for this story. Roles left off use the global default."
             />
 
+            <!-- Catalog couldn't load (usually a missing/invalid key): the
+                 pickers still accept a hand-typed slug, so this is a hint. -->
             <div
-                v-for="(row, index) in form.roles"
-                :key="row.role"
-                class="space-y-4 rounded-lg border border-border bg-card/40 p-4"
-                :data-test="`story-model-role-${row.role}`"
+                v-if="noModelsAvailable"
+                class="flex items-start gap-3 rounded-lg border border-border bg-card/40 p-4"
+                data-test="story-roles-no-catalog-hint"
             >
-                <!-- Role identity + override toggle -->
+                <span
+                    class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
+                >
+                    <KeyRound class="size-5" />
+                </span>
+                <div class="min-w-0 space-y-1 text-sm">
+                    <p class="font-medium text-foreground">
+                        No models to choose from yet
+                    </p>
+                    <p class="text-muted-foreground">
+                        Add or check your key in
+                        <Link
+                            :href="providerSettings()"
+                            class="font-medium text-foreground underline underline-offset-4"
+                        >
+                            Provider settings
+                        </Link>
+                        to load the searchable model list. You can still type a
+                        model slug by hand below.
+                    </p>
+                </div>
+            </div>
+
+            <div
+                v-for="(form, index) in roleForms"
+                :key="props.roles[index].role"
+                class="space-y-4 rounded-lg border border-border bg-card/40 p-4"
+                :data-test="`story-model-role-${props.roles[index].role}`"
+            >
+                <!-- Role identity + override toggle + per-section save -->
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0 space-y-1">
                         <p class="text-sm font-medium text-foreground">
@@ -148,39 +399,84 @@ function submit(): void {
                             {{ props.roles[index].description }}
                         </p>
                     </div>
-                    <Label class="flex shrink-0 items-center gap-2">
-                        <Checkbox
-                            v-model="row.override"
-                            :data-test="`override-${row.role}`"
-                        />
-                        <span class="text-sm text-foreground">Override</span>
-                    </Label>
+
+                    <div class="flex shrink-0 flex-col items-end gap-2">
+                        <Label
+                            class="flex items-center gap-2"
+                            :for="`override_${props.roles[index].role}`"
+                        >
+                            <span class="text-xs text-muted-foreground">
+                                Override
+                            </span>
+                            <Switch
+                                :id="`override_${props.roles[index].role}`"
+                                v-model="form.roles[0].override"
+                                :data-test="`override-${props.roles[index].role}`"
+                            />
+                        </Label>
+
+                        <div class="flex items-center gap-3">
+                            <span
+                                v-if="isRoleSaved(index)"
+                                class="flex items-center gap-1 text-xs font-medium text-primary"
+                                data-test="story-model-role-saved"
+                            >
+                                <Check class="size-3.5" />
+                                Saved
+                            </span>
+                            <span
+                                v-else-if="form.isDirty"
+                                class="flex items-center gap-1.5 text-xs text-muted-foreground"
+                            >
+                                <span class="size-1.5 rounded-full bg-amber-500" />
+                                Unsaved
+                            </span>
+                            <Button
+                                type="button"
+                                size="sm"
+                                class="h-9"
+                                :disabled="isRoleBusy(index) || !form.isDirty"
+                                :data-test="`save-story-role-${props.roles[index].role}`"
+                                @click="saveRole(index)"
+                            >
+                                <Spinner v-if="isRoleBusy(index)" class="size-4" />
+                                Save
+                            </Button>
+                        </div>
+                    </div>
                 </div>
 
+                <AlertError
+                    v-if="errorsForRole(index).length > 0"
+                    :errors="errorsForRole(index)"
+                    title="We couldn't save this override."
+                />
+
                 <!-- Override fields (only when overriding) -->
-                <div v-if="row.override" class="space-y-4">
+                <div v-if="form.roles[0].override" class="space-y-4">
                     <div class="grid gap-2">
-                        <Label :for="`model_slug_${row.role}`">Model slug</Label>
-                        <Input
-                            :id="`model_slug_${row.role}`"
-                            v-model="row.model_slug"
-                            class="h-11 font-mono"
-                            autocomplete="off"
-                            placeholder="anthropic/claude-sonnet-4"
+                        <Label :for="`model_slug_${props.roles[index].role}`">
+                            Model
+                        </Label>
+                        <ModelCombobox
+                            :id="`model_slug_${props.roles[index].role}`"
+                            v-model="form.roles[0].model_slug"
+                            :models="availableModels"
+                            :loading="catalog.processing"
+                            :invalid="!!errorForField(index, 'model_slug')"
+                            placeholder="Search or paste a model slug"
                         />
-                        <InputError
-                            :message="form.errors[`roles.${index}.model_slug`]"
-                        />
+                        <InputError :message="errorForField(index, 'model_slug')" />
                     </div>
 
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="grid gap-2">
-                            <Label :for="`temperature_${row.role}`">
+                            <Label :for="`temperature_${props.roles[index].role}`">
                                 Temperature
                             </Label>
                             <Input
-                                :id="`temperature_${row.role}`"
-                                v-model="row.temperature"
+                                :id="`temperature_${props.roles[index].role}`"
+                                v-model.number="form.roles[0].temperature"
                                 type="number"
                                 step="0.1"
                                 min="0"
@@ -188,32 +484,43 @@ function submit(): void {
                                 class="h-11"
                             />
                             <InputError
-                                :message="form.errors[`roles.${index}.temperature`]"
+                                :message="errorForField(index, 'temperature')"
                             />
                         </div>
 
                         <div class="grid gap-2">
-                            <Label :for="`max_tokens_${row.role}`">
+                            <Label :for="`max_tokens_${props.roles[index].role}`">
                                 Max tokens
                             </Label>
                             <Input
-                                :id="`max_tokens_${row.role}`"
-                                v-model="row.max_tokens"
+                                :id="`max_tokens_${props.roles[index].role}`"
+                                v-model.number="form.roles[0].max_tokens"
                                 type="number"
                                 step="1"
                                 min="1"
                                 class="h-11"
                             />
                             <InputError
-                                :message="form.errors[`roles.${index}.max_tokens`]"
+                                :message="errorForField(index, 'max_tokens')"
                             />
                         </div>
                     </div>
 
-                    <Label class="flex w-fit items-center gap-3">
-                        <Checkbox v-model="row.is_active" />
-                        <span class="text-sm text-foreground">Active</span>
-                    </Label>
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="space-y-0.5">
+                            <Label :for="`is_active_${props.roles[index].role}`">
+                                Active
+                            </Label>
+                            <p class="text-xs text-muted-foreground">
+                                Turn off to fall back to the global default for
+                                this role.
+                            </p>
+                        </div>
+                        <Switch
+                            :id="`is_active_${props.roles[index].role}`"
+                            v-model="form.roles[0].is_active"
+                        />
+                    </div>
                 </div>
 
                 <!-- Fallback summary (when not overriding) -->
@@ -251,16 +558,5 @@ function submit(): void {
                 sprint.
             </p>
         </div>
-
-        <div class="flex items-center gap-4">
-            <Button
-                type="submit"
-                class="h-11"
-                :disabled="form.processing"
-                data-test="save-story-settings-button"
-            >
-                Save settings
-            </Button>
-        </div>
-    </form>
+    </div>
 </template>

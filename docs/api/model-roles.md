@@ -43,6 +43,12 @@ Body: `roles[]`, each `{ role, model_slug, temperature, max_tokens, is_active }`
 
 For each row, `ModelProfile::updateOrCreate` upserts the unique `(scope=Global, story_id=null, role)` profile, storing `temperature`/`max_tokens` into the `params` JSON. On success: flash `toast` (success) and redirect to `model-roles.edit`.
 
+> The `roles` array accepts **one or more** rows, so the screen saves **per role**: each role card is an independent form that submits just its own row. This keeps the Save action in every section (no scroll to a shared footer — Fitts's Law + Goal-Gradient).
+
+## 4. Model picker
+
+The `model_slug` field is a **searchable combobox** (`ModelCombobox.vue`) populated from `provider.models` ([provider.md](./provider.md) §7), so authors choose from the models their key can actually reach instead of memorising slugs (Hick's Law). The catalog loads once after mount via `useHttp` and is shared by every role picker. When the catalog can't load (no/invalid key), the picker still accepts a **hand-typed slug** (Postel's Law) and a hint links to Provider settings.
+
 ## Related
 
 - [../architecture/DATABASE.md](../architecture/DATABASE.md) — `model_profiles` schema · [../adr/0017-llm-orchestration-openrouter.md](../adr/0017-llm-orchestration-openrouter.md) §2 — role tiering

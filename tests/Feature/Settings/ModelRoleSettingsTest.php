@@ -63,6 +63,45 @@ class ModelRoleSettingsTest extends TestCase
         $this->assertSame(4096, $profile->params['max_tokens']);
     }
 
+    public function test_saving_multiple_roles_upserts_each_profile(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->from(route('model-roles.edit'))
+            ->put(route('model-roles.update'), [
+                'roles' => [
+                    [
+                        'role' => LlmRole::NarratorProse->value,
+                        'model_slug' => 'anthropic/claude-opus-4',
+                        'temperature' => 0.6,
+                        'max_tokens' => 4096,
+                        'is_active' => true,
+                    ],
+                    [
+                        'role' => LlmRole::BeatJudge->value,
+                        'model_slug' => 'openai/gpt-4o-mini',
+                        'temperature' => 0.2,
+                        'max_tokens' => 512,
+                        'is_active' => false,
+                    ],
+                ],
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('model-roles.edit'));
+
+        $this->assertDatabaseHas('model_profiles', [
+            'role' => LlmRole::NarratorProse->value,
+            'model_slug' => 'anthropic/claude-opus-4',
+        ]);
+
+        $this->assertDatabaseHas('model_profiles', [
+            'role' => LlmRole::BeatJudge->value,
+            'model_slug' => 'openai/gpt-4o-mini',
+            'is_active' => false,
+        ]);
+    }
+
     public function test_a_missing_model_slug_is_rejected(): void
     {
         $user = User::factory()->create();

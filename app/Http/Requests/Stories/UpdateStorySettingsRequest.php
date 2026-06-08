@@ -11,10 +11,13 @@ use Illuminate\Validation\Rule;
 /**
  * Validates a per-story settings save (S-1.2.1).
  *
- * Carries the default POV plus one row per engine {@see LlmRole}. A row's model
- * fields are only required when its `override` flag is set; an unset override
- * means the role falls back to the global default. Ownership is enforced in the
- * controller via the policy + the owner-scoped route binding.
+ * Carries the default POV and/or one or more rows, one per engine {@see LlmRole}.
+ * Both sections are `sometimes` so the screen can save each independently (the
+ * POV section, or a single role card, or everything at once); whichever is sent
+ * is then validated. A row's model fields are only required when its `override`
+ * flag is set; an unset override means the role falls back to the global
+ * default. Ownership is enforced in the controller via the policy + the
+ * owner-scoped route binding.
  */
 class UpdateStorySettingsRequest extends FormRequest
 {
@@ -24,8 +27,8 @@ class UpdateStorySettingsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'default_pov' => ['required', Rule::enum(PovMode::class)],
-            'roles' => ['required', 'array', 'min:1'],
+            'default_pov' => ['sometimes', 'required', Rule::enum(PovMode::class)],
+            'roles' => ['sometimes', 'required', 'array', 'min:1'],
             'roles.*.role' => ['required', Rule::enum(LlmRole::class)],
             'roles.*.override' => ['required', 'boolean'],
             'roles.*.model_slug' => ['nullable', 'required_if:roles.*.override,true', 'string', 'max:120'],

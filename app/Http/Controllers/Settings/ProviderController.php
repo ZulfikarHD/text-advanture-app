@@ -6,6 +6,7 @@ use App\Enums\Provider;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProviderCredentialUpdateRequest;
 use App\Services\Llm\ConnectionTester;
+use App\Services\Llm\ProviderModelCatalog;
 use App\Services\ProviderCredentialService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +27,7 @@ class ProviderController extends Controller
     public function __construct(
         private readonly ProviderCredentialService $credentials,
         private readonly ConnectionTester $connectionTester,
+        private readonly ProviderModelCatalog $modelCatalog,
     ) {}
 
     /**
@@ -60,6 +62,10 @@ class ProviderController extends Controller
             $validated['base_url'] ?? null,
         );
 
+        // The cached catalog was fetched with the old key - drop it so the
+        // picker reflects what the new key can reach.
+        $this->modelCatalog->forget($request->user());
+
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Provider key saved.')]);
 
         return to_route('provider.edit');
@@ -71,6 +77,7 @@ class ProviderController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         $this->credentials->forget($request->user());
+        $this->modelCatalog->forget($request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Provider key removed.')]);
 
@@ -94,5 +101,22 @@ class ProviderController extends Controller
         $result = $this->connectionTester->test($request->user());
 
         return response()->json($result->toArray());
+    }
+
+    /**
+     * List the models the stored key can reach, for the role -> model picker.
+     *
+     * Answers a standalone client request (Inertia `useHttp`) so the model-roles
+     * screen can offer a searchable list of real, reachable models instead of a
+     * hand-typed slug. Returns an empty list (never an error) when no key is
+     * stored, so the picker degrades gracefully to manual entry.
+     *
+     * @return JsonResponse `{ models: list<{ id, name, contextLength }> }` (no secrets).
+     */
+    public function models(Request $request): JsonResponse
+    {
+        return response()->json([
+            'models' => $this->modelCatalog->for($request->user()),
+        ]);
     }
 }
