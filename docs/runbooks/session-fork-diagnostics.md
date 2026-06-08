@@ -1,6 +1,6 @@
-# Session Save Diagnostics (S-2.1.1 / S-2.1.2 / S-2.1.3 / S-3.1.1)
+# Session Save Diagnostics (S-2.1.1 / S-2.1.2 / S-2.1.3 / S-3.1.1 / S-4.1.1)
 
-Operational playbook for the **save realm** — forking a story into a save, then naming, renaming, resetting, deleting, and resuming saves, plus the **state-machine spine** that advances a save through the narrator loop. Use this when "Start session" does nothing, a save lands at the wrong position, a manage action fails, a Play link 404s, or a loop transition throws. Backed by `SessionService` + `SessionController` + `SessionStateMachine` (see [../api/saves.md](../api/saves.md), [../architecture/Diagrams/Engine/Session_Fork_Flow.md](../architecture/Diagrams/Engine/Session_Fork_Flow.md), and [../architecture/Diagrams/Engine/Session_State_Machine.md](../architecture/Diagrams/Engine/Session_State_Machine.md)).
+Operational playbook for the **save realm** — forking a story into a save, then naming, renaming, resetting, deleting, and resuming saves, plus the **state-machine spine** that advances a save through the narrator loop and the **narrator prompt assembly** that builds the narrator turn's prompt. Use this when "Start session" does nothing, a save lands at the wrong position, a manage action fails, a Play link 404s, a loop transition throws, or the narrator prompt is missing/extra a block. Backed by `SessionService` + `SessionController` + `SessionStateMachine` + `NarratorPromptAssembler` (see [../api/saves.md](../api/saves.md), [../architecture/Diagrams/Engine/Session_Fork_Flow.md](../architecture/Diagrams/Engine/Session_Fork_Flow.md), [../architecture/Diagrams/Engine/Session_State_Machine.md](../architecture/Diagrams/Engine/Session_State_Machine.md), and [../architecture/Diagrams/Engine/Narrator_Prompt_Assembly.md](../architecture/Diagrams/Engine/Narrator_Prompt_Assembly.md)).
 
 ## What "start a session" does
 
@@ -61,6 +61,29 @@ php artisan tinker --execute '
   $p = App\Models\PlaySession::firstWhere("id", 1);
   dump($p?->only(["id","state_node","current_chapter_id","current_scene_id","current_beat_id"]));
   dump(app(App\Services\BeatSequence::class)->next($p->currentBeat)?->only(["id","number"]));
+'
+```
+
+## Narrator prompt assembly (S-4.1.1)
+
+`NarratorPromptAssembler` ([`app/Services/Narrator/NarratorPromptAssembler.php`](../../app/Services/Narrator/NarratorPromptAssembler.php)) builds the narrator turn's prompt by reading the seeded `prompt_blocks` registry — it folds the lit narrator blocks (`POV_CONTRACT`, `BEAT`, `LOREBOOK_NARRATOR`, `SCENE_STATE`, and `RESUME_ANCHOR` when resuming) from their data producers into an `AssembledPrompt`. It is backend-only: no route (the prose call is S-4.2.1), no LLM call — it produces chat messages. Selection and order come from the registry rows, not code.
+
+| Symptom | Likely cause | Triage |
+|---------|--------------|--------|
+| `MESH_AWARENESS` or `DIRECTOR_STATE` appears in the prompt | A producer was registered for that key before its phase | Expected this phase: both are seeded `is_active = true` but have **no producer**, so the assembler skips them (PH-39). Do not rely on `is_active` to exclude them — the gate is "a producer is registered for the key". The mesh + clock producers land in Phase 4. |
+| A lit block (`POV_CONTRACT` / `BEAT` / `SCENE_STATE`) is **missing** | Its producer returned null/empty — the save is unpositioned (no current scene/beat), or the beat `goal` is blank | Check the save's `current_scene_id`/`current_beat_id` and the authored scene/beat. The assembler omits an empty block rather than inject filler. |
+| `[LOREBOOK]` is missing though entries exist | No keyword matched the scene sample text, or the entry's `min_reveal_chapter` is later than the save's current chapter | Expected — the narrator is omniscient (no knowledge clamp) but still honours the reveal gate. Use the lorebook keyword-match preview to confirm what triggers; check `chapters.number` vs `min_reveal_chapter_id`. |
+| Blocks render in an unexpected order | Order is read from `prompt_blocks.order_index` within `section` (system before user), not code | Inspect the registry rows; reordering `order_index` reorders the prompt. Re-seed with `GlobalLibrarySeeder` if a row was hand-edited. |
+| `RESUME_ANCHOR` never appears | `resume_anchor` is null until a narrator turn writes one (S-5.3.1) | Expected this phase — the block plumbing exists, but the anchor content producer is S-5.3.1 (PH-37). |
+
+### Verify assembly from tinker (read-only)
+
+```bash
+php artisan tinker --execute '
+  $p = App\Models\PlaySession::firstWhere("id", 1);
+  $prompt = app(App\Services\Narrator\NarratorPromptAssembler::class)->assemble($p);
+  dump($prompt->keys());
+  dump($prompt->messages());
 '
 ```
 
